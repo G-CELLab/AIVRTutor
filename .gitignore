@@ -1,0 +1,31 @@
+# ========== Unity ==========
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+sysinfo.txt
+
+# VS / Rider / VSCode
+.vs/
+.vscode/
+.vsconfig/
+*.csproj
+*.sln
+*.user
+*.unityproj
+*.pidb
+*.svd
+
+# OS junk
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# Unity cache
+*.unitypackage
