@@ -38,6 +38,8 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     public float interruptGraceMs = 40f;
     [Tooltip("打断时是否全局停所有注册的 TTS（项目里有多个 TTS 时建议开启）")]
     public bool killAllTTSOnInterrupt = true;
+    [Tooltip("TTS 开始播放后，在此时间内不会被用户声音打断（秒，防止自中断）")]
+    public float ttsProtectionDurationSec = 0.5f;
 
     // 识别器对外事件：一旦“疑似用户开口”，立即触发（供 TTS 订阅）
     public event Action OnUserSpeechLikely;
@@ -56,6 +58,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     private float interruptAboveTimer = 0f;   // 峰值持续计时（秒）
     private float lastBatchMax = 0f;          // 调试显示：最近一批最大值
     private GUIStyle _g;
+    private float _ttsStartTime = -999f;      // Track when TTS started to prevent self-interrupt
 
     // 统计/节流
     private float _nextLogTime = 0f;
@@ -107,6 +110,8 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     {
         D("[Loop] 进入 RecordingLoop()");
         isRunning = true;
+        float lastUtteranceTime = -999f;
+        float cooldownSec = 1.0f; // 1 second cooldown after each utterance
         while (isRunning)
         {
             string wavPath = null;
@@ -120,13 +125,18 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                 D($"[Loop] 本段保存成功: {wavPath}");
                 // 立刻异步处理（直接把音频送给 GPTConnector），不阻塞录音主循环
                 StartCoroutine(ProcessUtterance(wavPath));
+                lastUtteranceTime = Time.realtimeSinceStartup;
             }
             else
             {
                 D("[Loop] 本段保存失败/无有效语音，继续下一轮监听");
             }
 
-            yield return null;
+            // Cooldown after sending utterance
+            while (Time.realtimeSinceStartup - lastUtteranceTime < cooldownSec)
+            {
+                yield return null;
+            }
         }
     }
 
@@ -139,6 +149,17 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             yield break;
         }
         D($"[Send] 发送音频到 GPTConnector: {wavPath}");
+        // Check audio length before sending (must be at least 100ms for 16kHz = 1600 samples, for 24kHz = 2400 samples)
+        try {
+            var wavBytes = File.ReadAllBytes(wavPath);
+            // crude check: look for at least 3200 bytes (16-bit mono, 1600 samples)
+            if (wavBytes.Length < 4000) {
+                Debug.LogWarning("[OpenAISpeechRecognizer] Audio buffer too small, not sending to GPTConnector.");
+                yield break;
+            }
+        } catch (Exception e) {
+            Debug.LogWarning($"[OpenAISpeechRecognizer] Failed to check audio file size: {e.Message}");
+        }
         gptConnector.SendAudioFileToGPT(wavPath, null);
         yield return null;
     }
@@ -290,31 +311,43 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             {
                 if (batchMax > startThreshold)
                 {
-                    aboveTimer += batchDur;
-                    _overStartCount++;
-                    DT("[VAD]", $">startThreshold：aboveTimer={aboveTimer:F3}/{startHoldTime:F3} (batchMax={batchMax:F4})");
-
-                    if (aboveTimer >= startHoldTime)
+                    // Check if TTS is in protection period (prevent self-interrupt)
+                    bool inProtectionPeriod = (ttsToInterrupt != null && ttsToInterrupt.IsSpeaking && 
+                                              (Time.realtimeSinceStartup - _ttsStartTime) < ttsProtectionDurationSec);
+                    
+                    if (inProtectionPeriod)
                     {
-                        started = true;
-                        DT("[VAD]", $"✅ STARTED! preRoll={preRoll.Count} samples 将并入 capture");
+                        DT("[VAD]", $"⏸️  TTS protection period active (started {(Time.realtimeSinceStartup - _ttsStartTime):F2}s ago), skipping VAD detection");
+                        aboveTimer = 0f;
+                    }
+                    else
+                    {
+                        aboveTimer += batchDur;
+                        _overStartCount++;
+                        DT("[VAD]", $">startThreshold：aboveTimer={aboveTimer:F3}/{startHoldTime:F3} (batchMax={batchMax:F4})");
 
-                        OnUserSpeechLikely?.Invoke();
-                        if (ttsToInterrupt != null && ttsToInterrupt.IsSpeaking)
+                        if (aboveTimer >= startHoldTime)
                         {
-                            ttsToInterrupt.StopSpeaking();
-                            if (killAllTTSOnInterrupt) TextToSpeechPlayer.KillAllTTS();
-                            LogAndStopAllAudio("vad start interrupt");
-                            StartCoroutine(HardMuteForFrames(2));
-                            DT("[VAD]", "🔇 VAD开始时：停止在播音频");
-                        }
+                            started = true;
+                            DT("[VAD]", $"✅ STARTED! preRoll={preRoll.Count} samples 将并入 capture");
 
-                        while (preRoll.Count > 0)
-                        {
-                            capture.Add(preRoll.Dequeue());
-                            recordedTime += 1f / sampleRate;
+                            OnUserSpeechLikely?.Invoke();
+                            if (ttsToInterrupt != null && ttsToInterrupt.IsSpeaking)
+                            {
+                                ttsToInterrupt.StopSpeaking();
+                                if (killAllTTSOnInterrupt) TextToSpeechPlayer.KillAllTTS();
+                                LogAndStopAllAudio("vad start interrupt");
+                                StartCoroutine(HardMuteForFrames(2));
+                                DT("[VAD]", "🔇 VAD开始时：停止在播音频");
+                            }
+
+                            while (preRoll.Count > 0)
+                            {
+                                capture.Add(preRoll.Dequeue());
+                                recordedTime += 1f / sampleRate;
+                            }
+                            silenceTimer = 0f;
                         }
-                        silenceTimer = 0f;
                     }
                 }
                 else
@@ -414,7 +447,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     {
         AudioSource[] all;
 #if UNITY_2020_1_OR_NEWER
-        all = GameObject.FindObjectsOfType<AudioSource>(true);
+        all = GameObject.FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
 #else
         var active = UnityEngine.Object.FindObjectsOfType<AudioSource>();
         var maybeAll = Resources.FindObjectsOfTypeAll<AudioSource>();

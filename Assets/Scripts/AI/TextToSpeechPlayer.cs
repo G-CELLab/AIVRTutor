@@ -45,7 +45,7 @@ public class TextToSpeechPlayer : MonoBehaviour
             try
             {
                 if (audioSource.isPlaying) audioSource.Stop();
-                audioSource.time = 0f;
+                if (audioSource.clip != null) audioSource.time = 0f;
                 audioSource.clip = null;
                 audioSource.mute = false;
             }

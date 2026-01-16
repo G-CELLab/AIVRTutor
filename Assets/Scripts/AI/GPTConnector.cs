@@ -51,8 +51,8 @@ public class GPTConnector : MonoBehaviour
     [Tooltip("让模型合成的语音音色")]
     public string gptVoice = "alloy";
 
-    [Tooltip("模型语音格式（wav/mp3）")]
-    public string gptAudioFormat = "wav";
+    [Tooltip("模型语音格式（pcm16/g711_ulaw/g711_alaw）")]
+    public string gptAudioFormat = "pcm16";
 
     [Header("Language")]
     public bool alwaysEnglish = true; // ✅ 强制英文
@@ -134,6 +134,7 @@ public class GPTConnector : MonoBehaviour
     // === Realtime ack gate ===
     private volatile bool _sessionReady = false;
     private int _sessionUpdatedTick = 0;
+    private volatile bool _responseInProgress = false; // Prevent simultaneous response.create calls
 
     // === 助理字幕累积 ===
     private readonly StringBuilder _assistantTranscriptAccum = new StringBuilder(256);
@@ -202,6 +203,12 @@ public class GPTConnector : MonoBehaviour
             Debug.LogWarning("[GPTConnector] Audio path invalid.");
             return;
         }
+        // Prevent sending if a response is already in progress
+        if (_responseInProgress)
+        {
+            Warn("[GPTConnector] Response already in progress, skipping new audio input.");
+            return;
+        }
         onReplyComplete = onComplete;
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
 
@@ -210,12 +217,13 @@ public class GPTConnector : MonoBehaviour
 
         if (useRealtime)
         {
-            byte[] pcm = ExtractPcm16FromWav(wav);
+            byte[] pcm = ExtractPcm16FromWavRobust(wav);
             if (pcm == null || pcm.Length == 0)
             {
-                Warn("[Realtime] 解析 WAV 失败，未能提取 PCM16。");
+                Warn($"[Realtime] 解析 WAV 失败，未能提取 PCM16。 wavBytes={wav.Length}, pcmBytes={(pcm?.Length ?? 0)}");
                 return;
             }
+            D($"[SendAudioFile] ✓ WAV extraction succeeded: {wav.Length} bytes → {pcm.Length} bytes PCM16");
             string extra = string.IsNullOrWhiteSpace(pendingUserPrompt) ? null : pendingUserPrompt;
             pendingUserPrompt = "";
             StartCoroutine(SendPcmViaRealtime(pcm, extra));
@@ -287,13 +295,16 @@ public class GPTConnector : MonoBehaviour
         sb.Append("{");
         sb.Append("\"model\":\"").Append(chatModel).Append("\",");
         sb.Append("\"modalities\":[\"text\",\"audio\"],");
-        if (preferModelAudio)
-        {
-            sb.Append("\"audio\":{")
-              .Append("\"voice\":\"").Append(string.IsNullOrEmpty(gptVoice) ? "alloy" : gptVoice).Append("\",")
-              .Append("\"format\":\"").Append(string.IsNullOrEmpty(gptAudioFormat) ? "wav" : gptAudioFormat).Append("\"")
-              .Append("},");
-        }
+                if (preferModelAudio)
+                {
+                        // Only use 'wav' for HTTP, never for Realtime
+                        string httpAudioFormat = string.IsNullOrEmpty(gptAudioFormat) ? "wav" : gptAudioFormat;
+                        if (httpAudioFormat != "pcm16" && httpAudioFormat != "g711_ulaw" && httpAudioFormat != "g711_alaw") httpAudioFormat = "wav";
+                        sb.Append("\"audio\":{")
+                            .Append("\"voice\":\"").Append(string.IsNullOrEmpty(gptVoice) ? "alloy" : gptVoice).Append("\",")
+                            .Append("\"format\":\"").Append(httpAudioFormat).Append("\"")
+                            .Append("},");
+                }
         sb.Append("\"messages\":[");
         bool first = true;
         string finalInstr = BuildFinalInstructions();
@@ -332,8 +343,16 @@ public class GPTConnector : MonoBehaviour
     // ========== Realtime(WebSocket) ==========
     private IEnumerator SendTextViaRealtime(string text)
     {
-        yield return EnsureRealtimeConnected();
-        yield return WaitForSessionReady(3f); // 等待会话指令就绪
+        if (_responseInProgress)
+        {
+            Warn("[Realtime] Response already in progress, queueing skipped (text input)");
+            yield break;
+        }
+        _responseInProgress = true;
+        try
+        {
+            yield return EnsureRealtimeConnected();
+            yield return WaitForSessionReady(3f); // 等待会话指令就绪
 
         // 将“当前相位指令”作为 developer 文本钉入对话
         if (prependPhaseTextAsDeveloperItem)
@@ -356,21 +375,31 @@ public class GPTConnector : MonoBehaviour
         EchoPrompt("RT/Text.Instructions(final)", instr, true);
 
         sb.Append("\"modalities\":[\"text\",\"audio\"],");
-        sb.Append("\"temperature\":0.3,");
-        sb.Append("\"max_output_tokens\":180,");
-        sb.Append("\"audio\":{");
-        sb.Append("\"voice\":\"").Append(string.IsNullOrEmpty(gptVoice) ? "alloy" : gptVoice).Append("\",");
-        sb.Append("\"format\":\"").Append(string.IsNullOrEmpty(gptAudioFormat) ? "wav" : gptAudioFormat).Append("\"}");
+        sb.Append("\"temperature\":0.8,");
+        sb.Append("\"max_output_tokens\":180");
         sb.Append(",\"instructions\":\"").Append(Escape(instr)).Append("\"");
         sb.Append("}}");
 
         yield return SendWsText(sb.ToString());
+        }
+        finally
+        {
+            _responseInProgress = false;
+        }
     }
 
     private IEnumerator SendPcmViaRealtime(byte[] pcm16User, string extraInstruction)
     {
-        yield return EnsureRealtimeConnected();
-        yield return WaitForSessionReady(3f); // 等待会话指令就绪
+        if (_responseInProgress)
+        {
+            Warn($"[Realtime] Response already in progress, queueing skipped (audio input, pcm={pcm16User?.Length ?? 0} bytes)");
+            yield break;
+        }
+        _responseInProgress = true;
+        try
+        {
+            yield return EnsureRealtimeConnected();
+            yield return WaitForSessionReady(3f); // 等待会话指令就绪
 
         // 1) 先钉开发者文本（当前相位）
         if (prependPhaseTextAsDeveloperItem)
@@ -381,7 +410,12 @@ public class GPTConnector : MonoBehaviour
             yield return SendWsText(devMsg);
         }
 
-        // 2) 送音频
+        // 2) 送音频（必须至少 100ms）
+        if (pcm16User == null || pcm16User.Length < 4800) // 24kHz * 0.1s * 2 bytes = 4800
+        {
+            Warn("[Realtime] Audio buffer too small (< 100ms). Aborting.");
+            yield break;
+        }
         string b64 = Convert.ToBase64String(pcm16User);
         string append = "{\"type\":\"input_audio_buffer.append\",\"audio\":\"" + b64 + "\"}";
         yield return SendWsText(append);
@@ -395,15 +429,17 @@ public class GPTConnector : MonoBehaviour
         EchoPrompt("RT/Audio.Instructions(final)", finalInstr, true);
 
         sb.Append("\"modalities\":[\"text\",\"audio\"],");
-        sb.Append("\"temperature\":0.3,");
-        sb.Append("\"max_output_tokens\":180,");
-        sb.Append("\"audio\":{");
-        sb.Append("\"voice\":\"").Append(string.IsNullOrEmpty(gptVoice) ? "alloy" : gptVoice).Append("\",");
-        sb.Append("\"format\":\"").Append(string.IsNullOrEmpty(gptAudioFormat) ? "wav" : gptAudioFormat).Append("\"}");
+        sb.Append("\"temperature\":0.8,");
+        sb.Append("\"max_output_tokens\":180");
         sb.Append(",\"instructions\":\"").Append(Escape(finalInstr)).Append("\"");
         sb.Append("}}");
 
         yield return SendWsText(sb.ToString());
+        }
+        finally
+        {
+            _responseInProgress = false;
+        }
     }
 
     private IEnumerator EnsureRealtimeConnected()
@@ -452,23 +488,12 @@ public class GPTConnector : MonoBehaviour
           .Append("\"prefix_padding_ms\":250")
           .Append("},");
 
-        // 输出音频
-        cfg.Append("\"output_audio_format\":{")
-          .Append("\"type\":\"").Append(string.IsNullOrEmpty(gptAudioFormat) ? "wav" : gptAudioFormat).Append("\",")
-          .Append("\"sample_rate_hz\":").Append(realtimeSampleRate)
-          .Append("},");
+        // 输出音频格式（string，不是object）
+        // Always use pcm16 for Realtime API regardless of Inspector value
+        cfg.Append("\"output_audio_format\":\"pcm16\",");
 
-        // 输入音频
-        cfg.Append("\"input_audio_format\":{")
-          .Append("\"type\":\"pcm16\",")
-          .Append("\"sample_rate_hz\":").Append(realtimeSampleRate)
-          .Append("}");
-
-        // 自动转写（用户）
-        cfg.Append(",\"input_audio_transcription\":{")
-          .Append("\"model\":\"openai/gpt-oss-120b\",")
-          .Append("\"language\":\"en\"")
-          .Append("}");
+        // 输入音频格式（string，不是object）
+        cfg.Append("\"input_audio_format\":\"pcm16\"");
 
         // 指令
         string sessionInstr = BuildFinalInstructions();
@@ -481,7 +506,7 @@ public class GPTConnector : MonoBehaviour
         Debug.Log("[Realtime] ✓ session.update sent");
 
         // ✅ 等待 ack
-        yield return WaitForSessionReady(5f);
+        yield return WaitForSessionReady(15f);  // 15s timeout for slow networks
         _sessionConfigured = true;
         D("[Realtime] session.update applied & acked.");
     }
@@ -823,6 +848,25 @@ public class GPTConnector : MonoBehaviour
     {
         _isSpeaking = true;
         D("[Speak] start");
+        
+        // Notify speech recognizer that TTS is starting (for self-interrupt protection)
+        if (speechRecognizer != null)
+        {
+            try
+            {
+                var fieldInfo = speechRecognizer.GetType().GetField("_ttsStartTime", 
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (fieldInfo != null)
+                {
+                    fieldInfo.SetValue(speechRecognizer, Time.realtimeSinceStartup);
+                    D("[Speak] Notified speech recognizer of TTS start time");
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[Speak] Failed to notify recognizer: {e.Message}");
+            }
+        }
     }
 
     private void MarkSpeakingEnd()
@@ -916,6 +960,98 @@ public class GPTConnector : MonoBehaviour
         var pcm = new byte[len];
         Buffer.BlockCopy(wav, 44, pcm, 0, len);
         return pcm;
+    }
+
+    // Robust WAV parsing that handles variable chunk sizes
+    private static byte[] ExtractPcm16FromWavRobust(byte[] wav)
+    {
+        if (wav == null || wav.Length < 12)
+        {
+            Debug.LogWarning($"[WAV] Buffer too small: {wav?.Length ?? 0} bytes");
+            return null;
+        }
+        
+        try
+        {
+            // Check RIFF header
+            if (wav[0] != 'R' || wav[1] != 'I' || wav[2] != 'F' || wav[3] != 'F')
+            {
+                Debug.LogWarning("[WAV] Invalid RIFF header");
+                return null;
+            }
+            if (wav[8] != 'W' || wav[9] != 'A' || wav[10] != 'V' || wav[11] != 'E')
+            {
+                Debug.LogWarning("[WAV] Invalid WAVE header");
+                return null;
+            }
+
+            // Find "data" chunk by scanning through all chunks
+            int dataPos = -1;
+            int dataSize = 0;
+            int i = 12;
+            int chunkCount = 0;
+            
+            while (i + 8 <= wav.Length)
+            {
+                // Read chunk ID (4 bytes)
+                char c0 = (char)wav[i];
+                char c1 = (char)wav[i + 1];
+                char c2 = (char)wav[i + 2];
+                char c3 = (char)wav[i + 3];
+                string chunkId = new string(new[] { c0, c1, c2, c3 });
+                i += 4;
+
+                // Read chunk size (4 bytes, little-endian)
+                if (i + 4 > wav.Length) break;
+                int chunkSize = wav[i] | (wav[i + 1] << 8) | (wav[i + 2] << 16) | (wav[i + 3] << 24);
+                i += 4;
+                
+                chunkCount++;
+                Debug.Log($"[WAV] Chunk {chunkCount}: '{chunkId}' size={chunkSize} at offset={i}");
+
+                if (chunkId == "data")
+                {
+                    dataPos = i;
+                    dataSize = chunkSize;
+                    Debug.Log($"[WAV] Found 'data' chunk: pos={dataPos}, size={dataSize}");
+                    break;
+                }
+
+                // Skip to next chunk (align to even boundary)
+                i += chunkSize;
+                if ((chunkSize & 1) == 1) i++; // Padding byte if chunk size is odd
+            }
+
+            if (dataPos >= 0 && dataSize > 0)
+            {
+                int pcmLen = Mathf.Min(dataSize, wav.Length - dataPos);
+                if (pcmLen > 0)
+                {
+                    byte[] pcm = new byte[pcmLen];
+                    Buffer.BlockCopy(wav, dataPos, pcm, 0, pcmLen);
+                    Debug.Log($"[WAV] ✓ Extracted PCM: {pcmLen} bytes");
+                    return pcm;
+                }
+            }
+
+            // Fallback: if no data chunk found, try simple 44-byte header
+            Debug.Log("[WAV] No data chunk found, trying 44-byte fallback");
+            if (wav.Length > 44)
+            {
+                byte[] pcm = new byte[wav.Length - 44];
+                Buffer.BlockCopy(wav, 44, pcm, 0, pcm.Length);
+                Debug.Log($"[WAV] ✓ Fallback extracted: {pcm.Length} bytes");
+                return pcm;
+            }
+
+            Debug.LogWarning("[WAV] Failed: WAV too short and no valid chunks found");
+            return null;
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[WAV] Robust extraction exception: {e.Message}");
+            return null;
+        }
     }
 
     private static byte[] BuildWavFromPcm16(byte[] pcm, int sampleRate, int channels)
@@ -1111,7 +1247,14 @@ public class GPTConnector : MonoBehaviour
             t += Time.deltaTime;
             yield return null;
         }
-        if (!_sessionReady) Warn("[Realtime] session.update 未在超时内确认，指令可能未生效。");
+        if (!_sessionReady)
+        {
+            Warn($"[Realtime] session.update ACK timeout ({timeoutSec:0.0}s): instructions may not be fully applied. Continuing anyway.");
+        }
+        else
+        {
+            D($"[Realtime] ✅ session.updated ACK received in {t:0.0}s");
+        }
     }
 
     // === 可选：阶段切换时明确覆盖会话指令 ===

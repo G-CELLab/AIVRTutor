@@ -2,9 +2,11 @@
 
 public class FreezeAtSecondsBehaviour : StateMachineBehaviour
 {
-    public float holdAtSeconds = 1f;
+    public float holdAtSeconds = 0f;
     [Tooltip("当 Animator Bool 参数为真时自动解除冻结")]
     public string resumeWhenBoolTrue = "isSpeaking";
+    [Tooltip("在进入状态时立刻冻结，不播放任何动画")]
+    public bool freezeOnEntry = true;
 
     bool paused;
     float prevSpeed = 1f;
@@ -15,6 +17,13 @@ public class FreezeAtSecondsBehaviour : StateMachineBehaviour
         paused = false;
         prevSpeed = Mathf.Max(0.0001f, animator.speed);
         resumeHash = Animator.StringToHash(resumeWhenBoolTrue);
+
+        // 如果启用 freezeOnEntry，立刻暂停动画
+        if (freezeOnEntry)
+        {
+            animator.speed = 0f;
+            paused = true;
+        }
     }
 
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
