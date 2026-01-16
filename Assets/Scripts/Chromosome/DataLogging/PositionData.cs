@@ -42,6 +42,16 @@ public class PositionData : MonoBehaviour
         round = WriteDebugToFile.round;
         startWriting = false;
         canRecord = true;
+        
+            // Auto-assign player if not set
+            if (player == null)
+            {
+                player = Camera.main.gameObject;
+                if (player == null)
+                {
+                    Debug.LogError("PositionData: Could not find Main Camera. Please assign player in Inspector.");
+                }
+            }
         //filePath = GetFilePath();
 
         if (round == 1)

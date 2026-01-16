@@ -24,6 +24,7 @@ public class WriteDebugToFile : MonoBehaviour
 
     void Start()
     {
+        EnsureFilename();
         if (round == 1)
         {
             filename = Application.persistentDataPath + "/Logfile1.csv";
@@ -49,8 +50,23 @@ public class WriteDebugToFile : MonoBehaviour
         Timer();
     }
 
+    private void EnsureFilename()
+    {
+        if (string.IsNullOrEmpty(filename))
+        {
+            filename = Path.Combine(Application.persistentDataPath, $"Logfile{round}.csv");
+        }
+
+        string dir = Path.GetDirectoryName(filename);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+    }
+
     public void WriteHeader()
     {
+        EnsureFilename();
         TextWriter tw = new StreamWriter(filename, false);
         tw.WriteLine("Time, Right_Pressed, Left_Pressed, Right_Grabbed, Left_Grabbed, Right_Touched, Left_Touched, InfoPanel, Phase, Others");
         tw.Close();
@@ -59,6 +75,7 @@ public class WriteDebugToFile : MonoBehaviour
 
     public void Log(string logString, string stackTrace, LogType type)
     {
+            EnsureFilename();
             if (type == LogType.Log && logString.Contains("RightGrab"))
             {
                 TextWriter tw = new StreamWriter(filename, true);
