@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
+using AI;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ using UnityEngine.Networking;
 
 public class GPTConnector : MonoBehaviour
 {
+    // Modular request queue for GPT requests
+    private GPTRequestQueue _requestQueue = new GPTRequestQueue();
     [Header("OpenAI")]
     public string apiKey = ""; // ⚠️不要硬编码，Inspector 填
     public string chatModel = "openai/gpt-oss-120b"; // HTTP 旧路径保留
@@ -182,9 +185,19 @@ public class GPTConnector : MonoBehaviour
     // ========== 外部 API ==========
     public void SendToGPT(string userInput, Action onComplete)
     {
+        if (_responseInProgress)
+        {
+            // Queue the request if a response is in progress
+            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest {
+                Type = GPTRequestQueue.RequestType.Text,
+                Text = userInput,
+                OnComplete = onComplete
+            });
+            D("[Queue] Text request queued (response in progress)");
+            return;
+        }
         onReplyComplete = onComplete;
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
-
         if (useRealtime)
         {
             StartCoroutine(SendTextViaRealtime(userInput));
@@ -196,6 +209,27 @@ public class GPTConnector : MonoBehaviour
         }
     }
 
+    // === Process next queued request ===
+    private void ProcessNextQueuedRequest()
+    {
+        if (_responseInProgress) return;
+        if (_requestQueue.Count == 0) return;
+        var req = _requestQueue.Dequeue();
+        if (req == null) return;
+        switch (req.Type)
+        {
+            case GPTRequestQueue.RequestType.Text:
+                SendToGPT(req.Text, req.OnComplete);
+                break;
+            case GPTRequestQueue.RequestType.AudioFile:
+                SendAudioFileToGPT(req.AudioFilePath, req.OnComplete);
+                break;
+            case GPTRequestQueue.RequestType.AudioBytes:
+                SendAudioBytesToGPT(req.AudioBytes, req.AudioFormat, req.OnComplete);
+                break;
+        }
+    }
+
     public void SendAudioFileToGPT(string audioFilePath, Action onComplete)
     {
         if (string.IsNullOrEmpty(audioFilePath) || !File.Exists(audioFilePath))
@@ -203,10 +237,15 @@ public class GPTConnector : MonoBehaviour
             Debug.LogWarning("[GPTConnector] Audio path invalid.");
             return;
         }
-        // Prevent sending if a response is already in progress
         if (_responseInProgress)
         {
-            Warn("[GPTConnector] Response already in progress, skipping new audio input.");
+            // Queue the audio file request
+            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest {
+                Type = GPTRequestQueue.RequestType.AudioFile,
+                AudioFilePath = audioFilePath,
+                OnComplete = onComplete
+            });
+            D("[Queue] Audio file request queued (response in progress)");
             return;
         }
         onReplyComplete = onComplete;
@@ -237,6 +276,18 @@ public class GPTConnector : MonoBehaviour
 
     public void SendAudioBytesToGPT(byte[] audioBytes, string format, Action onComplete)
     {
+        if (_responseInProgress)
+        {
+            // Queue the audio bytes request
+            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest {
+                Type = GPTRequestQueue.RequestType.AudioBytes,
+                AudioBytes = audioBytes,
+                AudioFormat = format,
+                OnComplete = onComplete
+            });
+            D("[Queue] Audio bytes request queued (response in progress)");
+            return;
+        }
         onReplyComplete = onComplete;
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
 
@@ -413,7 +464,10 @@ public class GPTConnector : MonoBehaviour
         // 2) 送音频（必须至少 100ms）
         if (pcm16User == null || pcm16User.Length < 4800) // 24kHz * 0.1s * 2 bytes = 4800
         {
-            Warn("[Realtime] Audio buffer too small (< 100ms). Aborting.");
+            Warn("[Realtime] Audio buffer too small (< 100ms). Skipping request.");
+            _responseInProgress = false;
+            // Immediately process next queued request
+            ProcessNextQueuedRequest();
             yield break;
         }
         string b64 = Convert.ToBase64String(pcm16User);
@@ -641,6 +695,13 @@ public class GPTConnector : MonoBehaviour
                 TrimHistory();
             }
 
+            Action afterPlayback = () =>
+            {
+                // After playback, clear response flag and process next queued request if any
+                _responseInProgress = false;
+                ProcessNextQueuedRequest();
+            };
+
             if (_audioAccum != null && _audioAccum.Length > 0 && ttsPlayer != null && preferModelAudio)
             {
                 byte[] pcm = _audioAccum.ToArray();
@@ -654,6 +715,7 @@ public class GPTConnector : MonoBehaviour
                     try { ttsDriver?.CancelWait(); } catch { }
                     MarkSpeakingEnd();
                     onReplyComplete?.Invoke();
+                    afterPlayback();
                 });
             }
             else
@@ -667,12 +729,14 @@ public class GPTConnector : MonoBehaviour
                         try { ttsDriver?.CancelWait(); } catch { }
                         MarkSpeakingEnd();
                         onReplyComplete?.Invoke();
+                        afterPlayback();
                     });
                 }
                 else
                 {
                     try { ttsDriver?.CancelWait(); } catch { }
                     onReplyComplete?.Invoke();
+                    afterPlayback();
                 }
             }
 
@@ -682,6 +746,7 @@ public class GPTConnector : MonoBehaviour
             _textAccum?.Clear();
             return;
         }
+    // ...existing code...
 
         // === 会话已创建/更新（ACK）
         if (type == "session.created" || type.Contains("session.created"))
