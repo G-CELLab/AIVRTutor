@@ -19,14 +19,14 @@ public class GPTConnector : MonoBehaviour
     private GPTRequestQueue _requestQueue = new GPTRequestQueue();
     [Header("OpenAI")]
     public string apiKey = ""; // ⚠️不要硬编码，Inspector 填
-    public string chatModel = "openai/gpt-oss-120b"; // HTTP 旧路径保留
-    public int requestTimeoutSeconds = 30;
+    public string chatModel = AI.Prompts.Customizations.DefaultChatModel;
+    public int requestTimeoutSeconds = AI.Prompts.Customizations.DefaultRequestTimeoutSeconds;
 
     [Header("Realtime")]
-    public bool useRealtime = true;
-    public string realtimeModel = "openai/gpt-oss-120b"; // 你当前的模型别名
-    public int realtimeSampleRate = 24000; // 将累积的 PCM16 按此采样率封成 WAV 播放 / 发送
-    public bool realtimeDumpEvents = false; // 将原始事件落盘（ndjson）
+    public bool useRealtime = AI.Prompts.Customizations.DefaultUseRealtime;
+    public string realtimeModel = AI.Prompts.Customizations.DefaultRealtimeModel;
+    public int realtimeSampleRate = AI.Prompts.Customizations.DefaultRealtimeSampleRate;
+    public bool realtimeDumpEvents = AI.Prompts.Customizations.DefaultRealtimeDumpEvents;
 
     [Header("UI/Audio")]
     public TMP_Text outputText;
@@ -38,33 +38,22 @@ public class GPTConnector : MonoBehaviour
 
     [Header("Conversation Memory")]
     [TextArea(2, 6)]
-    public string systemPrompt =
-        "Global / System\n" +
-        "You are a facilitator who must answer only using the information in this prompt—do not add outside facts. " +
-        "For every student question, first say one brief empathetic line (e.g., “Oh, great question!”), then give no more than two sentences strictly about the current phase; " +
-        "perform the specified gesture at the cue word; if a question is outside the allowed content, respond: “That seems outside of our current learning goal. You can ask a real teacher about that.”";
-
-    public int maxHistoryTurnsToSend = 8;
-    public int maxCharsBudget = 12000;
+    public string systemPrompt = AI.Prompts.PromptLibrary.SystemPrompt;
+    public int maxHistoryTurnsToSend = AI.Prompts.Customizations.DefaultMaxHistoryTurnsToSend;
+    public int maxCharsBudget = AI.Prompts.Customizations.DefaultMaxCharsBudget;
 
     [Header("Audio I/O Settings")]
     [Tooltip("启用：优先播放模型直接返回的语音；否则回退到本地TTS。")]
-    public bool preferModelAudio = true;
-
+    public bool preferModelAudio = AI.Prompts.Customizations.DefaultPreferModelAudio;
     [Tooltip("让模型合成的语音音色")]
-    public string gptVoice = "alloy";
-
+    public string gptVoice = AI.Prompts.Customizations.DefaultGptVoice;
     [Tooltip("模型语音格式（pcm16/g711_ulaw/g711_alaw）")]
-    public string gptAudioFormat = "pcm16";
+    public string gptAudioFormat = AI.Prompts.Customizations.DefaultGptAudioFormat;
 
     [Header("Language")]
-    public bool alwaysEnglish = true; // ✅ 强制英文
-
+    public bool alwaysEnglish = AI.Prompts.Customizations.DefaultAlwaysEnglish; // ✅ 强制英文
     [TextArea(1, 3)]
-    public string englishDirective =
-        "Respond ONLY in English. Do not use any other language under any circumstances. " +
-        "If the user speaks another language, briefly translate their intent and then reply in English. " +
-        "Do not echo non-English text. All spoken audio and text must be English.";
+    public string englishDirective = AI.Prompts.PromptLibrary.EnglishDirective;
 
     [Header("Audio Coordinator")]
     public OpenAISpeechRecognizer speechRecognizer;
@@ -75,10 +64,10 @@ public class GPTConnector : MonoBehaviour
     public void SetPendingUserPrompt(string s) { pendingUserPrompt = s ?? ""; }
 
     [Header("Debug")]
-    public bool verboseDebug = true;
-    public bool dumpResponsesToFile = true;
-    public float debugLogInterval = 0.25f;
-    public int maxLogChars = 600;
+    public bool verboseDebug = AI.Prompts.Customizations.DefaultVerboseDebug;
+    public bool dumpResponsesToFile = AI.Prompts.Customizations.DefaultDumpResponsesToFile;
+    public float debugLogInterval = AI.Prompts.Customizations.DefaultDebugLogInterval;
+    public int maxLogChars = AI.Prompts.Customizations.DefaultMaxLogChars;
 
     // ===== 延时触发：基于 isSpeaking 的延时调度 =====
     [Header("Speaking & Delayed Triggers")]
@@ -104,14 +93,14 @@ public class GPTConnector : MonoBehaviour
 
     // ================= 相位指令预缓存（文本+音频） =================
     [Header("Phase Cache (Precompute)")]
-    public bool precomputePhaseAssetsOnStart = true; // 启动时预缓存
-    public bool savePhaseTextFiles = true; // 保存 .txt
-    public bool generatePhaseTtsAudio = true; // 生成 TTS
-    public string ttsModel = "openai/gpt-oss-120b"; // TTS 模型
-    public string ttsVoice = "alloy"; // TTS 音色
-    public string phaseAudioFormat = "wav"; // TTS 音频格式（建议 wav）
-    public bool prependPhaseTextAsDeveloperItem = true; // 每次对话前把相位指令作为 developer 文本钉入
-    public bool prependPhaseInstructionAudio = false; // 把“相位指令的音频”拼在用户语音前（需采样率一致，默认关）
+    public bool precomputePhaseAssetsOnStart = AI.Prompts.Customizations.DefaultPrecomputePhaseAssetsOnStart; // 启动时预缓存
+    public bool savePhaseTextFiles = AI.Prompts.Customizations.DefaultSavePhaseTextFiles; // 保存 .txt
+    public bool generatePhaseTtsAudio = AI.Prompts.Customizations.DefaultGeneratePhaseTtsAudio; // 生成 TTS
+    public string ttsModel = AI.Prompts.Customizations.DefaultTtsModel; // TTS 模型
+    public string ttsVoice = AI.Prompts.Customizations.DefaultTtsVoice; // TTS 音色
+    public string phaseAudioFormat = AI.Prompts.Customizations.DefaultPhaseAudioFormat; // TTS 音频格式（建议 wav）
+    public bool prependPhaseTextAsDeveloperItem = AI.Prompts.Customizations.DefaultPrependPhaseTextAsDeveloperItem; // 每次对话前把相位指令作为 developer 文本钉入
+    public bool prependPhaseInstructionAudio = AI.Prompts.Customizations.DefaultPrependPhaseInstructionAudio; // 把“相位指令的音频”拼在用户语音前（需采样率一致，默认关)
 
     // ===== 触发来源：仅用“助理字幕/文本” =====
     [Header("Reactions")]
@@ -131,7 +120,6 @@ public class GPTConnector : MonoBehaviour
     private MemoryStream _audioAccum; // 累计 audio.delta (PCM16)
     private int _audioChunkCount;
     private StringBuilder _textAccum; // 累计 text.delta
-    private bool _sessionConfigured;
     private float _nextLog = 0f;
 
     // === Realtime ack gate ===
@@ -278,14 +266,15 @@ public class GPTConnector : MonoBehaviour
     {
         if (_responseInProgress)
         {
-            // Queue the audio bytes request
-            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest {
-                Type = GPTRequestQueue.RequestType.AudioBytes,
-                AudioBytes = audioBytes,
-                AudioFormat = format,
-                OnComplete = onComplete
-            });
-            D("[Queue] Audio bytes request queued (response in progress)");
+            // If a response is in progress, clear the queue and only process the latest request
+            _requestQueue.Clear();
+        }
+        // Check audio buffer length: must be at least 100ms
+        int minSamples = (int)(realtimeSampleRate * 0.1f); // 100ms
+        if (audioBytes == null || audioBytes.Length < minSamples * 2) // 2 bytes per sample (pcm16)
+        {
+            Warn("[Realtime][Audio] Buffer too small. Skipping send. Need at least 100ms of audio.");
+            onComplete?.Invoke();
             return;
         }
         onReplyComplete = onComplete;
@@ -509,7 +498,6 @@ public class GPTConnector : MonoBehaviour
         _audioAccum = new MemoryStream();
         _textAccum = new StringBuilder(512);
         _audioChunkCount = 0;
-        _sessionConfigured = false;
         _sessionReady = false;
 
         string url = "wss://api.openai.com/v1/realtime?model=" + Uri.EscapeDataString(string.IsNullOrEmpty(realtimeModel) ? "gpt-realtime-2025-08-28" : realtimeModel);
@@ -538,10 +526,9 @@ public class GPTConnector : MonoBehaviour
         // turn_detection
         cfg.Append("\"turn_detection\":{")
           .Append("\"type\":\"server_vad\",")
-          .Append("\"silence_duration_ms\":450,")
-          .Append("\"prefix_padding_ms\":250")
+          .Append("\"silence_duration_ms\":").Append(AI.Prompts.Customizations.SilenceDurationMs).Append(",")
+          .Append("\"prefix_padding_ms\":").Append(AI.Prompts.Customizations.PrefixPaddingMs)
           .Append("},");
-
         // 输出音频格式（string，不是object）
         // Always use pcm16 for Realtime API regardless of Inspector value
         cfg.Append("\"output_audio_format\":\"pcm16\",");
@@ -561,7 +548,6 @@ public class GPTConnector : MonoBehaviour
 
         // ✅ 等待 ack
         yield return WaitForSessionReady(15f);  // 15s timeout for slow networks
-        _sessionConfigured = true;
         D("[Realtime] session.update applied & acked.");
     }
 

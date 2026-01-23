@@ -33,6 +33,7 @@ namespace AI
                             // Handle audio bytes request
                             break;
                     }
+                    await Task.Yield();
                 }
                 finally
                 {
@@ -48,6 +49,11 @@ namespace AI
 
         public void Enqueue(QueuedRequest req)
         {
+            // If a response is in progress, clear the queue and only keep the latest request
+            if (isProcessing)
+            {
+                _queue.Clear();
+            }
             _queue.Enqueue(req);
             ProcessQueue();
         }

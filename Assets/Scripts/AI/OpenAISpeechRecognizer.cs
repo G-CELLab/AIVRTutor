@@ -21,7 +21,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     [Tooltip("判定“开始说话”的音量阈值（0~1）")]
     public float startThreshold = 0.02f;
     [Tooltip("音量持续高于 startThreshold 这么久才算“开始说话”")]
-    public float startHoldTime = 0.12f;
+    public float startHoldTime = 0.7f; // Require 700ms above threshold to trigger VAD
     [Tooltip("判定“停止”的音量阈值（建议略低于开始阈值）")]
     public float stopThreshold = 0.015f;
     [Tooltip("开始说话后，静音持续这么久即判定“结束”")]
@@ -31,11 +31,11 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     [Tooltip("需要被打断的 TTS 播放器（可空；为空时仍会广播 OnUserSpeechLikely 事件）")]
     public TextToSpeechPlayer ttsToInterrupt;
     [Tooltip("即使 VAD 还没判定开始，只要峰值短时间超过阈值也立刻打断 TTS")]
-    public bool interruptEvenBeforeVAD = true;
+    public bool interruptEvenBeforeVAD = false; // Only allow VAD-based interrupts
     [Tooltip("硬中断的瞬时阈值（0~1，可按设备调）")]
     public float interruptThreshold = 0.03f;
     [Tooltip("硬中断阈值需要持续的最短时间（毫秒）")]
-    public float interruptGraceMs = 40f;
+    public float interruptGraceMs = 700f;
     [Tooltip("打断时是否全局停所有注册的 TTS（项目里有多个 TTS 时建议开启）")]
     public bool killAllTTSOnInterrupt = true;
     [Tooltip("TTS 开始播放后，在此时间内不会被用户声音打断（秒，防止自中断）")]

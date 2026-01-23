@@ -40,5 +40,9 @@ namespace AI.Prompts
         public static bool DefaultGeneratePhaseTtsAudio = true;
         public static bool DefaultPrependPhaseTextAsDeveloperItem = true;
         public static bool DefaultPrependPhaseInstructionAudio = false;
+
+        // VAD settings for Realtime
+        public static int SilenceDurationMs = 1200; // Default: 1200ms (was 450ms)
+        public static int PrefixPaddingMs = 250;
     }
 }
