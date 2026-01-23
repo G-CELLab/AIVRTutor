@@ -14,6 +14,11 @@ public class FreezeAtSecondsBehaviour : StateMachineBehaviour
 
     public override void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        if (animator == null)
+        {
+            Debug.LogWarning("[FreezeAtSecondsBehaviour] Animator is null in OnStateEnter.");
+            return;
+        }
         paused = false;
         prevSpeed = Mathf.Max(0.0001f, animator.speed);
         resumeHash = Animator.StringToHash(resumeWhenBoolTrue);
@@ -28,6 +33,11 @@ public class FreezeAtSecondsBehaviour : StateMachineBehaviour
 
     public override void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        if (animator == null)
+        {
+            Debug.LogWarning("[FreezeAtSecondsBehaviour] Animator is null in OnStateUpdate.");
+            return;
+        }
         // 若外部已要求恢复（TTS 开声），立刻解冻
         if (paused && animator.GetBool(resumeHash))
         {
@@ -49,6 +59,11 @@ public class FreezeAtSecondsBehaviour : StateMachineBehaviour
 
     public override void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        if (animator == null)
+        {
+            Debug.LogWarning("[FreezeAtSecondsBehaviour] Animator is null in OnStateExit.");
+            return;
+        }
         if (paused) animator.speed = prevSpeed;
         paused = false;
     }

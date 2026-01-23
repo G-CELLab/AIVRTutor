@@ -6,10 +6,28 @@ public static class WavUtility
 {
     public static byte[] FromAudioClip(AudioClip clip)
     {
+        if (clip == null)
+        {
+            Debug.LogError("[WavUtility] AudioClip is null in FromAudioClip.");
+            return new byte[0];
+        }
+        if (clip.samples <= 0 || clip.channels <= 0)
+        {
+            Debug.LogError("[WavUtility] AudioClip has invalid samples or channels.");
+            return new byte[0];
+        }
         MemoryStream stream = new MemoryStream();
         int sampleCount = clip.samples * clip.channels;
         float[] samples = new float[sampleCount];
-        clip.GetData(samples, 0);
+        try
+        {
+            clip.GetData(samples, 0);
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[WavUtility] Failed to get AudioClip data: {ex.Message}");
+            return new byte[0];
+        }
         byte[] bytesData = ConvertAudioClipDataToInt16ByteArray(samples);
 
         stream.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"), 0, 4);
@@ -36,9 +54,13 @@ public static class WavUtility
     private static byte[] ConvertAudioClipDataToInt16ByteArray(float[] data)
     {
         MemoryStream dataStream = new MemoryStream();
+        if (data == null || data.Length == 0)
+            return dataStream.ToArray();
         foreach (var sample in data)
         {
-            short intData = (short)(sample * short.MaxValue);
+            // Clamp sample to [-1, 1] to avoid overflow
+            float clamped = Mathf.Clamp(sample, -1f, 1f);
+            short intData = (short)(clamped * short.MaxValue);
             byte[] byteArr = BitConverter.GetBytes(intData);
             dataStream.Write(byteArr, 0, byteArr.Length);
         }

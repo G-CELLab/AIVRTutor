@@ -30,8 +30,8 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     [Header("TTS Interrupt")]
     [Tooltip("需要被打断的 TTS 播放器（可空；为空时仍会广播 OnUserSpeechLikely 事件）")]
     public TextToSpeechPlayer ttsToInterrupt;
-    [Tooltip("即使 VAD 还没判定开始，只要峰值短时间超过阈值也立刻打断 TTS")]
-    public bool interruptEvenBeforeVAD = false; // Only allow VAD-based interrupts
+    [Tooltip("即使 VAD 还没判定开始，只要峰值短时间超过阈值也立刻打断 TTS (DISABLED for uninterruptible agent)")]
+    public bool interruptEvenBeforeVAD = false; // DISABLED: Agent is uninterruptible
     [Tooltip("硬中断的瞬时阈值（0~1，可按设备调）")]
     public float interruptThreshold = 0.03f;
     [Tooltip("硬中断阈值需要持续的最短时间（毫秒）")]
@@ -113,8 +113,12 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         float lastUtteranceTime = -999f;
         float cooldownSec = 1.0f; // 1 second cooldown after each utterance
         while (isRunning)
-        {
-            string wavPath = null;
+        {            // Block recording while agent is busy (speaking or generating response)
+            if (gptConnector != null && gptConnector.IsAgentBusy)
+            {
+                yield return new WaitForSeconds(0.1f);
+                continue;
+            }            string wavPath = null;
             _globalMax = 0f; _overStartCount = 0; _overStopCount = 0; _overInterruptCount = 0;
 
             // 录到“开始”+“结束”一段，保存到 wavPath
@@ -147,6 +151,21 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         {
             Debug.LogWarning("GPTConnector 未设置，无法发送音频。");
             yield break;
+        }
+        // Check minimum audio duration before sending
+        if (!string.IsNullOrEmpty(wavPath))
+        {
+            try {
+                var wavBytes = File.ReadAllBytes(wavPath);
+                // For 16kHz mono 16-bit PCM, 120ms = 1920 samples = 3840 bytes + 44 byte header
+                if (wavBytes.Length < 3900)
+                {
+                    Debug.LogWarning($"[SpeechRecognizer] Skipping too-short utterance: {wavBytes.Length} bytes");
+                    yield break;
+                }
+            } catch (Exception e) {
+                Debug.LogWarning($"[SpeechRecognizer] Failed to check audio file: {e.Message}");
+            }
         }
         D($"[Send] 发送音频到 GPTConnector: {wavPath}");
         // Check audio length before sending (must be at least 100ms for 16kHz = 1600 samples, for 24kHz = 2400 samples)
@@ -288,13 +307,9 @@ public class OpenAISpeechRecognizer : MonoBehaviour
 
                     if (interruptAboveTimer >= (interruptGraceMs / 1000f))
                     {
+                        // Only notify listeners, do NOT interrupt TTS if currently speaking
                         OnUserSpeechLikely?.Invoke();
-                        if (ttsToInterrupt != null) ttsToInterrupt.StopSpeaking();
-                        if (killAllTTSOnInterrupt) TextToSpeechPlayer.KillAllTTS();
-
-                        LogAndStopAllAudio("hard interrupt");
-                        StartCoroutine(HardMuteForFrames(2));
-                        DT("[INT]", "⚡ 触发硬中断：停止所有正在播放的音频");
+                        // Removed TTS interruption logic to allow agent to finish speaking
                         interruptAboveTimer = 0f;
                     }
                 }
@@ -331,15 +346,9 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                             started = true;
                             DT("[VAD]", $"✅ STARTED! preRoll={preRoll.Count} samples 将并入 capture");
 
+                            // Only notify listeners, do NOT interrupt TTS if currently speaking
                             OnUserSpeechLikely?.Invoke();
-                            if (ttsToInterrupt != null && ttsToInterrupt.IsSpeaking)
-                            {
-                                ttsToInterrupt.StopSpeaking();
-                                if (killAllTTSOnInterrupt) TextToSpeechPlayer.KillAllTTS();
-                                LogAndStopAllAudio("vad start interrupt");
-                                StartCoroutine(HardMuteForFrames(2));
-                                DT("[VAD]", "🔇 VAD开始时：停止在播音频");
-                            }
+                            // Removed TTS interruption logic to allow agent to finish speaking
 
                             while (preRoll.Count > 0)
                             {
@@ -461,13 +470,16 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         }
         all = list.ToArray();
 #endif
+        Debug.LogWarning($"[INT] LogAndStopAllAudio called! Reason: {reason}. StackTrace: {System.Environment.StackTrace}");
         foreach (var s in all)
         {
             if (s == null) continue;
             if (s.isPlaying)
             {
+                Debug.LogWarning($"[INT] Stopping AudioSource {s.name} on GameObject {s.gameObject.name}.");
                 s.Stop();
                 s.time = 0f;
+                Debug.LogWarning($"[INT] Clearing AudioSource.clip for {s.name} on GameObject {s.gameObject.name}.");
                 s.clip = null;
             }
         }

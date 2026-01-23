@@ -7,6 +7,27 @@ using UnityEngine.Networking;
 
 public class TextToSpeechPlayer : MonoBehaviour
 {
+    private void OnEnable()
+    {
+        StartCoroutine(GlobalAudioSourceMonitor());
+    }
+
+    private IEnumerator GlobalAudioSourceMonitor()
+    {
+        while (true)
+        {
+            var all = GameObject.FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+            foreach (var s in all)
+            {
+                if (s == null) continue;
+                if (!s.isPlaying && s.clip == null && IsSpeaking)
+                {
+                    Debug.LogWarning($"[TTS][GlobalMonitor] AudioSource {s.name} on {s.gameObject.name} stopped and clip is null while IsSpeaking=true. This may indicate an external interruption. StackTrace: {System.Environment.StackTrace}");
+                }
+            }
+            yield return new WaitForSeconds(0.1f);
+        }
+    }
     [Header("OpenAI")]
     
     public string openAIKey = "*****";
@@ -39,17 +60,26 @@ public class TextToSpeechPlayer : MonoBehaviour
 
     public void StopSpeaking()
     {
+        Debug.LogWarning($"[TTS] StopSpeaking() called! Stopping speech. StackTrace: {System.Environment.StackTrace}");
         IsSpeaking = false;
         if (audioSource != null)
         {
             try
             {
-                if (audioSource.isPlaying) audioSource.Stop();
-                if (audioSource.clip != null) audioSource.time = 0f;
-                audioSource.clip = null;
+                if (audioSource.isPlaying)
+                {
+                    Debug.LogWarning($"[TTS] audioSource.Stop() called on {audioSource.name} (GameObject: {audioSource.gameObject.name})");
+                    audioSource.Stop();
+                }
+                if (audioSource.clip != null)
+                {
+                    audioSource.time = 0f;
+                    Debug.LogWarning($"[TTS] audioSource.clip set to null on {audioSource.name} (GameObject: {audioSource.gameObject.name})");
+                    audioSource.clip = null;
+                }
                 audioSource.mute = false;
             }
-            catch { }
+            catch (System.Exception ex) { Debug.LogError($"[TTS] Exception in StopSpeaking: {ex}"); }
         }
     }
 
@@ -62,12 +92,7 @@ public class TextToSpeechPlayer : MonoBehaviour
 
     private void HandleUserSpeechLikely()
     {
-        if (IsSpeaking)
-        {
-            Debug.Log("🛑 [TTS] Received OnUserSpeechLikely -> StopSpeaking()");
-            StopSpeaking();
-            if (killAllTTSOnInterrupt) KillAllTTS();
-        }
+        // Do not interrupt TTS when agent is speaking
     }
 
     // ====== 新增：播放模型直接返回的音频（base64） ======
@@ -130,9 +155,34 @@ public class TextToSpeechPlayer : MonoBehaviour
             IsSpeaking = true;
             audioSource.Play();
 
-            yield return new WaitWhile(() =>
-                IsSpeaking && audioSource != null && audioSource.isPlaying
-            );
+            // Robust playback wait: handle brief hiccups (Quest Link lag, GC, etc.)
+            float expectedDuration = clip != null ? clip.length : 0f;
+            float playbackStart = Time.realtimeSinceStartup;
+            float lastPlayingTime = playbackStart;
+            float gracePeriod = 0.5f; // Allow 500ms of "not playing" before considering finished
+            
+            while (true)
+            {
+                if (audioSource == null) break;
+                
+                bool isCurrentlyPlaying = audioSource.isPlaying;
+                float elapsed = Time.realtimeSinceStartup - playbackStart;
+                
+                if (isCurrentlyPlaying)
+                {
+                    lastPlayingTime = Time.realtimeSinceStartup;
+                }
+                else
+                {
+                    float timeSinceLastPlaying = Time.realtimeSinceStartup - lastPlayingTime;
+                    // Only exit if: not playing for grace period AND (elapsed > expected duration OR grace period exceeded)
+                    if (timeSinceLastPlaying >= gracePeriod && elapsed >= expectedDuration * 0.8f)
+                    {
+                        break;
+                    }
+                }
+                yield return null;
+            }
         }
 
         IsSpeaking = false;
@@ -204,9 +254,34 @@ public class TextToSpeechPlayer : MonoBehaviour
                 IsSpeaking = true;
                 audioSource.Play();
 
-                yield return new WaitWhile(() =>
-                    IsSpeaking && audioSource != null && audioSource.isPlaying
-                );
+                // Robust playback wait: handle brief hiccups (Quest Link lag, GC, etc.)
+                float expectedDuration = clip != null ? clip.length : 0f;
+                float playbackStart = Time.realtimeSinceStartup;
+                float lastPlayingTime = playbackStart;
+                float gracePeriod = 0.5f; // Allow 500ms of "not playing" before considering finished
+                
+                while (true)
+                {
+                    if (audioSource == null) break;
+                    
+                    bool isCurrentlyPlaying = audioSource.isPlaying;
+                    float elapsed = Time.realtimeSinceStartup - playbackStart;
+                    
+                    if (isCurrentlyPlaying)
+                    {
+                        lastPlayingTime = Time.realtimeSinceStartup;
+                    }
+                    else
+                    {
+                        float timeSinceLastPlaying = Time.realtimeSinceStartup - lastPlayingTime;
+                        // Only exit if: not playing for grace period AND (elapsed > expected duration OR grace period exceeded)
+                        if (timeSinceLastPlaying >= gracePeriod && elapsed >= expectedDuration * 0.8f)
+                        {
+                            break;
+                        }
+                    }
+                    yield return null;
+                }
             }
             else
             {

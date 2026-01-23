@@ -80,6 +80,8 @@ namespace AI
             {
                 QueuedRequest currentRequest = _queue.Dequeue();
                 await currentRequest.ExecuteAsync();
+                // After each response, clear the queue to prevent queued speech during agent's response from triggering follow-up
+                Clear();
             }
 
             isProcessing = false;

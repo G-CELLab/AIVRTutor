@@ -44,5 +44,27 @@ namespace AI.Prompts
         // VAD settings for Realtime
         public static int SilenceDurationMs = 1200; // Default: 1200ms (was 450ms)
         public static int PrefixPaddingMs = 250;
+
+        // ===== Response Behavior =====
+        // Response length (max tokens for GPT output) - ~100 tokens ≈ 20 seconds of speech
+        public static int DefaultMaxOutputTokens = 100;
+        // Temperature (0.0 = precise, 1.0 = creative)
+        public static float DefaultTemperature = 0.8f;
+
+        // ===== Agent Personality =====
+        // Agent name (for reference in prompts)
+        public static string AgentName = "AI Tutor";
+        // Personality traits to append to system prompt
+        public static string PersonalityTraits = "Be friendly, patient, and encouraging. Use simple language appropriate for students.";
+        // Empathy phrases the agent can use
+        public static string EmpathyPhrases = "Oh, great question!;That's a good observation!;I understand, let me help!;Nice thinking!";
+
+        // ===== Response Style =====
+        // Max sentences per response (0 = no limit)
+        public static int MaxSentencesPerResponse = 3;
+        // Whether to always start with empathy
+        public static bool AlwaysStartWithEmpathy = true;
+        // Phrase to use when question is off-topic
+        public static string OffTopicResponse = "That seems outside of our current learning goal. You can ask a real teacher about that.";
     }
 }

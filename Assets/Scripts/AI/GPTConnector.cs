@@ -127,6 +127,12 @@ public class GPTConnector : MonoBehaviour
     private int _sessionUpdatedTick = 0;
     private volatile bool _responseInProgress = false; // Prevent simultaneous response.create calls
 
+    /// <summary>
+    /// Returns true if the agent is currently responding (speaking or generating response).
+    /// Use this to block user input processing while agent is active.
+    /// </summary>
+    public bool IsAgentBusy => _responseInProgress || (ttsPlayer != null && ttsPlayer.IsSpeaking);
+
     // === 助理字幕累积 ===
     private readonly StringBuilder _assistantTranscriptAccum = new StringBuilder(256);
 
@@ -175,16 +181,16 @@ public class GPTConnector : MonoBehaviour
     {
         if (_responseInProgress)
         {
-            // Queue the request if a response is in progress
-            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest {
-                Type = GPTRequestQueue.RequestType.Text,
-                Text = userInput,
-                OnComplete = onComplete
-            });
-            D("[Queue] Text request queued (response in progress)");
+            // If a response is in progress, ignore new requests (agent is uninterruptible)
+            D("[Queue] Ignored new text request (response in progress)");
             return;
         }
-        onReplyComplete = onComplete;
+        _responseInProgress = true;
+        onReplyComplete = () => {
+            _responseInProgress = false;
+            if (_requestQueue != null) _requestQueue.Clear();
+            onComplete?.Invoke();
+        };
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
         if (useRealtime)
         {
@@ -227,16 +233,15 @@ public class GPTConnector : MonoBehaviour
         }
         if (_responseInProgress)
         {
-            // Queue the audio file request
-            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest {
-                Type = GPTRequestQueue.RequestType.AudioFile,
-                AudioFilePath = audioFilePath,
-                OnComplete = onComplete
-            });
-            D("[Queue] Audio file request queued (response in progress)");
+            D("[Queue] Ignored new audio file request (response in progress)");
             return;
         }
-        onReplyComplete = onComplete;
+        _responseInProgress = true;
+        onReplyComplete = () => {
+            _responseInProgress = false;
+            if (_requestQueue != null) _requestQueue.Clear();
+            onComplete?.Invoke();
+        };
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
 
         byte[] wav = File.ReadAllBytes(audioFilePath);
@@ -266,9 +271,15 @@ public class GPTConnector : MonoBehaviour
     {
         if (_responseInProgress)
         {
-            // If a response is in progress, clear the queue and only process the latest request
-            _requestQueue.Clear();
+            D("[Queue] Ignored new audio bytes request (response in progress)");
+            return;
         }
+        _responseInProgress = true;
+        onReplyComplete = () => {
+            _responseInProgress = false;
+            if (_requestQueue != null) _requestQueue.Clear();
+            onComplete?.Invoke();
+        };
         // Check audio buffer length: must be at least 100ms
         int minSamples = (int)(realtimeSampleRate * 0.1f); // 100ms
         if (audioBytes == null || audioBytes.Length < minSamples * 2) // 2 bytes per sample (pcm16)
@@ -383,12 +394,8 @@ public class GPTConnector : MonoBehaviour
     // ========== Realtime(WebSocket) ==========
     private IEnumerator SendTextViaRealtime(string text)
     {
-        if (_responseInProgress)
-        {
-            Warn("[Realtime] Response already in progress, queueing skipped (text input)");
-            yield break;
-        }
-        _responseInProgress = true;
+        // Note: _responseInProgress is already set by the caller (SendToGPT)
+        // Do not check or set it again here
         try
         {
             yield return EnsureRealtimeConnected();
@@ -415,27 +422,24 @@ public class GPTConnector : MonoBehaviour
         EchoPrompt("RT/Text.Instructions(final)", instr, true);
 
         sb.Append("\"modalities\":[\"text\",\"audio\"],");
-        sb.Append("\"temperature\":0.8,");
-        sb.Append("\"max_output_tokens\":180");
+        sb.Append($"\"temperature\":{AI.Prompts.Customizations.DefaultTemperature},");
+        sb.Append($"\"max_output_tokens\":{AI.Prompts.Customizations.DefaultMaxOutputTokens}");
         sb.Append(",\"instructions\":\"").Append(Escape(instr)).Append("\"");
-        sb.Append("}}");
+        sb.Append("}}");;
 
         yield return SendWsText(sb.ToString());
+        // Note: _responseInProgress will be reset by onReplyComplete callback after TTS finishes
         }
         finally
         {
-            _responseInProgress = false;
+            // Do not reset _responseInProgress here - it will be reset by onReplyComplete after TTS playback
         }
     }
 
     private IEnumerator SendPcmViaRealtime(byte[] pcm16User, string extraInstruction)
     {
-        if (_responseInProgress)
-        {
-            Warn($"[Realtime] Response already in progress, queueing skipped (audio input, pcm={pcm16User?.Length ?? 0} bytes)");
-            yield break;
-        }
-        _responseInProgress = true;
+        // Note: _responseInProgress is already set by the caller (SendAudioFileToGPT or SendAudioBytesToGPT)
+        // Do not check or set it again here
         try
         {
             yield return EnsureRealtimeConnected();
@@ -472,16 +476,17 @@ public class GPTConnector : MonoBehaviour
         EchoPrompt("RT/Audio.Instructions(final)", finalInstr, true);
 
         sb.Append("\"modalities\":[\"text\",\"audio\"],");
-        sb.Append("\"temperature\":0.8,");
-        sb.Append("\"max_output_tokens\":180");
+        sb.Append($"\"temperature\":{AI.Prompts.Customizations.DefaultTemperature},");
+        sb.Append($"\"max_output_tokens\":{AI.Prompts.Customizations.DefaultMaxOutputTokens}");
         sb.Append(",\"instructions\":\"").Append(Escape(finalInstr)).Append("\"");
         sb.Append("}}");
 
         yield return SendWsText(sb.ToString());
+        // Note: _responseInProgress will be reset by onReplyComplete callback after TTS finishes
         }
         finally
         {
-            _responseInProgress = false;
+            // Do not reset _responseInProgress here - it will be reset by onReplyComplete after TTS playback
         }
     }
 
@@ -1253,21 +1258,7 @@ public class GPTConnector : MonoBehaviour
     // 拆成静态方法便于重用（预缓存也用它）
     private static string PhaseText(GameManager.GameState gs)
     {
-        const string interphase = @"Interphase Cureent is interphase. The goal in interphase is to generate ATP and replicate the centrioles. Tell the student bring the three capsule-shaped nutrients to the mitochondria; as they are absorbed, a green ATP bar fills and must be completely full before moving on. After ATP is generated, instruct the student to replicate the centrioles by grabbing one centriole and placing it a short distance away, as practiced in the tutorial. When explaining energy, use: “The mitochondria absorb nutrients to produce energy—just like when we eat food to get energy to move,” When answering questions in this phase, start with empathy and give two or three sentences that only cover these tasks. Example template: “You’re in Interphase. Bring the three capsule nutrients to the mitochondria; the green ATP bar must fill completely. After ATP is generated, replicate the centrioles by grabbing one and placing it a short distance away. ";
-        const string prophase = @"Prophase Cureent is Prophase. The key concept in prophase is that thread-like DNA condenses into chromosomes. Tell the student to find the red, thread-like DNA and hold it for three seconds so it condenses into an X-shaped chromosome. If they are confused, point out the blue chromosomes as examples of DNA that already condensed in Prophase and ask them to do the same with the red DNA. Keep responses to two or three sentences and do not discuss other stages. Example template: “You’re in Prophase. Find the red, thread-like DNA and hold it for 3 seconds so it condenses into an X-shaped chromosome. If needed, use the blue chromosomes as examples of already-condensed DNA.”";
-        const string metaphase = @"Metaphase Current is Metaphase. The goal in metaphase is to align chromosomes at the center. Explain that spindle fibers from the centrioles pull chromosomes to the cell’s center so they line up in a single row; the red chromosome is misaligned and should be moved to align with the others. If the student is unsure, direct them to the glowing yellow particle effect and have them place the red chromosome slightly above that spot. Keep answers short, and do not explain Prophase or Anaphase details. Example template: “You’re in Metaphase. Spindle fibers pull chromosomes to the middle—line them up at the center in a single row. Move the red chromosome to the glowing yellow spot (slightly above it) to align.”";
-        const string anaphase = @"Anaphase Current is Anaphase. The goal in Anaphase is to separate chromatids to opposite ends. Instruct the student to split chromosomes into chromatids and move them to opposite ends, using the blue chromatids as examples. If needed, tell them to place chromatids on the glowing yellow particle effects at each end. Keep to two or three sentences and do not revisit Metaphase or narrate Telophase outcomes. Example template: “You’re in Anaphase. Separate the chromatids and move them to opposite ends of the cell. Use the glowing yellow markers at each end as targets.”";
-        const string telophase = @"Telophase Current is Telophase. The goal in Telophase is to complete division and trigger the ending. Because chromatids moved to both ends in Anaphase, each daughter cell will receive identical DNA. Instruct the student to touch the wound on the arm again for three seconds to repeat the healing process until it’s complete; the ending scene will start automatically. Keep the answer brief and on-task. Example template: “You’re in Telophase. Each side now has identical DNA, so you just need to finish the last step. Touch the arm wound for 3 seconds until healing completes; the ending scene will start.”";
-
-        switch (gs)
-        {
-            case GameManager.GameState.Interphase: return interphase;
-            case GameManager.GameState.Prophase: return prophase;
-            case GameManager.GameState.Metaphase: return metaphase;
-            case GameManager.GameState.Anaphase: return anaphase;
-            case GameManager.GameState.Telophase: return telophase;
-            default: return "";
-        }
+        return AI.Prompts.PromptLibrary.GetPhaseText(gs);
     }
 
     // ★ instruction debug
