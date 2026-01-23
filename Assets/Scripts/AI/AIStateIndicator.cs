@@ -1,8 +1,24 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
+
+// --- Definitions added to resolve compiler errors ---
+public enum AIState
+{
+    Idle,
+    Listening,
+    Speaking
+}
+
+public interface IAIStateProvider
+{
+    AIState CurrentState { get; }
+    event Action<AIState> OnStateChanged;
+}
+// ---------------------------------------------------
 
 public class AIStateIndicator : MonoBehaviour
 {
@@ -41,15 +57,9 @@ public class AIStateIndicator : MonoBehaviour
         }
 
         // Try interface-based provider first
-        var any = stateProviderGameObject.GetComponents<MonoBehaviour>();
-        foreach (var mb in any)
-        {
-            if (mb is IAIStateProvider p)
-            {
-                provider = p;
-                break;
-            }
-        }
+        provider = stateProviderGameObject.GetComponents<MonoBehaviour>()
+            .OfType<IAIStateProvider>()
+            .FirstOrDefault();
 
         if (provider != null)
         {
