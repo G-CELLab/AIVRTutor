@@ -16,46 +16,48 @@ namespace AI
             public byte[] AudioBytes;
             public string AudioFormat;
             public Action OnComplete;
+            public float QueuedTime; // Time when request was queued (Time.realtimeSinceStartup)
+            public string TranscriptContext; // What the user said (for evaluation)
 
-            public async Task ExecuteAsync()
+            /// <summary>
+            /// Returns a summary of this request for AI evaluation
+            /// </summary>
+            public string GetSummary()
             {
-                try
+                switch (Type)
                 {
-                    switch (Type)
-                    {
-                        case RequestType.Text:
-                            // Handle text request
-                            break;
-                        case RequestType.AudioFile:
-                            // Handle audio file request
-                            break;
-                        case RequestType.AudioBytes:
-                            // Handle audio bytes request
-                            break;
-                    }
-                    await Task.Yield();
-                }
-                finally
-                {
-                    OnComplete?.Invoke();
+                    case RequestType.Text:
+                        return !string.IsNullOrEmpty(Text) ? Text : "(empty text)";
+                    case RequestType.AudioFile:
+                    case RequestType.AudioBytes:
+                        return !string.IsNullOrEmpty(TranscriptContext) ? TranscriptContext : "(audio input, no transcript)";
+                    default:
+                        return "(unknown request)";
                 }
             }
         }
 
         private readonly Queue<QueuedRequest> _queue = new Queue<QueuedRequest>();
-        private bool isProcessing = false;
 
         public int Count => _queue.Count;
 
+        /// <summary>
+        /// Queue a request. If there's already a queued request, replace it with the latest.
+        /// </summary>
         public void Enqueue(QueuedRequest req)
         {
-            // If a response is in progress, clear the queue and only keep the latest request
-            if (isProcessing)
-            {
-                _queue.Clear();
-            }
+            // Only keep the latest request - clear any existing
+            _queue.Clear();
             _queue.Enqueue(req);
-            ProcessQueue();
+        }
+
+        /// <summary>
+        /// Peek at the next request without removing it
+        /// </summary>
+        public QueuedRequest Peek()
+        {
+            if (_queue.Count == 0) return null;
+            return _queue.Peek();
         }
 
         public QueuedRequest Dequeue()
@@ -67,24 +69,6 @@ namespace AI
         public void Clear()
         {
             _queue.Clear();
-        }
-
-        private async void ProcessQueue()
-        {
-            if (isProcessing || _queue.Count == 0)
-                return;
-
-            isProcessing = true;
-
-            while (_queue.Count > 0)
-            {
-                QueuedRequest currentRequest = _queue.Dequeue();
-                await currentRequest.ExecuteAsync();
-                // After each response, clear the queue to prevent queued speech during agent's response from triggering follow-up
-                Clear();
-            }
-
-            isProcessing = false;
         }
     }
 }

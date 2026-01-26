@@ -176,20 +176,44 @@ public class GPTConnector : MonoBehaviour
         return ApplyLang(string.Join("\n\n", parts));
     }
 
+    // ========== Queued Request Evaluation ==========
+    [Header("Queue Evaluation")]
+    [Tooltip("Enable AI evaluation of queued requests to decide if they're still relevant")]
+    public bool evaluateQueuedRequests = true;
+    [Tooltip("Max age in seconds for a queued request to be considered (older requests are discarded)")]
+    public float maxQueuedRequestAgeSec = 30f;
+    [Tooltip("System prompt for evaluating if a queued request is still relevant")]
+    [TextArea(2, 4)]
+    public string queueEvaluationPrompt = "You just finished speaking. The user said something while you were talking. Decide if you should respond. Reply ONLY with 'YES' or 'NO'. Say YES if it's a new question, comment, or request. Say NO if it's just acknowledgment, 'ok', 'thanks', or doesn't need a response.";
+
     // ========== 外部 API ==========
     public void SendToGPT(string userInput, Action onComplete)
     {
-        if (_responseInProgress)
+        if (_responseInProgress || (_isSpeaking && ttsPlayer != null && ttsPlayer.IsSpeaking))
         {
-            // If a response is in progress, ignore new requests (agent is uninterruptible)
-            D("[Queue] Ignored new text request (response in progress)");
+            // Agent is busy - queue this request for later evaluation
+            D($"[Queue] Queuing text request (agent busy): {userInput?.Substring(0, Math.Min(50, userInput?.Length ?? 0))}...");
+            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest
+            {
+                Type = GPTRequestQueue.RequestType.Text,
+                Text = userInput,
+                TranscriptContext = userInput,
+                OnComplete = onComplete,
+                QueuedTime = Time.realtimeSinceStartup
+            });
             return;
         }
+        ExecuteTextRequest(userInput, onComplete);
+    }
+
+    private void ExecuteTextRequest(string userInput, Action onComplete)
+    {
         _responseInProgress = true;
         onReplyComplete = () => {
             _responseInProgress = false;
-            if (_requestQueue != null) _requestQueue.Clear();
             onComplete?.Invoke();
+            // After completing, check for queued requests
+            StartCoroutine(ProcessQueuedRequestWithEvaluation());
         };
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
         if (useRealtime)
@@ -203,44 +227,179 @@ public class GPTConnector : MonoBehaviour
         }
     }
 
-    // === Process next queued request ===
-    private void ProcessNextQueuedRequest()
+    // === Process next queued request with AI evaluation ===
+    private IEnumerator ProcessQueuedRequestWithEvaluation()
     {
-        if (_responseInProgress) return;
-        if (_requestQueue.Count == 0) return;
-        var req = _requestQueue.Dequeue();
+        if (_responseInProgress) yield break;
+        if (_requestQueue.Count == 0) yield break;
+
+        var req = _requestQueue.Peek();
+        if (req == null)
+        {
+            _requestQueue.Clear();
+            yield break;
+        }
+
+        // Check if request is too old
+        float age = Time.realtimeSinceStartup - req.QueuedTime;
+        if (age > maxQueuedRequestAgeSec)
+        {
+            D($"[Queue] Discarding stale request (age={age:0.1f}s > {maxQueuedRequestAgeSec}s)");
+            _requestQueue.Dequeue();
+            req.OnComplete?.Invoke();
+            yield break;
+        }
+
+        // Get summary of what user said
+        string userSaid = req.GetSummary();
+        
+        // If evaluation is disabled or no transcript, just process it
+        if (!evaluateQueuedRequests || string.IsNullOrWhiteSpace(userSaid) || userSaid.StartsWith("("))
+        {
+            D($"[Queue] Processing request without evaluation (eval={evaluateQueuedRequests}, summary='{userSaid}')");
+            _requestQueue.Dequeue();
+            ExecuteQueuedRequest(req);
+            yield break;
+        }
+
+        D($"[Queue] Evaluating if should respond to: '{userSaid}'");
+
+        // Ask AI if we should respond
+        bool shouldRespond = true;
+        yield return EvaluateQueuedRequest(userSaid, (result) => { shouldRespond = result; });
+
+        // Request may have been replaced while we were evaluating
+        if (_requestQueue.Count == 0 || _requestQueue.Peek() != req)
+        {
+            D("[Queue] Request was replaced during evaluation, checking new request");
+            StartCoroutine(ProcessQueuedRequestWithEvaluation());
+            yield break;
+        }
+
+        _requestQueue.Dequeue();
+
+        if (shouldRespond)
+        {
+            D($"[Queue] AI decided to respond to: '{userSaid}'");
+            ExecuteQueuedRequest(req);
+        }
+        else
+        {
+            D($"[Queue] AI decided NOT to respond to: '{userSaid}'");
+            req.OnComplete?.Invoke();
+        }
+    }
+
+    private void ExecuteQueuedRequest(GPTRequestQueue.QueuedRequest req)
+    {
         if (req == null) return;
         switch (req.Type)
         {
             case GPTRequestQueue.RequestType.Text:
-                SendToGPT(req.Text, req.OnComplete);
+                ExecuteTextRequest(req.Text, req.OnComplete);
                 break;
             case GPTRequestQueue.RequestType.AudioFile:
-                SendAudioFileToGPT(req.AudioFilePath, req.OnComplete);
+                ExecuteAudioFileRequest(req.AudioFilePath, req.OnComplete);
                 break;
             case GPTRequestQueue.RequestType.AudioBytes:
-                SendAudioBytesToGPT(req.AudioBytes, req.AudioFormat, req.OnComplete);
+                ExecuteAudioBytesRequest(req.AudioBytes, req.AudioFormat, req.OnComplete);
                 break;
         }
     }
 
+    private IEnumerator EvaluateQueuedRequest(string userSaid, Action<bool> callback)
+    {
+        // Build a quick evaluation request
+        string evalPrompt = $"{queueEvaluationPrompt}\n\nUser said: \"{userSaid}\"";
+        
+        const string endpoint = "https://api.openai.com/v1/chat/completions";
+        var sb = new StringBuilder(512);
+        sb.Append("{\"model\":\"").Append(chatModel).Append("\",");
+        sb.Append("\"max_tokens\":5,"); // We only need YES or NO
+        sb.Append("\"messages\":[{\"role\":\"system\",\"content\":\"").Append(Escape(evalPrompt)).Append("\"}]}");
+        
+        var req = new UnityWebRequest(endpoint, "POST");
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(sb.ToString());
+        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        req.downloadHandler = new DownloadHandlerBuffer();
+        req.SetRequestHeader("Content-Type", "application/json");
+        req.SetRequestHeader("Authorization", "Bearer " + apiKey);
+        req.timeout = 10; // Quick timeout for evaluation
+
+        D($"[Queue/Eval] Asking AI if should respond...");
+        yield return req.SendWebRequest();
+
+        bool shouldRespond = true; // Default to responding if evaluation fails
+        
+        bool ok;
+#if UNITY_2020_2_OR_NEWER
+        ok = (req.result == UnityWebRequest.Result.Success);
+#else
+        ok = (!req.isNetworkError && !req.isHttpError);
+#endif
+
+        if (ok && req.downloadHandler != null)
+        {
+            try
+            {
+                string response = req.downloadHandler.text;
+                // Extract the content from response
+                string content = ExtractJsonString(response, "content");
+                if (!string.IsNullOrEmpty(content))
+                {
+                    string normalized = content.Trim().ToUpperInvariant();
+                    shouldRespond = normalized.Contains("YES");
+                    D($"[Queue/Eval] AI response: '{content}' → shouldRespond={shouldRespond}");
+                }
+            }
+            catch (Exception e)
+            {
+                D($"[Queue/Eval] Parse error: {e.Message}, defaulting to respond");
+            }
+        }
+        else
+        {
+            D($"[Queue/Eval] Request failed: {req.error}, defaulting to respond");
+        }
+
+        callback?.Invoke(shouldRespond);
+    }
+
     public void SendAudioFileToGPT(string audioFilePath, Action onComplete)
+    {
+        SendAudioFileToGPT(audioFilePath, null, onComplete);
+    }
+
+    public void SendAudioFileToGPT(string audioFilePath, string transcriptContext, Action onComplete)
     {
         if (string.IsNullOrEmpty(audioFilePath) || !File.Exists(audioFilePath))
         {
             Debug.LogWarning("[GPTConnector] Audio path invalid.");
             return;
         }
-        if (_responseInProgress)
+        if (_responseInProgress || (_isSpeaking && ttsPlayer != null && ttsPlayer.IsSpeaking))
         {
-            D("[Queue] Ignored new audio file request (response in progress)");
+            D($"[Queue] Queuing audio file request (agent busy): {audioFilePath}");
+            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest
+            {
+                Type = GPTRequestQueue.RequestType.AudioFile,
+                AudioFilePath = audioFilePath,
+                TranscriptContext = transcriptContext,
+                OnComplete = onComplete,
+                QueuedTime = Time.realtimeSinceStartup
+            });
             return;
         }
+        ExecuteAudioFileRequest(audioFilePath, onComplete);
+    }
+
+    private void ExecuteAudioFileRequest(string audioFilePath, Action onComplete)
+    {
         _responseInProgress = true;
         onReplyComplete = () => {
             _responseInProgress = false;
-            if (_requestQueue != null) _requestQueue.Clear();
             onComplete?.Invoke();
+            StartCoroutine(ProcessQueuedRequestWithEvaluation());
         };
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
 
@@ -253,6 +412,7 @@ public class GPTConnector : MonoBehaviour
             if (pcm == null || pcm.Length == 0)
             {
                 Warn($"[Realtime] 解析 WAV 失败，未能提取 PCM16。 wavBytes={wav.Length}, pcmBytes={(pcm?.Length ?? 0)}");
+                _responseInProgress = false;
                 return;
             }
             D($"[SendAudioFile] ✓ WAV extraction succeeded: {wav.Length} bytes → {pcm.Length} bytes PCM16");
@@ -269,17 +429,11 @@ public class GPTConnector : MonoBehaviour
 
     public void SendAudioBytesToGPT(byte[] audioBytes, string format, Action onComplete)
     {
-        if (_responseInProgress)
-        {
-            D("[Queue] Ignored new audio bytes request (response in progress)");
-            return;
-        }
-        _responseInProgress = true;
-        onReplyComplete = () => {
-            _responseInProgress = false;
-            if (_requestQueue != null) _requestQueue.Clear();
-            onComplete?.Invoke();
-        };
+        SendAudioBytesToGPT(audioBytes, format, null, onComplete);
+    }
+
+    public void SendAudioBytesToGPT(byte[] audioBytes, string format, string transcriptContext, Action onComplete)
+    {
         // Check audio buffer length: must be at least 100ms
         int minSamples = (int)(realtimeSampleRate * 0.1f); // 100ms
         if (audioBytes == null || audioBytes.Length < minSamples * 2) // 2 bytes per sample (pcm16)
@@ -288,7 +442,32 @@ public class GPTConnector : MonoBehaviour
             onComplete?.Invoke();
             return;
         }
-        onReplyComplete = onComplete;
+
+        if (_responseInProgress || (_isSpeaking && ttsPlayer != null && ttsPlayer.IsSpeaking))
+        {
+            D($"[Queue] Queuing audio bytes request (agent busy), transcript: {transcriptContext ?? "(none)"}");
+            _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest
+            {
+                Type = GPTRequestQueue.RequestType.AudioBytes,
+                AudioBytes = audioBytes,
+                AudioFormat = format,
+                TranscriptContext = transcriptContext,
+                OnComplete = onComplete,
+                QueuedTime = Time.realtimeSinceStartup
+            });
+            return;
+        }
+        ExecuteAudioBytesRequest(audioBytes, format, onComplete);
+    }
+
+    private void ExecuteAudioBytesRequest(byte[] audioBytes, string format, Action onComplete)
+    {
+        _responseInProgress = true;
+        onReplyComplete = () => {
+            _responseInProgress = false;
+            onComplete?.Invoke();
+            StartCoroutine(ProcessQueuedRequestWithEvaluation());
+        };
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
 
         if (useRealtime)
@@ -459,8 +638,8 @@ public class GPTConnector : MonoBehaviour
         {
             Warn("[Realtime] Audio buffer too small (< 100ms). Skipping request.");
             _responseInProgress = false;
-            // Immediately process next queued request
-            ProcessNextQueuedRequest();
+            // Process next queued request if any
+            StartCoroutine(ProcessQueuedRequestWithEvaluation());
             yield break;
         }
         string b64 = Convert.ToBase64String(pcm16User);
@@ -688,9 +867,9 @@ public class GPTConnector : MonoBehaviour
 
             Action afterPlayback = () =>
             {
-                // After playback, clear response flag and process next queued request if any
+                // After playback, clear response flag and evaluate queued requests
                 _responseInProgress = false;
-                ProcessNextQueuedRequest();
+                StartCoroutine(ProcessQueuedRequestWithEvaluation());
             };
 
             if (_audioAccum != null && _audioAccum.Length > 0 && ttsPlayer != null && preferModelAudio)
