@@ -9,20 +9,10 @@ public class AudioSyncedAnimation : MonoBehaviour
     [Range(0f, 1f)]
     public float restFrameTime = 0f;
 
-    [Header("Glow Settings")]
-    public Material normalMaterial;
-    public Material outlineMaterial;
-    private SpriteRenderer spriteRenderer;
-
     private Animator anim;
     private float lastTimeAudioDetected;
 
-    void Start()
-    {
-        anim = GetComponent<Animator>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        if (normalMaterial != null) spriteRenderer.material = normalMaterial;
-    }
+    void Start() => anim = GetComponent<Animator>();
 
     void Update()
     {
@@ -44,21 +34,22 @@ public class AudioSyncedAnimation : MonoBehaviour
         }
     }
 
-    // This will now ONLY be called by the XR Interactable Event
+    // VR HAND INTERACTION LOGIC
+    // This triggers when your VR hand (with a collider) touches the sprite
+    private void OnTriggerEnter(Collider healthcare)
+    {
+        // Check if the thing hitting us is a VR hand
+        // (You can tag your hand objects as "Player" to be safe)
+        if (healthcare.CompareTag("Player") || healthcare.name.Contains("Hand"))
+        {
+            ToggleAudio();
+        }
+    }
+
     public void ToggleAudio()
     {
         if (audioSource.isPlaying) audioSource.Pause();
         else audioSource.Play();
-    }
-
-    public void ShowGlow()
-    {
-        if (outlineMaterial != null) spriteRenderer.material = outlineMaterial;
-    }
-
-    public void HideGlow()
-    {
-        if (normalMaterial != null) spriteRenderer.material = normalMaterial;
     }
 
     void StopAnimation()
