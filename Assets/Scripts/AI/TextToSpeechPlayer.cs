@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using AI.Performance;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -110,17 +111,36 @@ public class TextToSpeechPlayer : MonoBehaviour
         }
 
         string fmt = string.IsNullOrEmpty(format) ? "wav" : format.ToLowerInvariant();
-        string ext = (fmt == "wav") ? "wav" : (fmt == "mp3" ? "mp3" : "mp3"); // 默认mp3兜底
+        string ext = (fmt == "wav") ? "wav" : (fmt == "mp3" ? "mp3" : "mp3");
         string filePath = Path.Combine(Application.persistentDataPath, "gpt_audio_reply." + ext);
 
-        try
+        // ★ PERFORMANCE: Decode base64 and write file on background thread
+        bool writeComplete = false;
+        bool writeError = false;
+        
+        ThreadPoolDispatcher.Instance.DecodeBase64Async(base64Data, bytes =>
         {
-            byte[] bytes = Convert.FromBase64String(base64Data);
-            File.WriteAllBytes(filePath, bytes);
+            if (bytes == null || bytes.Length == 0)
+            {
+                writeError = true;
+                writeComplete = true;
+                return;
+            }
+            
+            ThreadPoolDispatcher.Instance.WriteFileBytesAsync(filePath, bytes, 
+                () => { writeComplete = true; },
+                ex => { writeError = true; writeComplete = true; Debug.LogError("写入模型音频失败: " + ex.Message); }
+            );
+        });
+        
+        // Wait for background write to complete
+        while (!writeComplete)
+        {
+            yield return null;
         }
-        catch (Exception e)
+        
+        if (writeError)
         {
-            Debug.LogError("写入模型音频失败: " + e.Message);
             onPlaybackComplete?.Invoke();
             yield break;
         }
@@ -230,8 +250,17 @@ public class TextToSpeechPlayer : MonoBehaviour
             yield break;
         }
 
+        // ★ PERFORMANCE: Write file on background thread
         string path = Path.Combine(Application.persistentDataPath, "tts_reply.mp3");
-        File.WriteAllBytes(path, req.downloadHandler.data);
+        bool writeComplete = false;
+        byte[] audioData = req.downloadHandler.data;
+        
+        ThreadPoolDispatcher.Instance.WriteFileBytesAsync(path, audioData, () => { writeComplete = true; });
+        
+        while (!writeComplete)
+        {
+            yield return null;
+        }
 
         using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.MPEG))
         {

@@ -6,6 +6,7 @@ using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using AI;
+using AI.Performance;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -57,6 +58,11 @@ public class GPTConnector : MonoBehaviour
 
     [Header("Audio Coordinator")]
     public OpenAISpeechRecognizer speechRecognizer;
+    
+    [Header("Performance - Streaming Audio")]
+    [Tooltip("Use streaming audio player for lower latency and no frame drops")]
+    public bool useStreamingAudio = true;
+    public StreamingAudioPlayer streamingAudioPlayer;
 
     [Header("Prompt + Audio")]
     [Tooltip("将要与下一段语音一并发送到 Realtime 的文本提示（发出后自动清空）")]
@@ -121,6 +127,7 @@ public class GPTConnector : MonoBehaviour
     private int _audioChunkCount;
     private StringBuilder _textAccum; // 累计 text.delta
     private float _nextLog = 0f;
+    private float _lastAudioChunkTime; // Track when last audio chunk was received
 
     // === Realtime ack gate ===
     private volatile bool _sessionReady = false;
@@ -137,13 +144,26 @@ public class GPTConnector : MonoBehaviour
     private readonly StringBuilder _assistantTranscriptAccum = new StringBuilder(256);
 
     // -------- 生命周期：启动即预缓存 --------
-    // private void Start()
-    // {
-    //     if (precomputePhaseAssetsOnStart)
-    //     {
-    //         StartCoroutine(PrecacheAllPhaseAssets());
-    //     }
-    // }
+    private void Start()
+    {
+        // Pre-warm the WebSocket connection during loading to avoid freeze on first user interaction
+        if (useRealtime && !string.IsNullOrEmpty(apiKey))
+        {
+            Debug.Log("[GPT] 🔥 Pre-warming WebSocket connection...");
+            StartCoroutine(PreWarmRealtimeConnection());
+        }
+    }
+    
+    private IEnumerator PreWarmRealtimeConnection()
+    {
+        // Wait a moment for scene to settle
+        yield return new WaitForSeconds(1f);
+        
+        // Establish connection early
+        yield return EnsureRealtimeConnected();
+        
+        Debug.Log("[GPT] 🔥 Pre-warm complete - WebSocket ready");
+    }
 
     // ===== 语言策略（强制英文）=====
     private string ApplyLang(string instr)
@@ -403,28 +423,48 @@ public class GPTConnector : MonoBehaviour
         };
         if (ttsDriver) ttsDriver.NotifyExpectSpeech(expectSpeechTimeout);
 
-        byte[] wav = File.ReadAllBytes(audioFilePath);
-        D($"[SendAudioFile] {audioFilePath} bytes={wav.Length}, useRealtime={useRealtime}");
-
-        if (useRealtime)
+        // ★ PERFORMANCE: Read file on background thread to prevent XR frame drops
+        ThreadPoolDispatcher.Instance.ReadFileBytesAsync(audioFilePath, wav =>
         {
-            byte[] pcm = ExtractPcm16FromWavRobust(wav);
-            if (pcm == null || pcm.Length == 0)
+            if (wav == null || wav.Length == 0)
             {
-                Warn($"[Realtime] 解析 WAV 失败，未能提取 PCM16。 wavBytes={wav.Length}, pcmBytes={(pcm?.Length ?? 0)}");
+                Warn($"[SendAudioFile] Failed to read file: {audioFilePath}");
                 _responseInProgress = false;
                 return;
             }
-            D($"[SendAudioFile] ✓ WAV extraction succeeded: {wav.Length} bytes → {pcm.Length} bytes PCM16");
-            string extra = string.IsNullOrWhiteSpace(pendingUserPrompt) ? null : pendingUserPrompt;
-            pendingUserPrompt = "";
-            StartCoroutine(SendPcmViaRealtime(pcm, extra));
-        }
-        else
+            
+            D($"[SendAudioFile] {audioFilePath} bytes={wav.Length}, useRealtime={useRealtime}");
+
+            if (useRealtime)
+            {
+                // ★ PERFORMANCE: Extract PCM on background thread
+                AsyncAudioProcessor.ExtractPcm16FromWavAsync(wav, pcm =>
+                {
+                    if (pcm == null || pcm.Length == 0)
+                    {
+                        Warn($"[Realtime] 解析 WAV 失败，未能提取 PCM16。 wavBytes={wav.Length}");
+                        _responseInProgress = false;
+                        return;
+                    }
+                    D($"[SendAudioFile] ✓ WAV extraction succeeded: {wav.Length} bytes → {pcm.Length} bytes PCM16");
+                    string extra = string.IsNullOrWhiteSpace(pendingUserPrompt) ? null : pendingUserPrompt;
+                    pendingUserPrompt = "";
+                    StartCoroutine(SendPcmViaRealtime(pcm, extra));
+                });
+            }
+            else
+            {
+                // ★ PERFORMANCE: Base64 encode on background thread
+                ThreadPoolDispatcher.Instance.EncodeBase64Async(wav, b64 =>
+                {
+                    StartCoroutine(SendAudioRequest(b64, "wav"));
+                });
+            }
+        }, ex =>
         {
-            string b64 = Convert.ToBase64String(wav);
-            StartCoroutine(SendAudioRequest(b64, "wav"));
-        }
+            Warn($"[SendAudioFile] Error reading file: {ex.Message}");
+            _responseInProgress = false;
+        });
     }
 
     public void SendAudioBytesToGPT(byte[] audioBytes, string format, Action onComplete)
@@ -479,9 +519,12 @@ public class GPTConnector : MonoBehaviour
         else
         {
             string fmt = string.IsNullOrEmpty(format) ? "wav" : format;
-            string b64 = Convert.ToBase64String(audioBytes);
-            D($"[SendAudioBytes] HTTP model={chatModel}, format={fmt}, base64Len={b64.Length}");
-            StartCoroutine(SendAudioRequest(b64, fmt));
+            // ★ PERFORMANCE: Base64 encode on background thread to prevent frame drops
+            ThreadPoolDispatcher.Instance.EncodeBase64Async(audioBytes, b64 =>
+            {
+                D($"[SendAudioBytes] HTTP model={chatModel}, format={fmt}, base64Len={b64.Length}");
+                StartCoroutine(SendAudioRequest(b64, fmt));
+            });
         }
     }
 
@@ -642,7 +685,33 @@ public class GPTConnector : MonoBehaviour
             StartCoroutine(ProcessQueuedRequestWithEvaluation());
             yield break;
         }
-        string b64 = Convert.ToBase64String(pcm16User);
+        
+        // ★ PERFORMANCE: Encode base64 on background thread to prevent 3+ second frame drops
+        float encodeStart = Time.realtimeSinceStartup;
+        Debug.Log($"[Realtime] 🎵 Starting base64 encode of {pcm16User.Length} bytes...");
+        
+        string b64 = null;
+        bool encodingComplete = false;
+        ThreadPoolDispatcher.Instance.EncodeBase64Async(pcm16User, result => {
+            b64 = result;
+            encodingComplete = true;
+        });
+        
+        // Wait for encoding to complete
+        while (!encodingComplete)
+        {
+            yield return null;
+        }
+        
+        Debug.Log($"[Realtime] 🎵 Base64 encode took {(Time.realtimeSinceStartup - encodeStart)*1000:F0}ms");
+        
+        if (string.IsNullOrEmpty(b64))
+        {
+            Warn("[Realtime] Base64 encoding failed.");
+            _responseInProgress = false;
+            yield break;
+        }
+        
         string append = "{\"type\":\"input_audio_buffer.append\",\"audio\":\"" + b64 + "\"}";
         yield return SendWsText(append);
         yield return SendWsText("{\"type\":\"input_audio_buffer.commit\"}");
@@ -673,14 +742,18 @@ public class GPTConnector : MonoBehaviour
     {
         if (_ws != null && _ws.State == WebSocketState.Open) yield break;
 
+        float connectStart = Time.realtimeSinceStartup;
+        Debug.Log("[Realtime] 🔌 Starting WebSocket connection...");
+
         if (_wsCts != null)
         {
             _wsCts.Cancel();
             _wsCts.Dispose();
         }
         _wsCts = new CancellationTokenSource();
-        _audioAccum = new MemoryStream();
-        _textAccum = new StringBuilder(512);
+        // ★ PERFORMANCE: Use pooled MemoryStream
+        _audioAccum = MemoryStreamPool.Instance.Get();
+        _textAccum = StringBuilderPool.Instance.Get(512);
         _audioChunkCount = 0;
         _sessionReady = false;
 
@@ -691,6 +764,8 @@ public class GPTConnector : MonoBehaviour
 
         Task t = _ws.ConnectAsync(new Uri(url), _wsCts.Token);
         while (!t.IsCompleted) yield return null;
+        
+        Debug.Log($"[Realtime] 🔌 WebSocket connect took {(Time.realtimeSinceStartup - connectStart)*1000:F0}ms");
 
         if (_ws.State != WebSocketState.Open)
         {
@@ -811,17 +886,46 @@ public class GPTConnector : MonoBehaviour
             }
             if (!string.IsNullOrEmpty(b64))
             {
-                try
+                // Track last audio chunk time for completion logic
+                _lastAudioChunkTime = Time.unscaledTime;
+                
+                // ★ PERFORMANCE: Decode base64 on background thread to prevent XR frame drops
+                string capturedB64 = b64;
+                ThreadPoolDispatcher.Instance.DecodeBase64Async(capturedB64, bytes =>
                 {
-                    byte[] bytes = Convert.FromBase64String(b64);
-                    _audioAccum?.Write(bytes, 0, bytes.Length);
+                    if (bytes == null || bytes.Length == 0) return;
+                    
+                    // Update last audio chunk time after decode completes too
+                    _lastAudioChunkTime = Time.unscaledTime;
+                    
+                    // If streaming audio is enabled, feed directly to streaming player
+                    if (useStreamingAudio && streamingAudioPlayer != null)
+                    {
+                        streamingAudioPlayer.AddPcmChunk(bytes);
+                        if (!streamingAudioPlayer.IsPlaying)
+                        {
+                            MarkSpeakingStart();
+                        }
+                        if (_audioChunkCount == 0)
+                        {
+                            Debug.Log("[GPT] 🔊 Streaming audio active - first chunk received");
+                        }
+                    }
+                    else
+                    {
+                        // Fallback: accumulate for later playback
+                        lock (_audioAccum)
+                        {
+                            _audioAccum?.Write(bytes, 0, bytes.Length);
+                        }
+                        if (_audioChunkCount == 0)
+                        {
+                            Debug.Log("[GPT] 📦 Non-streaming audio - accumulating chunks");
+                        }
+                    }
                     _audioChunkCount++;
                     DT("[RT-audio]", $"chunk#{_audioChunkCount} bytes={bytes.Length} total={_audioAccum?.Length}");
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning("[Realtime] audio.delta 解码失败: " + e.Message);
-                }
+                });
             }
             return;
         }
@@ -872,20 +976,71 @@ public class GPTConnector : MonoBehaviour
                 StartCoroutine(ProcessQueuedRequestWithEvaluation());
             };
 
+            // ★ PERFORMANCE: Handle streaming audio completion
+            if (useStreamingAudio && streamingAudioPlayer != null)
+            {
+                // Don't mark stream complete immediately - wait for all audio chunks to arrive
+                // This prevents cutting off speech when response.completed arrives before final audio.delta chunks
+                Debug.Log($"[GPT] 📊 Response completed - waiting for audio chunks to finish (last chunk: {Time.unscaledTime - _lastAudioChunkTime:F3}s ago, total chunks: {_audioChunkCount})");
+                
+                StartCoroutine(WaitForAudioChunksComplete(() =>
+                {
+                    // Now mark stream complete and wait for playback
+                    Debug.Log($"[GPT] ✅ All audio chunks received - marking stream complete");
+                    streamingAudioPlayer.MarkStreamComplete();
+                    
+                    StartCoroutine(WaitForStreamingPlaybackComplete(() =>
+                    {
+                        try { ttsDriver?.CancelWait(); } catch { }
+                        MarkSpeakingEnd();
+                        onReplyComplete?.Invoke();
+                        afterPlayback();
+                    }));
+                }));
+                
+                // Clear accumulators
+                lock (_audioAccum)
+                {
+                    _audioAccum?.Dispose();
+                    _audioAccum = MemoryStreamPool.Instance.Get();
+                }
+                _audioChunkCount = 0;
+                _textAccum?.Clear();
+                return;
+            }
+
+            // ★ PERFORMANCE: Process audio on background thread
             if (_audioAccum != null && _audioAccum.Length > 0 && ttsPlayer != null && preferModelAudio)
             {
-                byte[] pcm = _audioAccum.ToArray();
-                byte[] wav = BuildWavFromPcm16(pcm, realtimeSampleRate, 1);
-                string b64wav = Convert.ToBase64String(wav);
-
-                D($"[Playback] Realtime音频完成 chunks={_audioChunkCount}, wavBytes={wav.Length}");
-                MarkSpeakingStart();
-                ttsPlayer.PlayModelAudioBase64(b64wav, "wav", () =>
+                byte[] pcm;
+                lock (_audioAccum)
                 {
-                    try { ttsDriver?.CancelWait(); } catch { }
-                    MarkSpeakingEnd();
-                    onReplyComplete?.Invoke();
-                    afterPlayback();
+                    pcm = _audioAccum.ToArray();
+                }
+                
+                // Build WAV on background thread
+                AsyncAudioProcessor.BuildWavFromPcm16Async(pcm, realtimeSampleRate, 1, wav =>
+                {
+                    if (wav == null || wav.Length == 0)
+                    {
+                        Warn("[Playback] Failed to build WAV");
+                        afterPlayback();
+                        return;
+                    }
+                    
+                    // Encode to base64 on background thread
+                    ThreadPoolDispatcher.Instance.EncodeBase64Async(wav, b64wav =>
+                    {
+                        D($"[Playback] Realtime音频完成 chunks={_audioChunkCount}, wavBytes={wav.Length}");
+                        MarkSpeakingStart();
+                        ttsPlayer.PlayModelAudioBase64(b64wav, "wav", () =>
+                        {
+                            try { ttsDriver?.CancelWait(); } catch { }
+                            MarkSpeakingEnd();
+                            onReplyComplete?.Invoke();
+                            afterPlayback();
+                        });
+                    });
                 });
             }
             else
@@ -910,8 +1065,12 @@ public class GPTConnector : MonoBehaviour
                 }
             }
 
-            _audioAccum?.Dispose();
-            _audioAccum = new MemoryStream();
+            // ★ PERFORMANCE: Use pooled MemoryStream
+            lock (_audioAccum)
+            {
+                _audioAccum?.Dispose();
+                _audioAccum = MemoryStreamPool.Instance.Get();
+            }
             _audioChunkCount = 0;
             _textAccum?.Clear();
             return;
@@ -1076,6 +1235,74 @@ public class GPTConnector : MonoBehaviour
             default:
                 break; // 其它阶段不触发
         }
+    }
+
+    // ====== Streaming Audio Helpers ======
+    
+    /// <summary>
+    /// Waits for all audio chunks to arrive and be processed before marking stream complete.
+    /// This prevents cutting off speech when response.completed arrives before final audio.delta chunks.
+    /// </summary>
+    private IEnumerator WaitForAudioChunksComplete(Action onComplete)
+    {
+        const float AUDIO_CHUNK_TIMEOUT = 3.0f; // Wait max 3 seconds after last chunk (OpenAI sends in bursts)
+        
+        if (_audioChunkCount == 0)
+        {
+            // No audio chunks received at all, can complete immediately
+            Debug.Log($"[GPT] No audio chunks received, completing immediately");
+            onComplete?.Invoke();
+            yield break;
+        }
+        
+        Debug.Log($"[GPT] Starting wait for audio chunks (total received so far: {_audioChunkCount})");
+        float startWaitTime = Time.unscaledTime;
+        int lastKnownChunkCount = _audioChunkCount;
+        
+        // Wait until no new audio chunks have arrived for AUDIO_CHUNK_TIMEOUT seconds
+        while (true)
+        {
+            yield return new WaitForSeconds(0.1f); // Check every 100ms
+            
+            float timeSinceLastChunk = Time.unscaledTime - _lastAudioChunkTime;
+            
+            // Log if new chunks arrived
+            if (_audioChunkCount > lastKnownChunkCount)
+            {
+                Debug.Log($"[GPT] Audio chunks still arriving: {_audioChunkCount} total (+{_audioChunkCount - lastKnownChunkCount} new)");
+                lastKnownChunkCount = _audioChunkCount;
+            }
+            
+            if (timeSinceLastChunk >= AUDIO_CHUNK_TIMEOUT)
+            {
+                // No new chunks for timeout period, safe to complete
+                float totalWaitTime = Time.unscaledTime - startWaitTime;
+                Debug.Log($"[GPT] Audio chunk timeout reached after {totalWaitTime:F2}s total wait, {timeSinceLastChunk:F2}s since last chunk. Total chunks: {_audioChunkCount}");
+                break;
+            }
+        }
+        
+        onComplete?.Invoke();
+    }
+    
+    private IEnumerator WaitForStreamingPlaybackComplete(Action onComplete)
+    {
+        if (streamingAudioPlayer == null)
+        {
+            onComplete?.Invoke();
+            yield break;
+        }
+        
+        // Wait for streaming player to finish
+        while (streamingAudioPlayer.IsPlaying || streamingAudioPlayer.BufferedSeconds > 0.01f)
+        {
+            yield return null;
+        }
+        
+        // Small grace period
+        yield return new WaitForSeconds(0.1f);
+        
+        onComplete?.Invoke();
     }
 
     // ====== Speaking 标记与延时调度 ======

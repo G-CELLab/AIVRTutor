@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using AI.Performance;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -152,33 +153,40 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             Debug.LogWarning("GPTConnector 未设置，无法发送音频。");
             yield break;
         }
-        // Check minimum audio duration before sending
+        // ★ PERFORMANCE: Check file size on background thread to prevent frame drops
+        D($"[Send] 发送音频到 GPTConnector: {wavPath}");
+        
         if (!string.IsNullOrEmpty(wavPath))
         {
-            try {
-                var wavBytes = File.ReadAllBytes(wavPath);
-                // For 16kHz mono 16-bit PCM, 120ms = 1920 samples = 3840 bytes + 44 byte header
-                if (wavBytes.Length < 3900)
-                {
-                    Debug.LogWarning($"[SpeechRecognizer] Skipping too-short utterance: {wavBytes.Length} bytes");
-                    yield break;
+            long fileSize = -1;
+            bool checkComplete = false;
+            
+            ThreadPoolDispatcher.Instance.RunAsync(() => {
+                try {
+                    var fi = new System.IO.FileInfo(wavPath);
+                    return fi.Exists ? fi.Length : -1;
+                } catch {
+                    return -1L;
                 }
-            } catch (Exception e) {
-                Debug.LogWarning($"[SpeechRecognizer] Failed to check audio file: {e.Message}");
+            }, size => {
+                fileSize = size;
+                checkComplete = true;
+            });
+            
+            // Wait for file size check to complete
+            while (!checkComplete)
+            {
+                yield return null;
             }
-        }
-        D($"[Send] 发送音频到 GPTConnector: {wavPath}");
-        // Check audio length before sending (must be at least 100ms for 16kHz = 1600 samples, for 24kHz = 2400 samples)
-        try {
-            var wavBytes = File.ReadAllBytes(wavPath);
-            // crude check: look for at least 3200 bytes (16-bit mono, 1600 samples)
-            if (wavBytes.Length < 4000) {
-                Debug.LogWarning("[OpenAISpeechRecognizer] Audio buffer too small, not sending to GPTConnector.");
+            
+            // For 16kHz mono 16-bit PCM, 100ms = 1600 samples = 3200 bytes + 44 byte header
+            if (fileSize < 4000)
+            {
+                Debug.LogWarning($"[SpeechRecognizer] Skipping too-short utterance: {fileSize} bytes");
                 yield break;
             }
-        } catch (Exception e) {
-            Debug.LogWarning($"[OpenAISpeechRecognizer] Failed to check audio file size: {e.Message}");
         }
+        
         gptConnector.SendAudioFileToGPT(wavPath, null);
         yield return null;
     }
@@ -208,7 +216,8 @@ public class OpenAISpeechRecognizer : MonoBehaviour
 
         int preRollMax = Mathf.CeilToInt(preRollSeconds * sampleRate);
         Queue<float> preRoll = new Queue<float>(preRollMax);
-        List<float> capture = new List<float>(sampleRate * 10);
+        // ★ PERFORMANCE: Use pooled List to reduce GC
+        List<float> capture = FloatListPool.Instance.Get(sampleRate * 10);
 
         // 节流打印函数（每 debugLogInterval 秒打印一次状态）
         Action throttledStateLog = () =>
@@ -238,17 +247,20 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             if (delta == 0) { throttledStateLog(); yield return null; continue; }
 
             int toEnd = micClip.samples - lastSample;
+            // ★ PERFORMANCE: Reuse list for chunks instead of creating new each frame
             var chunks = new List<float[]>(2);
             if (delta <= toEnd)
             {
-                float[] a = new float[delta * channels];
+                // ★ PERFORMANCE: Use pooled float arrays
+                float[] a = FloatArrayPool.Instance.Rent(delta * channels);
                 micClip.GetData(a, lastSample);
                 chunks.Add(a);
             }
             else
             {
-                float[] a = new float[toEnd * channels];
-                float[] b = new float[(delta - toEnd) * channels];
+                // ★ PERFORMANCE: Use pooled float arrays
+                float[] a = FloatArrayPool.Instance.Rent(toEnd * channels);
+                float[] b = FloatArrayPool.Instance.Rent((delta - toEnd) * channels);
                 micClip.GetData(a, lastSample);
                 micClip.GetData(b, 0);
                 chunks.Add(a);
@@ -289,6 +301,9 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                         recordedTime += 1f / sampleRate;
                     }
                 }
+                
+                // ★ PERFORMANCE: Return pooled arrays after processing
+                FloatArrayPool.Instance.Return(src);
             }
 
             float batchDur = batchFrames / (float)sampleRate;
@@ -408,27 +423,67 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             Debug.LogWarning("⚠️ 未捕获到有效语音（阈值可能过高或环境过静）" +
                              $" | globalMax={_globalMax:F4} startThr={startThreshold} stopThr={stopThreshold} " +
                              $" | over(start/stop/intr)={_overStartCount}/{_overStopCount}/{_overInterruptCount}");
+            // ★ PERFORMANCE: Return pooled list
+            FloatListPool.Instance.Return(capture);
             onSaved?.Invoke(null);
             yield break;
         }
 
-        // 写入 WAV
-        var outClip = AudioClip.Create("speech_trimmed", capture.Count, 1, sampleRate, false);
-        outClip.SetData(capture.ToArray(), 0);
+        // ★ PERFORMANCE: Log timing for diagnostics
+        float wavBuildStart = Time.realtimeSinceStartup;
+        Debug.Log($"[SpeechRec] 🎤 Building WAV from {capture.Count} samples...");
+        
+        // ★ PERFORMANCE: Copy to array - this runs on main thread but is usually fast
+        QuestPerformanceSettings.StartTiming("capture.ToArray()");
+        float[] captureArray = capture.ToArray();
+        QuestPerformanceSettings.EndTiming(5f);
+        
+        // Return pooled list immediately after copying data
+        FloatListPool.Instance.Return(capture);
 
         string filePath = Path.Combine(Application.persistentDataPath, "temp_speech.wav");
-        try
+        
+        // ★ PERFORMANCE: Encode WAV on background thread to prevent XR frame drops
+        bool encodeComplete = false;
+        string savedPath = null;
+        
+        ThreadPoolDispatcher.Instance.RunAsync(() =>
         {
-            byte[] wav = WavUtility.FromAudioClip(outClip); // 依赖你项目里的 WavUtility
-            File.WriteAllBytes(filePath, wav);
-            D($"[Save] 写入 WAV 完成: {filePath} ({wav.Length} bytes)");
-            onSaved?.Invoke(filePath);
-        }
-        catch (Exception e)
+            // Build WAV manually on background thread (can't use WavUtility.FromAudioClip from background)
+            return WavUtilityPooled.FromFloatArray(captureArray, sampleRate, 1);
+        }, 
+        wavBytes =>
         {
-            Debug.LogError("保存 WAV 失败: " + e.Message);
-            onSaved?.Invoke(null);
+            if (wavBytes == null || wavBytes.Length == 0)
+            {
+                encodeComplete = true;
+                return;
+            }
+            
+            ThreadPoolDispatcher.Instance.WriteFileBytesAsync(filePath, wavBytes, 
+                () => 
+                { 
+                    D($"[Save] 写入 WAV 完成: {filePath} ({wavBytes.Length} bytes)");
+                    savedPath = filePath;
+                    encodeComplete = true;
+                },
+                ex =>
+                {
+                    Debug.LogError("保存 WAV 失败: " + ex.Message);
+                    encodeComplete = true;
+                }
+            );
+        });
+        
+        // Wait for background encoding to complete
+        while (!encodeComplete)
+        {
+            yield return null;
         }
+        
+        Debug.Log($"[SpeechRec] 🎤 WAV build + save took {(Time.realtimeSinceStartup - wavBuildStart)*1000:F0}ms");
+        
+        onSaved?.Invoke(savedPath);
     }
 
     // =========（未使用）Whisper 转写 =========
@@ -440,7 +495,29 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             yield break;
         }
 
-        byte[] audioData = File.ReadAllBytes(filePath);
+        // ★ PERFORMANCE: Read file on background thread to prevent frame drops
+        byte[] audioData = null;
+        bool readComplete = false;
+        
+        ThreadPoolDispatcher.Instance.ReadFileBytesAsync(filePath, data => {
+            audioData = data;
+            readComplete = true;
+        }, ex => {
+            Debug.LogWarning($"[SpeechRecognizer] Failed to read audio file: {ex.Message}");
+            readComplete = true;
+        });
+        
+        while (!readComplete)
+        {
+            yield return null;
+        }
+        
+        if (audioData == null || audioData.Length == 0)
+        {
+            onComplete?.Invoke(null);
+            yield break;
+        }
+        
         WWWForm form = new WWWForm();
         form.AddBinaryData("file", audioData, "speech.wav", "audio/wav");
         form.AddField("model", "openai/gpt-oss-120b");
