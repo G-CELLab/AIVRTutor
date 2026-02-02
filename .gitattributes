@@ -1,0 +1,9 @@
+* text=auto
+*.cs text eol=lf
+*.meta text eol=lf
+*.asset text eol=lf
+*.unity text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.xml text eol=lf
