@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Android;
 using UnityEngine.Networking;
 
 public class OpenAISpeechRecognizer : MonoBehaviour
@@ -71,12 +72,35 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     void Start()
     {
         D("[Init] Start() 进入");
+        StartCoroutine(InitMicrophoneAndStartLoop());
+    }
+
+    private IEnumerator InitMicrophoneAndStartLoop()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
+        {
+            Debug.LogWarning("[Mic] Requesting microphone permission...");
+            Permission.RequestUserPermission(Permission.Microphone);
+            float t = 0f;
+            while (!Permission.HasUserAuthorizedPermission(Permission.Microphone) && t < 5f)
+            {
+                t += Time.deltaTime;
+                yield return null;
+            }
+        }
+        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
+        {
+            Debug.LogError("❌ Microphone permission denied. Enable it in Quest app permissions.");
+            yield break;
+        }
+#endif
 
         // 打印设备列表
         if (Microphone.devices.Length == 0)
         {
             Debug.LogError("❌ 未检测到麦克风");
-            return;
+            yield break;
         }
         else
         {

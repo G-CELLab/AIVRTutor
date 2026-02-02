@@ -21488,7 +21488,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3682f6735b552264fa2cf53d0692856f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  apiKey: 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
+  apiKey: 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
   chatModel: gpt-5-mini
   requestTimeoutSeconds: 30
   useRealtime: 1
