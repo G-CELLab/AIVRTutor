@@ -21544,6 +21544,12 @@ MonoBehaviour:
   prependPhaseTextAsDeveloperItem: 1
   prependPhaseInstructionAudio: 1
   reactToAssistantTranscript: 1
+  evaluateQueuedRequests: 1
+  maxQueuedRequestAgeSec: 30
+  queueEvaluationPrompt: You just finished speaking. The user said something while
+    you were talking. Decide if you should respond. Reply ONLY with 'YES' or 'NO'.
+    Say YES if it's a new question, comment, or request. Say NO if it's just acknowledgment,
+    'ok', 'thanks', or doesn't need a response.
 --- !u!114 &1434790982
 MonoBehaviour:
   m_ObjectHideFlags: 0
