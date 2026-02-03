@@ -1428,11 +1428,11 @@ MonoBehaviour:
   stopThreshold: 0.015
   stopSilenceTime: 1.2
   ttsToInterrupt: {fileID: 436895152}
-  interruptEvenBeforeVAD: 1
-  interruptThreshold: 0.035
-  interruptGraceMs: 60
+  interruptEvenBeforeVAD: 0
+  interruptThreshold: 0.05
+  interruptGraceMs: 700
   killAllTTSOnInterrupt: 1
-  ttsProtectionDurationSec: 0.5
+  ttsProtectionDurationSec: 1
   showDebugOverlay: 0
   verboseDebug: 1
   debugLogInterval: 0.25
@@ -1480,7 +1480,7 @@ MonoBehaviour:
     the phase the student is currently in: Interphase, Prophase, Metaphase, Anaphase,
     or Telophase. There are only these five phases.\n\nUse only the information in
     the Phase Instructions below. Do NOT add any outside facts or internet information.\n\nRespond
-    in 2\u20133 short, simple sentences. You may include a small amount of encouragement.\n\nNever
+    in 4\u20136 short, simple sentences. You may include a small amount of encouragement.\n\nNever
     explain content from another phase\u2014only what applies to the current phase.\n\nIf
     the student asks about anything outside this document or outside the current
     phase, reply exactly: \u201CThat seems outside of our current learning goal.
