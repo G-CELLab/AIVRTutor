@@ -21519,8 +21519,8 @@ MonoBehaviour:
     to mitosis and the current simulation phase.
 
     - If a question is outside
-    the learning scope, say kindly: ''That''s a great curiosity, but let''s save
-    that for later. Right now, let''s focus on what we''re doing here.''
+    the learning scope, say along the lines of: ''That''s a great curiosity, but
+    let''s save that for later. Right now, let''s focus on what we''re doing here.''
 
 
     QUESTION
@@ -21580,6 +21580,8 @@ MonoBehaviour:
     and text must be English. '
   speechRecognizer: {fileID: 1434790983}
   pendingUserPrompt: 
+  realtimeSilenceTimeoutSec: 30
+  minCharsForTts: 30
   verboseDebug: 1
   dumpResponsesToFile: 1
   debugLogInterval: 0.25

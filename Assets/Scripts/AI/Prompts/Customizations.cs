@@ -25,8 +25,8 @@ namespace AI.Prompts
         public static bool DefaultAlwaysEnglish = true;
 
         // Conversation/Memory
-        public static int DefaultMaxHistoryTurnsToSend = 8;
-        public static int DefaultMaxCharsBudget = 12000;
+        public static int DefaultMaxHistoryTurnsToSend = 4; // Reduced to limit repeated context
+        public static int DefaultMaxCharsBudget = 6000; // Reduced to limit repeated context
 
         // Debug
         public static bool DefaultVerboseDebug = true;
@@ -42,7 +42,7 @@ namespace AI.Prompts
         public static bool DefaultPrependPhaseInstructionAudio = false;
 
         // VAD settings for Realtime
-        public static int SilenceDurationMs = 1200; // Default: 1200ms (was 450ms)
+        public static int SilenceDurationMs = 1100; // Default: 1200ms (was 450ms)
         public static int PrefixPaddingMs = 250;
 
         // ===== Response Behavior =====
@@ -57,7 +57,7 @@ namespace AI.Prompts
         // Personality traits to append to system prompt
         public static string PersonalityTraits = "Be friendly, patient, and encouraging. Use simple language appropriate for students.";
         // Empathy phrases the agent can use
-        public static string EmpathyPhrases = "Oh, great question!;That's a good observation!;I understand, let me help!;Nice thinking!";
+        public static string EmpathyPhrases = "Great job!;You've got this!;That's exactly right!";
 
         // ===== Response Style =====
         // Max sentences per response (0 = no limit)
@@ -65,6 +65,6 @@ namespace AI.Prompts
         // Whether to always start with empathy
         public static bool AlwaysStartWithEmpathy = true;
         // Phrase to use when question is off-topic
-        public static string OffTopicResponse = "That seems outside of our current learning goal. You can ask a real teacher about that.";
+        public static string OffTopicResponse = "That's a great curiosity, but let's save that for later. Right now, let's focus on what we're doing here.";
     }
 }

@@ -63,11 +63,22 @@ public class GPTConnector : MonoBehaviour
     public string pendingUserPrompt = "";
     public void SetPendingUserPrompt(string s) { pendingUserPrompt = s ?? ""; }
 
+    [Header("Cost Optimization")]
+    [Tooltip("Disconnect realtime WebSocket after N seconds of user silence (0 = never disconnect)")]
+    public float realtimeSilenceTimeoutSec = 30f; // Auto-disconnect realtime after silence
+    [Tooltip("Skip TTS for responses shorter than this character count (0 = always TTS)")]
+    public int minCharsForTts = 30; // Don't TTS if response is too short
+
     [Header("Debug")]
     public bool verboseDebug = AI.Prompts.Customizations.DefaultVerboseDebug;
     public bool dumpResponsesToFile = AI.Prompts.Customizations.DefaultDumpResponsesToFile;
     public float debugLogInterval = AI.Prompts.Customizations.DefaultDebugLogInterval;
     public int maxLogChars = AI.Prompts.Customizations.DefaultMaxLogChars;
+
+    [Header("Prompt/Token Debug")]
+    public bool logTokenBreakdown = true;
+    [Tooltip("If true, realtime instructions omit phase text when it is already pinned as a developer item.")]
+    public bool omitPhaseFromInstructionsWhenPinned = true;
 
     // ===== 延时触发：基于 isSpeaking 的延时调度 =====
     [Header("Speaking & Delayed Triggers")]
@@ -121,6 +132,7 @@ public class GPTConnector : MonoBehaviour
     private int _audioChunkCount;
     private StringBuilder _textAccum; // 累计 text.delta
     private float _nextLog = 0f;
+    private float _lastUserAudioTime = 0f; // Track last time user sent audio (for silence timeout)
 
     // === Realtime ack gate ===
     private volatile bool _sessionReady = false;
@@ -154,15 +166,26 @@ public class GPTConnector : MonoBehaviour
     }
 
     // ===== 合并“系统+相位+可选附加”为最终 instructions =====
-    private string BuildFinalInstructions(string extra = null)
+    private string BuildFinalInstructions(string extra = null, bool includePhase = true)
     {
         var parts = new List<string>(3);
         if (!string.IsNullOrEmpty(systemPrompt)) parts.Add(systemPrompt);
-        string phase = BuildSystemPromptForCurrentPhase();
+        string phase = includePhase ? BuildSystemPromptForCurrentPhase() : null;
         if (!string.IsNullOrEmpty(phase)) parts.Add(phase);
         if (!string.IsNullOrEmpty(extra)) parts.Add(extra);
         string joined = string.Join("\n\n", parts);
-        return ApplyLang(joined);
+        string finalInstr = ApplyLang(joined);
+        LogPromptBreakdown("BuildFinalInstructions", systemPrompt, phase, extra, finalInstr);
+        return finalInstr;
+    }
+
+    private string BuildPhaseOnlyInstructions(GameManager.GameState gs, string extra = null)
+    {
+        var parts = new List<string>(2);
+        string phaseText = PhaseText(gs);
+        if (!string.IsNullOrEmpty(phaseText)) parts.Add(phaseText);
+        if (!string.IsNullOrEmpty(extra)) parts.Add(extra);
+        return ApplyLang(string.Join("\n\n", parts));
     }
 
     // ===== 为“指定相位”构造最终 instructions（用于预缓存） =====
@@ -583,7 +606,7 @@ public class GPTConnector : MonoBehaviour
         // 将“当前相位指令”作为 developer 文本钉入对话
         if (prependPhaseTextAsDeveloperItem)
         {
-            string dev = BuildInstructionsForPhase(GameManager.eGameStatus);
+            string dev = BuildPhaseOnlyInstructions(GameManager.eGameStatus);
             EchoPrompt("RT/DevItem(phase).Instructions(final)", dev, true);
             string devMsg = "{\"type\":\"conversation.item.create\",\"item\":{\"type\":\"message\",\"role\":\"developer\",\"content\":[{\"type\":\"input_text\",\"text\":\"" + Escape(dev) + "\"}]}}";
             yield return SendWsText(devMsg);
@@ -597,7 +620,8 @@ public class GPTConnector : MonoBehaviour
         var sb = new StringBuilder();
         sb.Append("{\"type\":\"response.create\",\"response\":{");
 
-        string instr = BuildFinalInstructions();
+        bool includePhaseInRealtime = !(prependPhaseTextAsDeveloperItem && omitPhaseFromInstructionsWhenPinned);
+        string instr = BuildFinalInstructions(null, includePhaseInRealtime);
         EchoPrompt("RT/Text.Instructions(final)", instr, true);
 
         sb.Append("\"modalities\":[\"text\",\"audio\"],");
@@ -621,13 +645,14 @@ public class GPTConnector : MonoBehaviour
         // Do not check or set it again here
         try
         {
+            _lastUserAudioTime = Time.realtimeSinceStartup; // Track user audio for silence timeout
             yield return EnsureRealtimeConnected();
             yield return WaitForSessionReady(3f); // 等待会话指令就绪
 
         // 1) 先钉开发者文本（当前相位）
         if (prependPhaseTextAsDeveloperItem)
         {
-            string dev = BuildInstructionsForPhase(GameManager.eGameStatus);
+            string dev = BuildPhaseOnlyInstructions(GameManager.eGameStatus);
             EchoPrompt("RT/DevItem(phase).Instructions(final)", dev, true);
             string devMsg = "{\"type\":\"conversation.item.create\",\"item\":{\"type\":\"message\",\"role\":\"system\",\"content\":[{\"type\":\"input_text\",\"text\":\"" + Escape(dev) + "\"}]}}";
             yield return SendWsText(devMsg);
@@ -651,7 +676,8 @@ public class GPTConnector : MonoBehaviour
         var sb = new StringBuilder();
         sb.Append("{\"type\":\"response.create\",\"response\":{");
 
-        string finalInstr = BuildFinalInstructions(string.IsNullOrWhiteSpace(extraInstruction) ? null : extraInstruction);
+        bool includePhaseInRealtime = !(prependPhaseTextAsDeveloperItem && omitPhaseFromInstructionsWhenPinned);
+        string finalInstr = BuildFinalInstructions(string.IsNullOrWhiteSpace(extraInstruction) ? null : extraInstruction, includePhaseInRealtime);
         EchoPrompt("RT/Audio.Instructions(final)", finalInstr, true);
 
         sb.Append("\"modalities\":[\"text\",\"audio\"],");
@@ -721,7 +747,8 @@ public class GPTConnector : MonoBehaviour
         cfg.Append("\"input_audio_format\":\"pcm16\"");
 
         // 指令
-        string sessionInstr = BuildFinalInstructions();
+        bool includePhaseInSession = !(prependPhaseTextAsDeveloperItem && omitPhaseFromInstructionsWhenPinned);
+        string sessionInstr = BuildFinalInstructions(null, includePhaseInSession);
         EchoPrompt("RT/session.update.Instructions(final)", sessionInstr, true);
         cfg.Append(",\"instructions\":\"").Append(Escape(sessionInstr)).Append("\"");
         cfg.Append("}}");
@@ -768,6 +795,22 @@ public class GPTConnector : MonoBehaviour
 
     private void Update()
     {
+        // Check for realtime silence timeout
+        if (useRealtime && _ws != null && _ws.State == WebSocketState.Open && realtimeSilenceTimeoutSec > 0)
+        {
+            float timeSinceLast = Time.realtimeSinceStartup - _lastUserAudioTime;
+            if (timeSinceLast > realtimeSilenceTimeoutSec && !_responseInProgress)
+            {
+                D($"[Realtime] Silence timeout ({timeSinceLast:0.1f}s > {realtimeSilenceTimeoutSec}s). Disconnecting to save cost.");
+                try
+                {
+                    _wsCts?.Cancel();
+                }
+                catch { }
+                _ws = null;
+            }
+        }
+
         while (_eventQueue.TryDequeue(out var json))
         {
             HandleRealtimeEvent(json);
@@ -872,7 +915,16 @@ public class GPTConnector : MonoBehaviour
                 StartCoroutine(ProcessQueuedRequestWithEvaluation());
             };
 
-            if (_audioAccum != null && _audioAccum.Length > 0 && ttsPlayer != null && preferModelAudio)
+            bool skipTtsRealtime = !string.IsNullOrEmpty(replyText) && minCharsForTts > 0 && replyText.Length < minCharsForTts;
+
+            if (skipTtsRealtime)
+            {
+                D($"[Cost] Skipping TTS (Realtime): response too short ({replyText.Length} < {minCharsForTts} chars)");
+                try { ttsDriver?.CancelWait(); } catch { }
+                onReplyComplete?.Invoke();
+                afterPlayback();
+            }
+            else if (_audioAccum != null && _audioAccum.Length > 0 && ttsPlayer != null && preferModelAudio)
             {
                 byte[] pcm = _audioAccum.ToArray();
                 byte[] wav = BuildWavFromPcm16(pcm, realtimeSampleRate, 1);
@@ -990,6 +1042,7 @@ public class GPTConnector : MonoBehaviour
             TryFireFromAssistantTranscript(replyText);
             history.Add(new Message { role = "assistant", content = replyText });
             TrimHistory();
+            D($"[Cost] Response length: {replyText.Length} chars (TTS threshold: {minCharsForTts} chars)");
         }
 
         if (speechRecognizer != null && ttsPlayer != null)
@@ -1011,7 +1064,9 @@ public class GPTConnector : MonoBehaviour
             onReplyComplete?.Invoke();
         }
 
-        if (preferModelAudio && ttsPlayer != null && !string.IsNullOrEmpty(audioB64))
+        bool skipTts = !string.IsNullOrEmpty(replyText) && minCharsForTts > 0 && replyText.Length < minCharsForTts;
+
+        if (preferModelAudio && ttsPlayer != null && !string.IsNullOrEmpty(audioB64) && !skipTts)
         {
             D("[Playback] 使用模型返回的音频播放(HTTP)");
             MarkSpeakingStart();
@@ -1019,7 +1074,12 @@ public class GPTConnector : MonoBehaviour
         }
         else
         {
-            if (ttsPlayer != null && !string.IsNullOrEmpty(replyText))
+            if (skipTts)
+            {
+                D($"[Cost] Skipping TTS: response too short ({replyText.Length} < {minCharsForTts} chars)");
+                AfterPlayback();
+            }
+            else if (ttsPlayer != null && !string.IsNullOrEmpty(replyText))
             {
                 D("[Playback] 回退到本地 TTS 播放文本(HTTP)");
                 MarkSpeakingStart();
@@ -1482,7 +1542,8 @@ public class GPTConnector : MonoBehaviour
     public IEnumerator PushPhaseToSession()
     {
         yield return EnsureRealtimeConnected();
-        string sessionInstr = BuildFinalInstructions(); // 全局+阶段
+        bool includePhaseInSession = !(prependPhaseTextAsDeveloperItem && omitPhaseFromInstructionsWhenPinned);
+        string sessionInstr = BuildFinalInstructions(null, includePhaseInSession); // 全局+阶段
         var j = "{\"type\":\"session.update\",\"session\":{\"instructions\":\"" + Escape(sessionInstr) + "\"}}";
         _sessionReady = false;
         EchoPrompt("RT/PushPhase.Instructions(final)", sessionInstr, true);
@@ -1586,6 +1647,7 @@ public class GPTConnector : MonoBehaviour
         bool first = true;
         string sysInstr = BuildFinalInstructions();
         EchoPrompt("HTTP/Messages.Instructions(final)", sysInstr, true);
+        LogHttpRequestBreakdown(currentUserInput, sysInstr);
         AppendMsg(sb, "system", sysInstr, ref first);
         int start = Mathf.Max(0, history.Count - 2 * Mathf.Max(1, maxHistoryTurnsToSend));
         for (int i = start; i < history.Count; i++) AppendMsg(sb, history[i].role, history[i].content, ref first);
@@ -1600,6 +1662,33 @@ public class GPTConnector : MonoBehaviour
         first = false;
         sb.Append("{\"role\":\"").Append(role).Append("\",\"content\":\"")
           .Append(Escape(content)).Append("\"}");
+    }
+
+    private void LogPromptBreakdown(string origin, string sys, string phase, string extra, string finalInstr)
+    {
+        if (!logTokenBreakdown || !verboseDebug) return;
+        int sysLen = sys?.Length ?? 0;
+        int phaseLen = phase?.Length ?? 0;
+        int extraLen = extra?.Length ?? 0;
+        int finalLen = finalInstr?.Length ?? 0;
+        int approxTokens = Mathf.CeilToInt(finalLen / 4f);
+        D($"[PromptBreakdown] {origin}: sys={sysLen}, phase={phaseLen}, extra={extraLen}, final={finalLen} (~{approxTokens} tokens)");
+    }
+
+    private void LogHttpRequestBreakdown(string userInput, string sysInstr)
+    {
+        if (!logTokenBreakdown || !verboseDebug) return;
+        int historyCount = history.Count;
+        int historyChars = 0;
+        for (int i = 0; i < history.Count; i++)
+        {
+            historyChars += history[i].content != null ? history[i].content.Length : 0;
+        }
+        int userLen = userInput?.Length ?? 0;
+        int sysLen = sysInstr?.Length ?? 0;
+        int totalChars = sysLen + historyChars + userLen;
+        int approxTokens = Mathf.CeilToInt(totalChars / 4f);
+        D($"[HTTP Payload] sys={sysLen}, historyMsgs={historyCount}, historyChars={historyChars}, user={userLen}, totalChars={totalChars} (~{approxTokens} tokens)");
     }
 
     private void TrimHistory()
