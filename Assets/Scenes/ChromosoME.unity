@@ -3285,6 +3285,9 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
+  onInterphasePart2:
+    m_PersistentCalls:
+      m_Calls: []
   onProphase:
     m_PersistentCalls:
       m_Calls:
@@ -21093,7 +21096,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!223 &1379255946
 Canvas:
   m_ObjectHideFlags: 0
@@ -49378,7 +49381,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!223 &2027785755
 Canvas:
   m_ObjectHideFlags: 0

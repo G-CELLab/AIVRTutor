@@ -182,10 +182,14 @@ public class FoodCollision : MonoBehaviour
         */
     }
 
+    bool interphasePart2Triggered = false;
+
     private void Update()
-    {      
-        if (food == false && food2 == false && food3 == false)
+    {
+        if (food == false && food2 == false && food3 == false && !interphasePart2Triggered)
         {
+            interphasePart2Triggered = true;
+            gameManager.InterphasePart2();
             Centriole1.GetComponent<CapsuleCollider>().enabled = true;
             Centriole2.GetComponent<CapsuleCollider>().enabled = true;
             Chromatin3.SetActive(true);

@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     {
         Intro,
         Interphase,
+        InterphasePart2,
         Prophase,
         Metaphase,
         Anaphase,
@@ -25,6 +26,7 @@ public class GameManager : MonoBehaviour
 
     public UnityEvent onIntro;
     public UnityEvent onInterphase;
+    public UnityEvent onInterphasePart2;
     public UnityEvent onProphase;
     public UnityEvent onMetaphase;
     public UnityEvent onAnaphase;
@@ -82,6 +84,13 @@ public class GameManager : MonoBehaviour
         Debug.Log("Interphase");
     }
 
+    public void InterphasePart2()
+    {
+        eGameStatus = GameState.InterphasePart2;
+        onInterphasePart2.Invoke();
+        Debug.Log("Interphase Part 2");
+    }
+
     public void Prophase()
     {
         eGameStatus = GameState.Prophase;
@@ -116,55 +125,5 @@ public class GameManager : MonoBehaviour
         eGameStatus = GameState.GameOver;
         onGameOver.Invoke();
         Debug.Log("Game_End");
-
     }
-
-
-
-    /*
-    private void Update()
-    {
-        //check what state the game is in
-        if (eGameStatus == GameState.Playing)
-        {
-            sliderImg.fillAmount = (sliderCurrentFillAmount - (Time.deltaTime / gameDuration));
-            sliderCurrentFillAmount = sliderImg.fillAmount;
-            if(sliderCurrentFillAmount <= 0)
-            {
-                GameOver();
-            }
-        }
-    }
-
-    private void GameOver()
-    {
-        eGameStatus = GameState.GameOver;
-        onGameOver.Invoke();
-    }
-
-    public static void AsteroidHit()
-    {
-        if (eGameStatus == GameState.Playing)
-        {
-            playerScore += 100;
-            AsteroidDestroyed();
-        }
-
-    }   
-    
-    public void StartGame()
-    {
-        eGameStatus = GameState.Playing;
-        onStartActivated.Invoke();
-    }
-
-    public void ResetGame()
-    {
-        onGameReset.Invoke();
-
-        sliderCurrentFillAmount = 1f;
-        playerScore = 0;
-    }
-
-    */
 }

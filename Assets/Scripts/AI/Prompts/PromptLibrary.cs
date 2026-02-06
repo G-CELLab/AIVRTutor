@@ -81,6 +81,8 @@ namespace AI.Prompts
             {
                 case GameManager.GameState.Interphase:
                     return Interphase;
+                case GameManager.GameState.InterphasePart2:
+                    return InterphasePart2;
                 case GameManager.GameState.Prophase:
                     return Prophase;
                 case GameManager.GameState.Metaphase:
@@ -95,18 +97,24 @@ namespace AI.Prompts
         }
 
         public static string Interphase = BuildPhase(
-            "Interphase",
-            "Generate energy (ATP) and copy the centrioles.",
+            "Interphase Part 1",
+            "Generate energy (ATP)",
             "- Three capsule-shaped nutrients (the student needs to grab these)\n" +
             "- Mitochondria (oval-shaped organelles that absorb nutrients)\n" +
-            "- Green ATP bar (fills up as nutrients are absorbed - must be completely full)\n" +
-            "- Centrioles (small barrel-shaped objects that need to be duplicated)",
+            "- Green ATP bar (fills up as nutrients are absorbed - must be completely full)\n",
             "1. Grab the three capsule nutrients and bring them to the mitochondria\n" +
             "2. Watch the green ATP bar fill completely\n" +
-            "3. Grab one centriole and place it a short distance away to duplicate it",
             "The mitochondria absorb nutrients to make energy—just like how you eat food to get energy!",
             "- 'What are the capsules?' → 'Those are nutrients! Bring them to the mitochondria.'\n" +
-            "- 'Is the bar full?' → Check the green ATP bar and give warm feedback.\n" +
+            "- 'Is the bar full?' → Check the green ATP bar and give warm feedback.\n",
+            HelpfulAnalogyHeader);
+
+        public static string InterphasePart2 = BuildPhase (
+            "Interphase Part 2", 
+            "Copy the centrioles.",
+            "- Centrioles (small barrel-shaped objects that need to be duplicated)",
+            "1. Grab one centriole and place it a short distance away to duplicate it",
+            "The centrioles need to be copied so they can help pull the chromosomes apart later on. It's like making a backup copy of an important tool!",
             "- 'What's a centriole?' → 'The small barrel-shaped things. You need to copy one by moving it.'",
             HelpfulAnalogyHeader);
 
