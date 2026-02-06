@@ -77,6 +77,13 @@ public class GameManager : MonoBehaviour
 
     }
 
+    public void Intro()
+    {
+        eGameStatus = GameState.Intro;
+        onIntro.Invoke();
+        Debug.Log("Intro");
+    }
+
     public void Interphase()
     {
         eGameStatus = GameState.Interphase;
