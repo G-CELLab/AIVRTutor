@@ -5500,7 +5500,7 @@ MonoBehaviour:
   m_Camera: {fileID: 628506234}
   m_OriginBaseGameObject: {fileID: 322479459}
   m_CameraFloorOffsetObject: {fileID: 1345052471}
-  m_RequestedTrackingOriginMode: 0
+  m_RequestedTrackingOriginMode: 2
   m_CameraYOffset: 1.1176
 --- !u!1 &327268108
 GameObject:
@@ -21586,6 +21586,8 @@ MonoBehaviour:
   dumpResponsesToFile: 1
   debugLogInterval: 0.25
   maxLogChars: 600
+  logTokenBreakdown: 1
+  omitPhaseFromInstructionsWhenPinned: 1
   delayFirstGroupSec: 5
   delaySecondGroupSec: 3
   delayThirdGroupSec: 2.5
