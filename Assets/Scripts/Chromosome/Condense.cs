@@ -2,10 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit.Interactables; // Added for XRI 3.0+
 
 public class Condense : MonoBehaviour
 {
+    private XRGrabInteractable grabInteractable;
+
     public GameManager gameManager;
+
+    // You can keep these references in the inspector to avoid errors, 
+    // but the script no longer uses them for logic.
     public GameObject LeftHandManager;
     public GameObject RightHandManager;
 
@@ -16,8 +22,12 @@ public class Condense : MonoBehaviour
     float lodingTime = 30f;
     float timer = 0f;
     bool proSuccess = false;
-    //public Sprite lockingImg;
 
+    void Awake()
+    {
+        // Automatically finds the Grab component we added to the DNA prefab
+        grabInteractable = GetComponent<XRGrabInteractable>();
+    }
 
     private void OnTriggerEnter(Collider other)
     {
@@ -30,6 +40,7 @@ public class Condense : MonoBehaviour
             rightHandDetected = true;
         }
     }
+
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Left"))
@@ -46,50 +57,36 @@ public class Condense : MonoBehaviour
 
     private void OnTriggerStay(Collider other)
     {
-        if (other.CompareTag("Left") && leftHandDetected == true && LeftHandManager.GetComponent<LeftHandManager>().isGrabbed_left == true && proSuccess == false && gameManager.proPhase == true)
+        // Check if the object is currently being grabbed/selected by XRI
+        bool isBeingHeld = grabInteractable != null && grabInteractable.isSelected;
+
+        // Logic for Left Hand
+        if (other.CompareTag("Left") && leftHandDetected && isBeingHeld && proSuccess == false && gameManager.proPhase == true)
         {
-            timer += Time.deltaTime;
-            sliderImg.fillAmount = timer / lodingTime;
-
-            if (timer >= lodingTime)
-            {
-                proSuccess = true;
-                gameManager.proPhase = false;
-
-                //sliderImg.sprite = lockingImg;
-                //sliderImg.color = new Color32(255, 255, 0, 155);
-
-                //go to metaphase
-                //게임 메니저 상에는 여기서 메타페이스로 가지만 UI는 나중에 Spindle fiber까지 다 붙이고 난 다음에 Meta info UI가 켜지도록 스크립트 작성함 (Centrosome_Hand.cs 참고)
-                gameManager.Metaphase();
-
-                //지금은 이렇게 삭제하지만 나중에는 손에 잡힌상태에서 물체 사라지는 것에 대한 해결책을 찾아야만 함!!
-                //Destroy(this.gameObject, 3f);
-
-                timer = 0f;
-            }
+            RunTimer();
         }
-        else if (other.CompareTag("Right") && rightHandDetected == true && RightHandManager.GetComponent<RightHandManager>().isGrabbed_right == true && proSuccess == false && gameManager.proPhase == true)
+        // Logic for Right Hand
+        else if (other.CompareTag("Right") && rightHandDetected && isBeingHeld && proSuccess == false && gameManager.proPhase == true)
         {
-            timer += Time.deltaTime;
-            sliderImg.fillAmount = timer / lodingTime;
-
-            if (timer >= lodingTime)
-            {
-                proSuccess = true;
-                gameManager.proPhase = false;
-
-                //sliderImg.sprite = lockingImg;
-                //sliderImg.color = new Color32(255, 255, 0, 155);
-
-                //go to metaphase
-                gameManager.Metaphase();
-                //Destroy(this.gameObject, 3f);
-
-                timer = 0f;
-            }
+            RunTimer();
         }
     }
 
+    void RunTimer()
+    {
+        timer += Time.deltaTime;
+        sliderImg.fillAmount = timer / lodingTime;
 
+        if (timer >= lodingTime)
+        {
+            proSuccess = true;
+            gameManager.proPhase = false;
+
+            // Trigger the next phase in your GameManager
+            gameManager.Metaphase();
+
+            timer = 0f;
+            Debug.Log("Condense Process Complete!");
+        }
+    }
 }
