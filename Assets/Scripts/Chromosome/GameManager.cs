@@ -32,7 +32,7 @@ public class GameManager : MonoBehaviour
     public UnityEvent onGameReset;
     public UnityEvent onGameOver;
 
-    public bool proPhase = false;
+    public bool proPhase = true;
 
     [Header("The Slider Components")]
     public Image ATPsliderImg;
