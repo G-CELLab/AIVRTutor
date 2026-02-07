@@ -42,6 +42,11 @@ public class GPTConnector : MonoBehaviour
     public int maxHistoryTurnsToSend = AI.Prompts.Customizations.DefaultMaxHistoryTurnsToSend;
     public int maxCharsBudget = AI.Prompts.Customizations.DefaultMaxCharsBudget;
 
+    [Header("Prompt Overrides")]
+    public bool usePhasePromptOverride = false;
+    [TextArea(3, 8)]
+    public string phasePromptOverride = "";
+
     [Header("Audio I/O Settings")]
     [Tooltip("启用：优先播放模型直接返回的语音；否则回退到本地TTS。")]
     public bool preferModelAudio = AI.Prompts.Customizations.DefaultPreferModelAudio;
@@ -170,7 +175,7 @@ public class GPTConnector : MonoBehaviour
     {
         var parts = new List<string>(3);
         if (!string.IsNullOrEmpty(systemPrompt)) parts.Add(systemPrompt);
-        string phase = includePhase ? BuildSystemPromptForCurrentPhase() : null;
+        string phase = includePhase ? GetCurrentPhasePrompt() : null;
         if (!string.IsNullOrEmpty(phase)) parts.Add(phase);
         if (!string.IsNullOrEmpty(extra)) parts.Add(extra);
         string joined = string.Join("\n\n", parts);
@@ -182,10 +187,22 @@ public class GPTConnector : MonoBehaviour
     private string BuildPhaseOnlyInstructions(GameManager.GameState gs, string extra = null)
     {
         var parts = new List<string>(2);
-        string phaseText = PhaseText(gs);
+        string phaseText = GetPhasePrompt(gs);
         if (!string.IsNullOrEmpty(phaseText)) parts.Add(phaseText);
         if (!string.IsNullOrEmpty(extra)) parts.Add(extra);
         return ApplyLang(string.Join("\n\n", parts));
+    }
+
+    private string GetCurrentPhasePrompt()
+    {
+        if (usePhasePromptOverride) return phasePromptOverride ?? "";
+        return BuildSystemPromptForCurrentPhase();
+    }
+
+    private string GetPhasePrompt(GameManager.GameState gs)
+    {
+        if (usePhasePromptOverride) return phasePromptOverride ?? "";
+        return PhaseText(gs);
     }
 
     // ===== 为“指定相位”构造最终 instructions（用于预缓存） =====
@@ -510,6 +527,17 @@ public class GPTConnector : MonoBehaviour
 
     public void ClearHistory() => history.Clear();
     public void SetSystemPrompt(string prompt) { systemPrompt = prompt ?? ""; }
+    public void SetPhasePromptOverride(string prompt, bool enabled = true)
+    {
+        phasePromptOverride = prompt ?? "";
+        usePhasePromptOverride = enabled;
+    }
+
+    public void ClearPhasePromptOverride()
+    {
+        phasePromptOverride = "";
+        usePhasePromptOverride = false;
+    }
 
     // ========== HTTP ==========
     private IEnumerator SendTextRequest(string userInput)
@@ -1485,12 +1513,13 @@ public class GPTConnector : MonoBehaviour
     {
         switch (GameManager.eGameStatus)
         {
+            case GameManager.GameState.Intro: return PhaseText(GameManager.GameState.Intro);
             case GameManager.GameState.Interphase: return PhaseText(GameManager.GameState.Interphase);
             case GameManager.GameState.Prophase: return PhaseText(GameManager.GameState.Prophase);
             case GameManager.GameState.Metaphase: return PhaseText(GameManager.GameState.Metaphase);
             case GameManager.GameState.Anaphase: return PhaseText(GameManager.GameState.Anaphase);
             case GameManager.GameState.Telophase: return PhaseText(GameManager.GameState.Telophase);
-            default: return ""; // Intro/Reset/GameOver：仅用 systemPrompt
+            default: return ""; // Reset/GameOver：仅用 systemPrompt
         }
     }
 
