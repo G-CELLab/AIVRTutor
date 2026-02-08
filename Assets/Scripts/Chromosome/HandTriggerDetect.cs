@@ -13,53 +13,52 @@ public class HandTriggerDetect : MonoBehaviour
     public GameObject UI;
     public GameObject UIlocation;
 
+    bool isFinished = false;
+
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.tag == "Left" || other.gameObject.tag == "Right")
+        if (other.CompareTag("Left") || other.CompareTag("Right"))
         {
             triggerDetected = true;
-            Debug.Log("Trigger_Enter_Wound");
-        }
-    }
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.gameObject.tag == "Left" || other.gameObject.tag == "Right")
-        {
-            triggerDetected = false;
-            Debug.Log("Trigger_Exit_Wound");
         }
     }
 
-    private void Start()
+    private void OnTriggerExit(Collider other)
     {
-        //Debug.Log("PC");
+        if (other.CompareTag("Left") || other.CompareTag("Right"))
+        {
+            triggerDetected = false;
+            if (!isFinished)
+            {
+                timer = 0f;
+                lodingImg.fillAmount = 0f;
+            }
+        }
     }
 
     private void Update()
     {
-        if(triggerDetected == true)
+        if (triggerDetected && !isFinished)
         {
-            Timer();            
-        }
-        else
-        {
-            timer = 0f;
+            timer += Time.deltaTime;
+            lodingImg.fillAmount = timer / touchingTime;
+
+            if (timer > touchingTime)
+            {
+                isFinished = true;
+                if (gameManager != null)
+                {
+                    gameManager.Interphase();
+                    gameManager.proPhase = true; // Unlocks Condense logic
+                }
+
+                if (UI != null && UIlocation != null)
+                {
+                    UI.transform.position = UIlocation.transform.position;
+                    UI.transform.rotation = UIlocation.transform.rotation;
+                }
+                this.enabled = false;
+            }
         }
     }
-
-    void Timer()
-    {
-        timer += Time.deltaTime;
-        lodingImg.fillAmount = timer / touchingTime;
-
-        if (timer > touchingTime)
-        {
-            gameManager.Interphase();            
-            triggerDetected = false;
-            UI.transform.position = UIlocation.transform.position;
-            UI.transform.rotation = UIlocation.transform.rotation;
-        }
-    }
-    
-    
 }

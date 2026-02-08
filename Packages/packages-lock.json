@@ -73,7 +73,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ai.navigation": {
-      "version": "2.0.9",
+      "version": "2.0.10",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -114,7 +114,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.collab-proxy": {
-      "version": "2.11.2",
+      "version": "2.11.3",
       "depth": 0,
       "source": "registry",
       "dependencies": {},
@@ -152,7 +152,7 @@
       "dependencies": {}
     },
     "com.unity.ide.rider": {
-      "version": "3.0.38",
+      "version": "3.0.39",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -161,7 +161,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.visualstudio": {
-      "version": "2.0.26",
+      "version": "2.0.27",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -362,7 +362,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.management": {
-      "version": "4.5.3",
+      "version": "4.5.4",
       "depth": 0,
       "source": "registry",
       "dependencies": {
