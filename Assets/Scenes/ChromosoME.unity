@@ -1246,6 +1246,12 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 71969773}
   m_CullTransparentMesh: 0
+--- !u!4 &81613696 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 657184242118504721, guid: d6878e1999eb4b44a9f5a263af86c185,
+    type: 3}
+  m_PrefabInstance: {fileID: 2054342156}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &82717677
 GameObject:
   m_ObjectHideFlags: 0
@@ -3072,9 +3078,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea55a300def9fdf4e8b5e5c06045eca0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playIntroOnSceneLoad: 1
-  introDelaySec: 3
-  gptConnector: {fileID: 0}
   onIntro:
     m_PersistentCalls:
       m_Calls:
@@ -9488,8 +9491,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 883651984040249935}
+  m_Children: []
   m_Father: {fileID: 1345052472}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &628506231
@@ -20602,6 +20604,8 @@ MonoBehaviour:
     step when appropriate.'
   maxHistoryTurnsToSend: 15
   maxCharsBudget: 12000
+  usePhasePromptOverride: 0
+  phasePromptOverride: 
   preferModelAudio: 1
   gptVoice: alloy
   gptAudioFormat: wav
@@ -49305,7 +49309,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 657184242118504721, guid: d6878e1999eb4b44a9f5a263af86c185,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 883651984040249935}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 657184242118504722, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
@@ -51514,11 +51522,11 @@ Transform:
   m_GameObject: {fileID: 883651984040249934}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.016, y: -0.063, z: 0.041}
+  m_LocalPosition: {x: 0.012001038, y: -0.06383991, z: 0.04499817}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 628506230}
+  m_Father: {fileID: 81613696}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &914982639294160699
 MonoBehaviour:
