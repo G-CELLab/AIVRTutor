@@ -14,6 +14,14 @@ public class Copy_Tutorial : MonoBehaviour
 
     private void Update()
     {
+        if (tutorialManager != null && tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.CopyTutorial)
+        {
+            timeTracker = 0f;
+            oneTimeOperator = false;
+            handTouchingDetect = false;
+            return;
+        }
+
         distanceBetweenObjects = Vector3.Distance(transform.position, obj.transform.position);
         //Debug.DrawLine(transform.position, obj.transform.position, Color.green);
 
@@ -24,7 +32,10 @@ public class Copy_Tutorial : MonoBehaviour
             {
                 //this.gameObject.GetComponent<BoxCollider>().enabled = false;
                 oneTimeOperator = true;
-                tutorialManager.tutorial_stage++;
+                if (tutorialManager != null)
+                {
+                    tutorialManager.RegisterCopyComplete();
+                }
             }
         }
         else

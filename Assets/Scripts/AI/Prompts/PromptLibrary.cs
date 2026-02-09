@@ -104,9 +104,8 @@ namespace AI.Prompts
             "Welcome the student and explain the learning objectives.",
             "- The arm wound (the problem they will solve by learning about mitosis)",
             "1. Greet the student and introduce yourself as their tutor\n" +
-            "2. Briefly explain that they'll be learning about mitosis, the process of cell division, to help heal the arm wound\n" +
-            "3. Give a quick overview of the phases they'll go through",
-            "Hi there! I'm your AI Tutor, here to guide you through an exciting journey inside a cell to learn about mitosis—the process cells use to divide and heal wounds like yours! We'll explore different phases of mitosis together, and by the end, you'll understand how your body repairs itself at a cellular level. Let's get started!",
+            "2. Briefly explain that they'll be learning about mitosis, the process of cell division, to help heal the arm wound\n",
+            "Hi there! I'm your AI Tutor, here to guide you through an exciting journey inside a cell to learn about mitosis—the process cells use to divide and heal wounds like yours! We'll explore different phases of mitosis together, and by the end, you'll understand how your body repairs itself at a cellular level. Touch the arm wound to get started!",
             "- 'What are we doing here?' → 'We're going to learn about mitosis, which is how your body heals wounds by making new cells!'\n" +
             HelpfulAnalogyHeader);
 

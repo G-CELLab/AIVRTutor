@@ -6,11 +6,14 @@ using UnityEngine.UI;
 public class Grab_Tutorial : MonoBehaviour
 {
     public GameObject grabPosition;
+    public GameObject nextTarget;
     public Image lodingImg;
     public Manager_Tutorial tutorialManager;
     public float touchingTime = 3.0f;
     float timer = 0.0f;
     bool triggerDetected = false;
+    bool completed = false;
+    public bool isFirstTarget = true;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -36,6 +39,17 @@ public class Grab_Tutorial : MonoBehaviour
 
     private void Update()
     {
+        if (tutorialManager != null && tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.GrabTutorial)
+        {
+            timer = 0f;
+            return;
+        }
+
+        if (completed)
+        {
+            return;
+        }
+
         if (triggerDetected == true)
         {
             Timer();
@@ -53,9 +67,33 @@ public class Grab_Tutorial : MonoBehaviour
 
         if (timer > touchingTime)
         {
-            grabPosition.SetActive(false);
-            //touchSphere.GetComponent<Renderer>().material.color = new Color(1, 255, 1);
-            tutorialManager.tutorial_stage++;
+            completed = true;
+
+            if (isFirstTarget)
+            {
+                if (nextTarget != null)
+                {
+                    GameObject targetToDisable = grabPosition != null ? grabPosition : gameObject;
+                    if (nextTarget.transform.IsChildOf(targetToDisable.transform))
+                    {
+                        nextTarget.transform.SetParent(targetToDisable.transform.parent, true);
+                    }
+
+                    targetToDisable.SetActive(false);
+                    nextTarget.SetActive(true);
+                }
+                else
+                {
+                    GameObject targetToDisable = grabPosition != null ? grabPosition : gameObject;
+                    targetToDisable.SetActive(false);
+                }
+            }
+            else if (tutorialManager != null)
+            {
+                GameObject targetToDisable = grabPosition != null ? grabPosition : gameObject;
+                targetToDisable.SetActive(false);
+                tutorialManager.AdvanceStage();
+            }
             //SceneManager.LoadScene("ChromosoME");
         }
     }

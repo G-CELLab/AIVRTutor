@@ -12,6 +12,7 @@ public class Touch_Tutorial : MonoBehaviour
     public float touchingTime = 3.0f;
     float timer = 0.0f;
     bool triggerDetected = false;
+    bool completed = false;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -37,6 +38,17 @@ public class Touch_Tutorial : MonoBehaviour
 
     private void Update()
     {
+        if (tutorialManager != null && tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.TouchStage)
+        {
+            timer = 0f;
+            return;
+        }
+
+        if (completed)
+        {
+            return;
+        }
+
         if (triggerDetected == true)
         {
             Timer();
@@ -56,7 +68,11 @@ public class Touch_Tutorial : MonoBehaviour
         {
             touchSphere.SetActive(false);
             //touchSphere.GetComponent<Renderer>().material.color = new Color(1, 255, 1);
-            tutorialManager.tutorial_stage++;
+            if (tutorialManager != null)
+            {
+                completed = true;
+                tutorialManager.RegisterTouchComplete();
+            }
             
         }
     }
