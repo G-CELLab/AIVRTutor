@@ -44,7 +44,7 @@ public class TTSAnimatorDriver : MonoBehaviour
 
     void Awake()
     {
-        if (!tts) tts = FindObjectOfType<TextToSpeechPlayer>();
+        if (!tts) tts = FindAnyObjectByType<TextToSpeechPlayer>();
         if (!animator) animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>(true);
         if (!animator) { Debug.LogError("[TTSAnimatorDriver] ❌ 没有 Animator"); enabled = false; return; }
 

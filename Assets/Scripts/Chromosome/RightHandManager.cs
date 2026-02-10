@@ -1,33 +1,46 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.XR; // Standard XR namespace
+using UnityEngine.XR.Hands;
 
 public class RightHandManager : MonoBehaviour
 {
     public bool isGrabbed_right = false;
-    private InputDevice rightHandDevice;
+    private XRHandSubsystem m_HandSubsystem;
 
     void Update()
     {
-        if (!rightHandDevice.isValid)
+        if (m_HandSubsystem == null || !m_HandSubsystem.running)
         {
-            InitializeDevice();
+            var subsystems = new List<XRHandSubsystem>();
+            SubsystemManager.GetSubsystems(subsystems);
+            foreach (var s in subsystems)
+            {
+                if (s.running)
+                {
+                    m_HandSubsystem = s;
+                    Debug.Log("Right XR Hand Subsystem found and running.");
+                    break;
+                }
+            }
             return;
         }
 
-        // In Unity 6, hand-tracking pinch is often mapped to 'Trigger' or 'Pinch' 
-        // usage on the hand device.
-        if (rightHandDevice.TryGetFeatureValue(CommonUsages.trigger, out float triggerValue))
-        {
-            isGrabbed_right = triggerValue > 0.8f;
-        }
-    }
+        var hand = m_HandSubsystem.rightHand;
 
-    void InitializeDevice()
-    {
-        var devices = new List<InputDevice>();
-        InputDevices.GetDevicesWithCharacteristics(InputDeviceCharacteristics.Right | InputDeviceCharacteristics.HandTracking, devices);
-        if (devices.Count > 0) rightHandDevice = devices[0];
+        if (hand.isTracked)
+        {
+            var thumbTip = hand.GetJoint(XRHandJointID.ThumbTip);
+            var indexTip = hand.GetJoint(XRHandJointID.IndexTip);
+
+            if (thumbTip.TryGetPose(out Pose thumbPose) && indexTip.TryGetPose(out Pose indexPose))
+            {
+                float distance = Vector3.Distance(thumbPose.position, indexPose.position);
+                isGrabbed_right = distance < 0.03f;
+            }
+        }
+        else
+        {
+            isGrabbed_right = false;
+        }
     }
 }

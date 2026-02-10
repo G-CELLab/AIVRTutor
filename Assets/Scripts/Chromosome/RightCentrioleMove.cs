@@ -1,32 +1,32 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class RightCentrioleMove : MonoBehaviour
 {
+    [Header("Movement")]
     public Transform endLocation;
+    private float timer = 0f;
+    private float startDelay = 3.0f;
+
+    [Header("State")]
     public bool lineConnectingR = false;
     public bool touchedR = false;
 
-    //private float speed = 0.002f;
-    private float timer = 0f;
-    private float startDelay = 3.0f;
-    //private float startTime;
-    //private float journeyLength;
+    [Header("Connections")]
     private LineRenderer lineRenderer;
     [SerializeField] GameObject target;
     [SerializeField] GameObject finalTarget;
     public Centrosome_Hand hand;
 
-
     void Start()
     {
-        // Keep a note of the time the movement started.
-        //startTime = Time.time;
+        lineRenderer = GetComponent<LineRenderer>();
 
-        // Calculate the journey length.
-        //journeyLength = Vector3.Distance(this.transform.position, endLocation.position);
-        lineRenderer = this.GetComponent<LineRenderer>();
+        if (GetComponent<Rigidbody>() == null)
+        {
+            Rigidbody rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
     }
 
     void Update()
@@ -37,42 +37,46 @@ public class RightCentrioleMove : MonoBehaviour
             if (timer > startDelay)
             {
                 transform.position = Vector3.Lerp(this.transform.position, endLocation.position, 0.01f);
-
-                if (timer > 10f)
-                    return;
+                if (timer > 10f) return;
             }
         }
-        if (lineConnectingR == true && touchedR == true && hand.R_handTouched == false)
+
+        // Draw Spindle Fibers
+        if (lineConnectingR && touchedR && hand.R_handTouched == false)
         {
-            lineRenderer.material.color = Color.yellow;
-            lineRenderer.SetPosition(0, this.transform.position);
+            lineRenderer.SetPosition(0, transform.position);
             lineRenderer.SetPosition(1, target.transform.position);
         }
-        else if (hand.R_handTouched == true)
+        else if (hand.R_handTouched)
         {
-            //Debug.Log("NoWay!");
-            timer = 0f;
-            lineConnectingR = false;
-            touchedR = false;
-            lineRenderer.material.color = Color.yellow;
-            lineRenderer.SetPosition(0, this.transform.position);
+            lineRenderer.SetPosition(0, transform.position);
             lineRenderer.SetPosition(1, finalTarget.transform.position);
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.tag == "Finish")
+        // 1. Reached the pole
+        if (other.CompareTag("Finish"))
         {
-            this.gameObject.GetComponent<BoxCollider>().enabled = true;
-            this.gameObject.GetComponentInChildren<CapsuleCollider>().enabled = true;
             lineConnectingR = true;
-            //Debug.Log("Finish");
+            if (GetComponent<BoxCollider>()) GetComponent<BoxCollider>().enabled = true;
         }
-        else if (other.gameObject.tag == "Right" && lineConnectingR == true)
+
+        // 2. Either hand touches the centriole
+        if ((other.CompareTag("Left") || other.CompareTag("Right")) && lineConnectingR)
         {
+            if (hand.R_handTouched) return; // Already locked
+
             touchedR = true;
-            //Debug.Log("RightTouch");
+            if (hand != null) hand.R_handTouched = true;
+
+            // DISABLE INTERACTION IMMEDIATELY
+            if (GetComponent<BoxCollider>()) GetComponent<BoxCollider>().enabled = false;
+            CapsuleCollider child = GetComponentInChildren<CapsuleCollider>();
+            if (child) child.enabled = false;
+
+            Debug.Log("Right Centriole Locked and Interaction Disabled.");
         }
     }
 }

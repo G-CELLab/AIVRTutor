@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.Hands;
 
@@ -12,9 +11,17 @@ public class LeftHandManager : MonoBehaviour
     {
         if (m_HandSubsystem == null || !m_HandSubsystem.running)
         {
-            List<XRHandSubsystem> subsystems = new List<XRHandSubsystem>();
+            var subsystems = new List<XRHandSubsystem>();
             SubsystemManager.GetSubsystems(subsystems);
-            if (subsystems.Count > 0) m_HandSubsystem = subsystems[0];
+            foreach (var s in subsystems)
+            {
+                if (s.running)
+                {
+                    m_HandSubsystem = s;
+                    Debug.Log("Left XR Hand Subsystem found and running.");
+                    break;
+                }
+            }
             return;
         }
 
@@ -22,8 +29,15 @@ public class LeftHandManager : MonoBehaviour
 
         if (hand.isTracked)
         {
-            var pinch = hand.GetFingerPinch(HandFinger.Index);
-            isGrabbed_left = pinch.isPinching || pinch.pinchAmount > 0.8f;
+            var thumbTip = hand.GetJoint(XRHandJointID.ThumbTip);
+            var indexTip = hand.GetJoint(XRHandJointID.IndexTip);
+
+            if (thumbTip.TryGetPose(out Pose thumbPose) && indexTip.TryGetPose(out Pose indexPose))
+            {
+                float distance = Vector3.Distance(thumbPose.position, indexPose.position);
+                // Increased threshold slightly to 0.03f (3cm) for better reliability in VR
+                isGrabbed_left = distance < 0.03f;
+            }
         }
         else
         {
