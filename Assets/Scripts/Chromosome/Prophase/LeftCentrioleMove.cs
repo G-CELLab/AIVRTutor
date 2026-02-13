@@ -1,18 +1,17 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class LeftCentrioleMove : MonoBehaviour
 {
+    [Header("Movement")]
     public Transform endLocation;
+    private float timer = 0f;
+    private float startDelay = 3.0f;
+
+    [Header("State")]
     public bool lineConnectingL = false;
     public bool touchedL = false;
 
-    //private float speed = 0.002f;
-    private float timer = 0f;
-    private float startDelay = 3.0f;
-    //private float startTime;
-    //private float journeyLength;
+    [Header("Connections")]
     private LineRenderer lineRenderer;
     [SerializeField] GameObject target;
     [SerializeField] GameObject finalTarget;
@@ -20,12 +19,15 @@ public class LeftCentrioleMove : MonoBehaviour
 
     void Start()
     {
-        // Keep a note of the time the movement started.
-        //startTime = Time.time;
+        lineRenderer = GetComponent<LineRenderer>();
 
-        // Calculate the journey length.
-        //journeyLength = Vector3.Distance(this.transform.position, endLocation.position);
-        lineRenderer = this.GetComponent<LineRenderer>();
+        // Ensure Rigidbody exists for trigger detection
+        if (GetComponent<Rigidbody>() == null)
+        {
+            Rigidbody rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
     }
 
     void Update()
@@ -36,50 +38,47 @@ public class LeftCentrioleMove : MonoBehaviour
             if (timer > startDelay)
             {
                 transform.position = Vector3.Lerp(this.transform.position, endLocation.position, 0.01f);
-
-                if (lineConnectingL == true)
-                {
-                    timer = 0f;
-                    return;
-                }                    
+                if (timer > 10f) return;
             }
         }
-        if (lineConnectingL == true && touchedL == true && hand.L_handTouched == false)
+
+        // Draw Spindle Fibers
+        if (lineConnectingL && touchedL && hand.L_handTouched == false)
         {
-            lineRenderer.material.color = Color.yellow;
-            lineRenderer.SetPosition(0, this.transform.position);
+            lineRenderer.SetPosition(0, transform.position);
             lineRenderer.SetPosition(1, target.transform.position);
-            //Debug.Log("Shoot2");
-
         }
-
-        if (hand.L_handTouched == true)
+        else if (hand.L_handTouched)
         {
-            //Debug.Log(timer);
-            lineConnectingL = false;
-            touchedL = false;
-            lineRenderer.material.color = Color.yellow;
-            lineRenderer.SetPosition(0, this.transform.position);
+            lineRenderer.SetPosition(0, transform.position);
             lineRenderer.SetPosition(1, finalTarget.transform.position);
-            //Debug.Log("Shoot3");
         }
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.tag == "Finish")
+        // 1. Reached the pole
+        if (other.CompareTag("Finish"))
         {
-            this.gameObject.GetComponent<BoxCollider>().enabled = true;
-            this.gameObject.GetComponentInChildren<CapsuleCollider>().enabled = true;
             lineConnectingL = true;
-            Debug.Log("Centriole_Moved_To_Edges");
+            // Enable the collider to wait for the hand touch
+            if (GetComponent<BoxCollider>()) GetComponent<BoxCollider>().enabled = true;
         }
-        else if (other.gameObject.tag == "Left" && lineConnectingL == true)
-        {
-            touchedL = true;
-            //Debug.Log(touchedL);
 
+        // 2. Either hand touches the centriole
+        if ((other.CompareTag("Left") || other.CompareTag("Right")) && lineConnectingL)
+        {
+            if (hand.L_handTouched) return; // Already locked
+
+            touchedL = true;
+            if (hand != null) hand.L_handTouched = true;
+
+            // DISABLE INTERACTION IMMEDIATELY
+            if (GetComponent<BoxCollider>()) GetComponent<BoxCollider>().enabled = false;
+            CapsuleCollider child = GetComponentInChildren<CapsuleCollider>();
+            if (child) child.enabled = false;
+
+            Debug.Log("Left Centriole Locked and Interaction Disabled.");
         }
     }
-
 }

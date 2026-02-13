@@ -1,98 +1,120 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 public class AnimDNA_P : MonoBehaviour
 {
     Animator anim;
     float timer = 0f;
     float delayTimer = 0f;
-    //float timer2 = 0f;
     bool isDone = false;
-    //bool animPlay = false;
-    //bool turnOn = false;
     public GameManager gameManager;
-    public RightHandManager rightHandManager;
-    public LeftHandManager leftHandManager;
-    string newName = "Chromosome";
+    
+    // Selection tracking via XRI
+    private XRGrabInteractable grabInteractable;
 
     public GameObject text1;
     public GameObject text2;
 
+    [Header("Condense Settings")]
+    public float targetCondenseTime = 8.0f; // Increased from 6.0f to ensure full animation
+    public float prophaseStartDelay = 2.0f; 
+
     void Start()
     {
         anim = GetComponent<Animator>();
-    }
-
-    private void OnTriggerStay(Collider other)
-    {
-        if (other.CompareTag("Right") && rightHandManager.isGrabbed_right == true && isDone == false && GameManager.eGameStatus == GameManager.GameState.Prophase && delayTimer >= 6.0f)
+        grabInteractable = GetComponent<XRGrabInteractable>();
+        
+        // Fix levitation: Set to Instantaneous for hand tracking
+        if (grabInteractable != null)
         {
-            timer += Time.deltaTime;
-            anim.SetBool("isOpened", true);
-            anim.SetBool("isIdle", false);
-            //Debug.Log(isDone);
-            //Debug.Log(timer);
-            if (timer > 6.5f)
-            {
-                isDone = true;
-                Debug.Log("DNA_Condensed");
-                text1.SetActive(false);
-                text2.SetActive(true);
-                this.gameObject.name = newName;
-                gameManager.Metaphase();
-                //this.gameObject.name = new string(Chromosome);
-            }
-        }
-        else if (other.CompareTag("Left") && leftHandManager.isGrabbed_left == true && isDone == false && GameManager.eGameStatus == GameManager.GameState.Prophase && delayTimer >= 6.0f)
-        {
-            timer += Time.deltaTime;
-            anim.SetBool("isOpened", true);
-            anim.SetBool("isIdle", false);
-            //Debug.Log(isDone);
-            //Debug.Log(timer);
-            if (timer > 6.5f)
-            {
-                isDone = true;
-                Debug.Log("DNA_Condensed");
-                text1.SetActive(false);
-                text2.SetActive(true);
-                this.gameObject.name = newName;
-                gameManager.Metaphase();
-                //this.gameObject.name = new string(Chromosome);
-            }
+            grabInteractable.movementType = XRBaseInteractable.MovementType.Instantaneous;
+            grabInteractable.useDynamicAttach = true;
         }
     }
 
-    private void OnTriggerExit(Collider other)
+    void OnEnable()
     {
-        if (other.CompareTag("Right") && isDone == false && GameManager.eGameStatus == GameManager.GameState.Prophase)
-        {
-            timer = 0f;
-            anim.SetBool("isOpened", false);
-            anim.SetBool("isIdle", true);
-        }
-        else if (other.CompareTag("Left") && isDone == false && GameManager.eGameStatus == GameManager.GameState.Prophase)
-        {
-            timer = 0f;
-            anim.SetBool("isOpened", false);
-            anim.SetBool("isIdle", true);
-        }
+        // Reset progress when enabled
+        ResetState();
     }
-    
 
     void Update()
     {
-        if (GameManager.eGameStatus == GameManager.GameState.Prophase)
+        // Only handle condensation logic during Prophase
+        if (GameManager.eGameStatus != GameManager.GameState.Prophase) 
         {
-            delayTimer += Time.deltaTime;
+            // Reset logic: Only reset if we go back to Intro or Interphase
+            if (GameManager.eGameStatus == GameManager.GameState.Intro || 
+                GameManager.eGameStatus == GameManager.GameState.Interphase)
+            {
+                if (isDone || timer > 0 || delayTimer > 0) ResetState();
+            }
+            return;
+        }
+
+        if (isDone) return;
+
+        delayTimer += Time.deltaTime;
+        if (delayTimer < prophaseStartDelay) return;
+
+        // Check if being held
+        if (grabInteractable != null && grabInteractable.isSelected)
+        {
+            timer += Time.deltaTime;
+            
+            if (anim != null)
+            {
+                anim.SetBool("isOpened", true);
+                anim.SetBool("isIdle", false);
+            }
+
+            // Once the timer hits target, we are done.
+            if (timer >= targetCondenseTime)
+            {
+                CompleteCondensation();
+            }
+        }
+        else
+        {
+            // Reset animation if let go
+            if (anim != null)
+            {
+                anim.SetBool("isOpened", false);
+                anim.SetBool("isIdle", true);
+            }
+            
+            if (timer > 0) timer -= Time.deltaTime;
         }
     }
-    /*
-    void BoxTurnOn()
+
+    void ResetState()
     {
-        this.GetComponent<BoxCollider>().enabled = true;
-        turnOn = true;
+        isDone = false;
+        timer = 0f;
+        delayTimer = 0f;
+        if (anim != null)
+        {
+            anim.SetBool("isOpened", false);
+            anim.SetBool("isIdle", true);
+        }
     }
-    */
+
+    void CompleteCondensation()
+    {
+        if (isDone) return;
+        isDone = true;
+        
+        Debug.Log("DNA_Condensed successfully - Transitioning to Metaphase");
+        
+        if (text1 != null) text1.SetActive(false);
+        if (text2 != null) text2.SetActive(true);
+        
+        if (gameManager != null)
+        {
+            gameManager.Metaphase();
+        }
+    }
 }

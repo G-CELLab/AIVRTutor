@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -125,6 +125,38 @@ public class GameManager : MonoBehaviour
         eGameStatus = GameState.Telophase;
         onTelophase.Invoke();
         Debug.Log("Telophase");
+
+        // Rigorous cleanup of previous phase objects
+        CleanupPreviousPhases();
+    }
+
+    private void CleanupPreviousPhases()
+    {
+        // Disable individual objects by tag if they are in the scene
+        string[] tagsToDisable = { "Centrosome1", "Centrosome2", "Meta", "Pro", "Finish" };
+        foreach (string tag in tagsToDisable)
+        {
+            GameObject[] objs = GameObject.FindGameObjectsWithTag(tag);
+            foreach (var obj in objs)
+            {
+                obj.SetActive(false);
+            }
+        }
+
+        // We use Resources.FindObjectsOfTypeAll to find objects even if they are already partially disabled
+        GameObject[] allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        foreach (var obj in allObjects)
+        {
+            // Disable the DNA and any remaining chromatids
+            if (obj.name == "Player_DNA" || obj.name == "P_Chromotid_L " || obj.name == "P_Chromotid_R")
+            {
+                // Only disable objects that are actually in a scene (not prefabs in the project)
+                if (obj.scene.name != null) 
+                {
+                    obj.SetActive(false);
+                }
+            }
+        }
     }
 
     public void GameEnd()
