@@ -36,6 +36,12 @@ public class SceneChange_Tutorial : MonoBehaviour
 
     private void Update()
     {
+        if (tutorialManager != null && tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.Finish)
+        {
+            timer = 0f;
+            return;
+        }
+
         if (triggerDetected == true)
         {
             Timer();
@@ -55,7 +61,10 @@ public class SceneChange_Tutorial : MonoBehaviour
         {
             touchSphere.SetActive(false);
             //touchSphere.GetComponent<Renderer>().material.color = new Color(1, 255, 1);
-            tutorialManager.tutorial_stage++;
+            if (tutorialManager != null)
+            {
+                tutorialManager.GoToNextScene(1);
+            }
 
         }
     }

@@ -6,7 +6,18 @@ using UnityEngine.UI;
 
 public class Manager_Tutorial : MonoBehaviour
 {
-    public int tutorial_stage = 0;
+    public enum TutorialStage
+    {
+        TouchStage,
+        GrabTutorial,
+        CopyTutorial,
+        ContentQuestions,
+        VisualQuestions,
+        ManipulationQuestions,
+        Finish
+    }
+
+    [SerializeField] private TutorialStage tutorialStage = TutorialStage.TouchStage;
     public GameObject touch_Info;
     public GameObject grab_Info;
     public GameObject grab_Obj;
@@ -17,6 +28,13 @@ public class Manager_Tutorial : MonoBehaviour
     public GameObject copy_obj2;
     public GameObject copy_obj3;
     public GameObject copy_obj4;
+
+    [Header("Question Tutorial Objects")]
+    [Tooltip("Enable question tutorial stages")]
+    public bool enableQuestionTutorial = false;
+    public GameObject chromatid_Object;
+    public GameObject centriole_Object;
+    public GameObject chromosome_Object;
 
     public GameObject img_Touch;
     public GameObject img_Grab;
@@ -30,57 +48,288 @@ public class Manager_Tutorial : MonoBehaviour
     public SceneTransitionManager sceneTransition;
     //public string sceneName;
 
+    private TutorialStage lastStage = (TutorialStage)(-1);
+    [SerializeField] private int touchTargetsRequired = 3;
+    private int touchTargetsCompleted = 0;
+    [SerializeField] private int copyTargetsRequired = 2;
+    private int copyTargetsCompleted = 0;
+
+    public TutorialStage CurrentStage => tutorialStage;
+
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        ApplyStageState();
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (tutorial_stage == 3)
+        if (tutorialStage != lastStage)
         {
-            touch_Info.SetActive(false);
-            grab_Info.SetActive(true);
-            grab_Obj.SetActive(true);
-            grab_particle1.SetActive(true);
-            img_Touch.GetComponent<Image>().sprite = touch_comp;
-            img_Grab.SetActive(true);
+            ApplyStageState();
         }
-        else if (tutorial_stage == 4)
-        {
-            grab_particle2.SetActive(true);
-        }
-        else if (tutorial_stage == 5)
-        {
-            grab_Info.SetActive(false);
-            grab_Obj.SetActive(false);
-            copy_Info.SetActive(true);
-            copy_obj1.SetActive(true);
-            copy_obj2.SetActive(true);
-            img_Grab.GetComponent<Image>().sprite = grab_comp;
-            img_Duplicate.SetActive(true);
+    }
 
-        }
-        else if (tutorial_stage == 6)
+    public void AdvanceStage()
+    {
+        if (tutorialStage == TutorialStage.Finish)
         {
-            copy_obj1.SetActive(false);
-            copy_obj2.SetActive(false);
-            copy_obj3.SetActive(true);
-            copy_obj4.SetActive(true);
+            return;
         }
-        else if (tutorial_stage == 7)
+
+        tutorialStage = (TutorialStage)((int)tutorialStage + 1);
+        ApplyStageState();
+    }
+
+    public void RegisterTouchComplete()
+    {
+        if (tutorialStage != TutorialStage.TouchStage)
         {
-            copy_obj3.SetActive(false);
-            copy_obj4.SetActive(false);
-            img_Duplicate.GetComponent<Image>().sprite = duplicate_comp;
-            change_Scene.SetActive(true);
+            return;
         }
-        else if (tutorial_stage == 8)
+
+        touchTargetsCompleted++;
+        if (touchTargetsCompleted >= touchTargetsRequired)
         {
-            sceneTransition.GoToScene(1);
+            AdvanceStage();
+        }
+    }
+
+    public void RegisterCopyComplete()
+    {
+        if (tutorialStage != TutorialStage.CopyTutorial)
+        {
+            return;
+        }
+
+        copyTargetsCompleted++;
+        if (copyTargetsCompleted == 1 && copyTargetsRequired > 1)
+        {
+            SetActiveSafe(copy_obj1, false);
+            SetActiveSafe(copy_obj2, false);
+            SetActiveSafe(copy_obj3, true);
+            SetActiveSafe(copy_obj4, true);
+            return;
+        }
+
+        if (copyTargetsCompleted >= copyTargetsRequired)
+        {
+            if (enableQuestionTutorial)
+            {
+                AdvanceStage();
+            }
+            else
+            {
+                // Skip question stages, go directly to Finish
+                tutorialStage = TutorialStage.Finish;
+                ApplyStageState();
+            }
+        }
+    }
+
+    public void GoToNextScene(int sceneIndex)
+    {
+        if (tutorialStage != TutorialStage.Finish)
+        {
+            return;
+        }
+
+        if (sceneTransition != null)
+        {
+            sceneTransition.GoToScene(sceneIndex);
+        }
+    }
+
+    private void ApplyStageState()
+    {
+        lastStage = tutorialStage;
+        Debug.Log($"[Tutorial] Stage changed to: {tutorialStage}");
+
+        switch (tutorialStage)
+        {
+            case TutorialStage.TouchStage:
+                touchTargetsCompleted = 0;
+                SetActiveSafe(touch_Info, true);
+                SetActiveSafe(grab_Info, false);
+                SetActiveSafe(grab_Obj, false);
+                SetActiveSafe(grab_particle1, false);
+                SetActiveSafe(grab_particle2, false);
+                SetActiveSafe(copy_Info, false);
+                SetActiveSafe(copy_obj1, false);
+                SetActiveSafe(copy_obj2, false);
+                SetActiveSafe(copy_obj3, false);
+                SetActiveSafe(copy_obj4, false);
+                SetActiveSafe(img_Touch, true);
+                SetActiveSafe(img_Grab, false);
+                SetActiveSafe(img_Duplicate, false);
+                SetActiveSafe(chromatid_Object, false);
+                SetActiveSafe(centriole_Object, false);
+                SetActiveSafe(chromosome_Object, false);
+                SetActiveSafe(change_Scene, false);
+                break;
+            case TutorialStage.GrabTutorial:
+                SetActiveSafe(touch_Info, false);
+                SetActiveSafe(grab_Info, true);
+                SetActiveSafe(grab_Obj, true);
+                SetActiveSafe(grab_particle1, true);
+                SetActiveSafe(grab_particle2, false);
+                SetImageSpriteSafe(img_Touch, touch_comp);
+                SetActiveSafe(img_Grab, true);
+                break;
+            case TutorialStage.CopyTutorial:
+                copyTargetsCompleted = 0;
+                SetActiveSafe(grab_Info, false);
+                SetActiveSafe(grab_Obj, false);
+                SetActiveSafe(grab_particle1, false);
+                SetActiveSafe(grab_particle2, false);
+                SetActiveSafe(copy_Info, true);
+                SetActiveSafe(copy_obj1, true);
+                SetActiveSafe(copy_obj2, true);
+                SetActiveSafe(copy_obj3, false);
+                SetActiveSafe(copy_obj4, false);
+                SetImageSpriteSafe(img_Grab, grab_comp);
+                SetActiveSafe(img_Duplicate, true);
+                SetActiveSafe(chromatid_Object, false);
+                SetActiveSafe(centriole_Object, false);
+                SetActiveSafe(chromosome_Object, false);
+                break;
+            case TutorialStage.ContentQuestions:
+                SetActiveSafe(copy_Info, false);
+                SetActiveSafe(copy_obj1, false);
+                SetActiveSafe(copy_obj2, false);
+                SetActiveSafe(copy_obj3, false);
+                SetActiveSafe(copy_obj4, false);
+                SetActiveSafe(grab_particle1, false);
+                SetActiveSafe(grab_particle2, false);
+                SetActiveSafe(chromatid_Object, true);
+                SetActiveSafe(centriole_Object, false);
+                SetActiveSafe(chromosome_Object, false);
+                SetActiveSafe(change_Scene, false);
+                break;
+            case TutorialStage.VisualQuestions:
+                SetActiveSafe(chromatid_Object, false);
+                SetActiveSafe(centriole_Object, true);
+                SetActiveSafe(chromosome_Object, true);
+                SetActiveSafe(change_Scene, false);
+                break;
+            case TutorialStage.ManipulationQuestions:
+                SetActiveSafe(chromatid_Object, false);
+                SetActiveSafe(centriole_Object, true);
+                SetActiveSafe(chromosome_Object, false);
+                SetActiveSafe(change_Scene, false);
+                break;
+            case TutorialStage.Finish:
+                SetActiveSafe(copy_Info, false);
+                SetActiveSafe(copy_obj1, false);
+                SetActiveSafe(copy_obj2, false);
+                SetActiveSafe(copy_obj3, false);
+                SetActiveSafe(copy_obj4, false);
+                SetActiveSafe(grab_particle1, false);
+                SetActiveSafe(grab_particle2, false);
+                SetActiveSafe(chromatid_Object, false);
+                SetActiveSafe(centriole_Object, false);
+                SetActiveSafe(chromosome_Object, false);
+                SetImageSpriteSafe(img_Duplicate, duplicate_comp);
+                SetActiveSafe(change_Scene, true);
+                break;
+        }
+    }
+
+    public void RegisterContentQuestionComplete()
+    {
+        if (tutorialStage != TutorialStage.ContentQuestions)
+        {
+            return;
+        }
+
+        AdvanceStage();
+    }
+
+    public void RegisterVisualQuestionComplete()
+    {
+        if (tutorialStage != TutorialStage.VisualQuestions)
+        {
+            return;
+        }
+
+        AdvanceStage();
+    }
+
+    public void RegisterManipulationQuestionComplete()
+    {
+        if (tutorialStage != TutorialStage.ManipulationQuestions)
+        {
+            return;
+        }
+
+        AdvanceStage();
+    }
+
+    private void SetActiveSafe(GameObject target, bool active)
+    {
+        if (target != null)
+        {
+            // First, ensure all parents are active
+            if (active)
+            {
+                EnsureParentChainActive(target.transform);
+            }
+            
+            target.SetActive(active);
+            
+            if (active)
+            {
+                // Verify it actually became active
+                if (!target.activeInHierarchy)
+                {
+                    Debug.LogError($"[Tutorial] {target.name} is still inactive! Check for inactive parents.");
+                }
+                else
+                {
+                    Debug.Log($"[Tutorial] Successfully activated {target.name}");
+                    Debug.Log($"  Position: {target.transform.position}");
+                    Debug.Log($"  Scale: {target.transform.localScale}");
+                }
+            }
+            else
+            {
+                Debug.Log($"[Tutorial] Deactivated {target.name}");
+            }
+        }
+        else if (active)
+        {
+            Debug.LogWarning($"[Tutorial] Attempted to activate a NULL GameObject. Check Inspector assignments!");
+        }
+    }
+
+    private void EnsureParentChainActive(Transform transform)
+    {
+        if (transform.parent != null)
+        {
+            // Recursively ensure all parents are active
+            EnsureParentChainActive(transform.parent);
+            
+            if (!transform.parent.gameObject.activeSelf)
+            {
+                Debug.Log($"[Tutorial] Activating parent: {transform.parent.name}");
+                transform.parent.gameObject.SetActive(true);
+            }
+        }
+    }
+
+    private void SetImageSpriteSafe(GameObject target, Sprite sprite)
+    {
+        if (target == null || sprite == null)
+        {
+            return;
+        }
+
+        Image image = target.GetComponent<Image>();
+        if (image != null)
+        {
+            image.sprite = sprite;
         }
     }
 }

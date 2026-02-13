@@ -1122,9 +1122,13 @@ public class GPTConnector : MonoBehaviour
     }
 
     // ========= 仅基于“助理字幕/文本”的 4 个动作（延时触发实现） =========
+    public event Action<string> OnAssistantTranscript;
+
     private void TryFireFromAssistantTranscript(string transcript)
     {
-        if (ttsDriver == null || string.IsNullOrWhiteSpace(transcript)) return;
+        if (string.IsNullOrWhiteSpace(transcript)) return;
+        OnAssistantTranscript?.Invoke(transcript);
+        if (ttsDriver == null) return;
         string t = Normalize(transcript); // 去标点/小写/压空白
 
         switch (GameManager.eGameStatus)

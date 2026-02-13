@@ -57,7 +57,7 @@ namespace AI.Prompts
         private const string HelpfulAnalogyHeader = "HELPFUL ANALOGY:";
         private const string CommonQuestionsHeader = "COMMON QUESTIONS:";
 
-        private static string BuildPhase(
+        internal static string BuildPhase(
             string phaseName,
             string goal,
             string keyObjects,
@@ -104,26 +104,10 @@ namespace AI.Prompts
             "Welcome the student and explain the learning objectives.",
             "- The arm wound (the problem they will solve by learning about mitosis)",
             "1. Greet the student and introduce yourself as their tutor\n" +
-            "2. Briefly explain that they'll be learning about mitosis, the process of cell division, to help heal the arm wound\n" +
-            "3. Give a quick overview of the phases they'll go through",
-            "Hi there! I'm your AI Tutor, here to guide you through an exciting journey inside a cell to learn about mitosis—the process cells use to divide and heal wounds like yours! We'll explore different phases of mitosis together, and by the end, you'll understand how your body repairs itself at a cellular level. Let's get started!",
+            "2. Briefly explain that they'll be learning about mitosis, the process of cell division, to help heal the arm wound\n",
+            "Hi there! I'm your AI Tutor, here to guide you through an exciting journey inside a cell to learn about mitosis—the process cells use to divide and heal wounds like yours! We'll explore different phases of mitosis together, and by the end, you'll understand how your body repairs itself at a cellular level. Touch the arm wound to get started!",
             "- 'What are we doing here?' → 'We're going to learn about mitosis, which is how your body heals wounds by making new cells!'\n" +
             HelpfulAnalogyHeader);
-
-// Place holder (change)
-        public static string Tutorial = BuildPhase( 
-            "Tutorial",
-            "Teach the student how to interact in the tutorial area before entering the cell.",
-            "- The hand wound touch sphere\n" +
-            "- Grab objects for practice\n" +
-            "- Duplicate object pair",
-            "1. Touch and hold the sphere on the hand for 3 seconds\n" +
-            "2. Grab the highlighted object and move it to the target\n" +
-            "3. Duplicate the object by pulling one copy away and holding it there",
-            "Keep guidance focused on the current tutorial step. If they ask for help, point them to the on-screen panels and give a short reminder.",
-            "- 'What do I do first?' → 'Touch and hold the sphere on your hand for a few seconds.'\n" +
-            "- 'How do I grab it?' → 'Reach out and use the grab control to pick it up.'\n" +
-            "- 'How do I duplicate it?' → 'Move one copy away and hold it there for a moment.'");
 
         public static string Interphase = BuildPhase(
             "Interphase",
