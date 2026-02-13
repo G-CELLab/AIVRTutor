@@ -5158,23 +5158,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 424960802}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &426119217
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 919132149123411715}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f273db3a170bac74db6ea4007e4e58fd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  lodingImg: {fileID: 744149392}
-  gameManager: {fileID: 256867758}
-  touchingTime: 3
-  UI: {fileID: 0}
-  UIlocation: {fileID: 0}
 --- !u!65 &426119218
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6844,15 +6827,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c8d3f15ec286774b9a8515b7d937e28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  leftHand: {fileID: 1379261226}
-  rightHand: {fileID: 865626579}
-  prophaseDNA: {fileID: 0}
-  targetAreaObject: {fileID: 0}
-  timer: 0
-  targetTime: 3
-  areaRadius: 0.5
-  sliderImg: {fileID: 2080670338}
-  dnaAnimator: {fileID: 0}
 --- !u!1 &510729749
 GameObject:
   m_ObjectHideFlags: 0
@@ -12815,9 +12789,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 865626577}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 733ae705b5106ae4cb28297870ad06e5, type: 3}
+  m_Script: {fileID: 11500000, guid: 2a1b551c9d5eed94ababb44769c80ec0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Assembly-CSharp::RightHandManager
   isGrabbed_right: 0
   handInteractor: {fileID: 852775122}
 --- !u!64 &877523556
@@ -20238,9 +20212,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1379261224}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7cbb0ed9c3467ab4babf94596b5a8ad3, type: 3}
+  m_Script: {fileID: 11500000, guid: b541c5d7183e6114889e25d43310b762, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Assembly-CSharp::LeftHandManager
   isGrabbed_left: 0
   handInteractor: {fileID: 846178712}
 --- !u!1 &1411262053
@@ -20495,6 +20469,8 @@ MonoBehaviour:
     of our current learning goal. You can ask a real teacher about that.\u201D"
   maxHistoryTurnsToSend: 15
   maxCharsBudget: 12000
+  usePhasePromptOverride: 0
+  phasePromptOverride: 
   preferModelAudio: 1
   gptVoice: alloy
   gptAudioFormat: wav
@@ -20502,10 +20478,14 @@ MonoBehaviour:
   englishDirective: 'Always speak and write in clear, natural English. '
   speechRecognizer: {fileID: 1434790983}
   pendingUserPrompt: 
+  realtimeSilenceTimeoutSec: 30
+  minCharsForTts: 30
   verboseDebug: 1
   dumpResponsesToFile: 1
   debugLogInterval: 0.25
   maxLogChars: 600
+  logTokenBreakdown: 1
+  omitPhaseFromInstructionsWhenPinned: 1
   delayFirstGroupSec: 5
   delaySecondGroupSec: 3
   delayThirdGroupSec: 2.5
@@ -51278,8 +51258,7 @@ GameObject:
   m_Component:
   - component: {fileID: 543450653596595641}
   - component: {fileID: 426119218}
-  - component: {fileID: 426119217}
-  - component: {fileID: 919132149123411716}
+  - component: {fileID: 919132149123411717}
   m_Layer: 0
   m_Name: Wound
   m_TagString: Wound
@@ -51287,33 +51266,23 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!54 &919132149123411716
-Rigidbody:
+--- !u!114 &919132149123411717
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 919132149123411715}
-  serializedVersion: 5
-  m_Mass: 1
-  m_LinearDamping: 0
-  m_AngularDamping: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cccc5fc15ca97945835c264e6dd4caf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HandTriggerDetect
+  lodingImg: {fileID: 744149392}
+  gameManager: {fileID: 256867758}
+  touchingTime: 3
+  UI: {fileID: 465860092}
+  UIlocation: {fileID: 963651619}
 --- !u!33 &1042724703030347458
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -52508,12 +52477,12 @@ PrefabInstance:
         type: 3}
       propertyPath: leftHandManager
       value: 
-      objectReference: {fileID: 1379261226}
+      objectReference: {fileID: 0}
     - target: {fileID: 6607898274604311376, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
       propertyPath: rightHandManager
       value: 
-      objectReference: {fileID: 865626579}
+      objectReference: {fileID: 0}
     - target: {fileID: 6820183113917757535, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
       propertyPath: target
@@ -52698,12 +52667,12 @@ PrefabInstance:
         type: 3}
       propertyPath: leftHandManager
       value: 
-      objectReference: {fileID: 1379261226}
+      objectReference: {fileID: 0}
     - target: {fileID: 8849930187908480507, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
       propertyPath: rightHandManager
       value: 
-      objectReference: {fileID: 865626579}
+      objectReference: {fileID: 0}
     - target: {fileID: 8914705369539077770, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
       propertyPath: m_Enabled
