@@ -71,11 +71,11 @@ public class TutorialPromptStageController : MonoBehaviour
         switch (stage)
         {
             case Manager_Tutorial.TutorialStage.ContentQuestions:
-                return "Greet the student and introduce the content question tutorial phase.";
+                return "Start speaking now. Explain that this phase teaches how to ask content knowledge questions. Give a brief example like: 'What does chromatid mean?' and ask the learner to try one.";
             case Manager_Tutorial.TutorialStage.VisualQuestions:
-                return "Greet the student and introduce the visual reference question tutorial phase.";
+                return "Start speaking now. Say: 'The next kind of question to learn is visual reference questions.' Briefly explain these connect biology terms to objects they can see. Give an example like: 'Which object here is the chromosome?' and ask them to try one.";
             case Manager_Tutorial.TutorialStage.ManipulationQuestions:
-                return "Greet the student and introduce the manipulation question tutorial phase.";
+                return "Start speaking now. Say: 'The next kind of question to learn is manipulation and instruction questions.' Briefly explain these are for asking what to do next. Give an example like: 'What should I do next?' and ask them to try one.";
             default:
                 return "Hello! How can I help you?";
         }

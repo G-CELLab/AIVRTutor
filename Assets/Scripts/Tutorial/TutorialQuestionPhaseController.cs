@@ -16,9 +16,13 @@ public class TutorialQuestionPhaseController : MonoBehaviour
     public float pulseDuration = 1.0f;
     public float pulseScaleMultiplier = 1.15f;
     public float visualAdvanceDelay = 1.0f;
+    [Tooltip("Maximum seconds to wait for AI speech to finish before advancing")]
+    public float maxWaitForSpeechEnd = 12.0f;
 
     private Coroutine pulseRoutine;
     private bool awaitingVisualAdvance;
+    private bool awaitingContentAdvance;
+    private bool awaitingManipulationAdvance;
 
     private void OnEnable()
     {
@@ -48,9 +52,14 @@ public class TutorialQuestionPhaseController : MonoBehaviour
 
         if (stage == Manager_Tutorial.TutorialStage.ContentQuestions)
         {
-            if (ContainsPhrase(normalized, "that was a content question"))
+            if (ContainsPhrase(normalized, "that was a content question") && !awaitingContentAdvance)
             {
-                tutorialManager.RegisterContentQuestionComplete();
+                awaitingContentAdvance = true;
+                StartCoroutine(AdvanceWhenReady(0f, () =>
+                {
+                    awaitingContentAdvance = false;
+                    tutorialManager.RegisterContentQuestionComplete();
+                }));
             }
             return;
         }
@@ -66,25 +75,44 @@ public class TutorialQuestionPhaseController : MonoBehaviour
                     StartPulse(target);
                 }
                 awaitingVisualAdvance = true;
-                StartCoroutine(AdvanceAfterDelay(delay));
+                StartCoroutine(AdvanceWhenReady(delay, () =>
+                {
+                    awaitingVisualAdvance = false;
+                    tutorialManager.RegisterVisualQuestionComplete();
+                }));
             }
             return;
         }
 
         if (stage == Manager_Tutorial.TutorialStage.ManipulationQuestions)
         {
-            if (ContainsPhrase(normalized, "that was a manipulation question"))
+            if (ContainsPhrase(normalized, "that was a manipulation question") && !awaitingManipulationAdvance)
             {
-                tutorialManager.RegisterManipulationQuestionComplete();
+                awaitingManipulationAdvance = true;
+                StartCoroutine(AdvanceWhenReady(0f, () =>
+                {
+                    awaitingManipulationAdvance = false;
+                    tutorialManager.RegisterManipulationQuestionComplete();
+                }));
             }
         }
     }
 
-    private IEnumerator AdvanceAfterDelay(float delay)
+    private IEnumerator AdvanceWhenReady(float delay, System.Action onAdvance)
     {
-        yield return new WaitForSeconds(delay);
-        awaitingVisualAdvance = false;
-        tutorialManager.RegisterVisualQuestionComplete();
+        if (delay > 0f)
+        {
+            yield return new WaitForSeconds(delay);
+        }
+
+        float elapsed = 0f;
+        while (gptConnector != null && gptConnector.IsAgentBusy && elapsed < maxWaitForSpeechEnd)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        onAdvance?.Invoke();
     }
 
     private Transform ResolveVisualTarget(string normalized)
