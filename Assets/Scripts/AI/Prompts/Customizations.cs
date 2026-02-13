@@ -46,8 +46,7 @@ namespace AI.Prompts
         public static int PrefixPaddingMs = 250;
 
         // ===== Response Behavior =====
-        // Response length (max tokens for GPT output) - ~100 tokens ≈ 20 seconds of speech
-        public static int DefaultMaxOutputTokens = 500;
+        public static int DefaultMaxOutputTokens = 600;
         // Temperature (0.0 = precise, 1.0 = creative)
         public static float DefaultTemperature = 0.8f;
 

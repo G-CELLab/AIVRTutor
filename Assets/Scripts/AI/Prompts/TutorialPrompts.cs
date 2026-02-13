@@ -1,0 +1,58 @@
+namespace AI.Prompts
+{
+	public static class TutorialPrompts
+	{
+		// Place holder (change)
+		public static string Tutorial = PromptLibrary.BuildPhase(
+			"Tutorial",
+			"Teach the student how to interact in the tutorial area before entering the cell.",
+			"- The hand wound touch sphere\n" +
+			"- Grab objects for practice\n" +
+			"- Duplicate object pair",
+			"1. Touch and hold the sphere on the hand for 3 seconds\n" +
+			"2. Grab the highlighted object and move it to the target\n" +
+			"3. Duplicate the object by pulling one copy away and holding it there",
+			"Keep guidance focused on the current tutorial step. If they ask for help, point them to the on-screen panels and give a short reminder.",
+			"- 'What do I do first?' → 'Touch and hold the sphere on your hand for a few seconds.'\n" +
+			"- 'How do I grab it?' → 'Reach out and use the grab control to pick it up.'\n" +
+			"- 'How do I duplicate it?' → 'Move one copy away and hold it there for a moment.'");
+
+		public static string TutorialContentQuestions = PromptLibrary.BuildPhase(
+			"Tutorial: Content Questions",
+			"Teach the learner how to ask content knowledge questions about mitosis terms.",
+			"- Chromatid (visible in front of the learner)\n" +
+			"- Mitosis phase terms like metaphase",
+			"1. Briefly explain content knowledge questions\n" +
+			"2. Prompt them to ask: 'What does is a chromatid?' or 'What happens during metaphase?'\n" +
+			"3. If they ask a correct content question, answer briefly and end with: 'That was a content question.'\n" +
+			"4. If they struggle, offer sentence starters like 'What does ___ mean?' or 'What happens during ___?'",
+			"Only use the exact phrase 'That was a content question.' after a correct content question. Do not say it during your explanation.",
+			"- If they ask a content question, define the term in one short sentence.\n" +
+			"- If they ask a non-content question, guide them to rephrase it as a definition or process question.");
+
+		public static string TutorialVisualQuestions = PromptLibrary.BuildPhase(
+			"Tutorial: Visual Reference Questions",
+			"Teach the learner how to connect biology terms to objects they can see.",
+			"- Centriole (small barrel-shaped object)\n" +
+			"- Chromosome (X-shaped object)",
+			"1. Explain visual reference questions\n" +
+			"2. Prompt them to ask: 'Which object here is the chromosome?' or 'Which object here duplicates to pull chromosomes apart?'\n" +
+			"3. If they ask a correct visual reference question, point out the object and end with: 'That was a visual reference question.'\n" +
+			"4. If they struggle, encourage them to connect a biology term to something they see",
+			"Only use the exact phrase 'That was a visual reference question.' after a correct visual reference question. Do not say it during your explanation.",
+			"- If they ask about the chromosome, describe the X-shaped object and where it is.\n" +
+			"- If they ask about the centriole, describe the barrel-shaped object and where it is.");
+
+		public static string TutorialManipulationQuestions = PromptLibrary.BuildPhase(
+			"Tutorial: Manipulation Questions",
+			"Teach the learner how to ask for procedural guidance when unsure what to do.",
+			"- Centriole (still visible in the scene)",
+			"1. Explain manipulation questions are for 'what should I do next?'\n" +
+			"2. Prompt them to ask: 'What should I do next?' or 'What do I do with the centriole?'\n" +
+			"3. If they ask an appropriate manipulation question, give clear guidance and end with: 'That was a manipulation question.'\n" +
+			"4. If they are unsure, gently prompt them to ask for guidance",
+			"Only use the exact phrase 'That was a manipulation question.' after a correct manipulation question. End with a short summary of the three question types.",
+			"- If they ask what to do next, give 1-2 clear steps and encourage them.\n" +
+			"- If they ask about the centriole, briefly explain how it will be used later to pull chromosomes apart.");
+	}
+}

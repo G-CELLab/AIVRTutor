@@ -4,7 +4,7 @@ public class TutorialPromptManager : MonoBehaviour
 {
     public GPTConnector gptConnector;
     [TextArea(3, 8)]
-    public string tutorialPromptOverride = AI.Prompts.PromptLibrary.Tutorial;
+    public string tutorialPromptOverride = AI.Prompts.TutorialPrompts.Tutorial;
     public bool clearHistoryOnEnable = true;
 
     private void OnEnable()
@@ -16,7 +16,7 @@ public class TutorialPromptManager : MonoBehaviour
         }
 
         string prompt = string.IsNullOrWhiteSpace(tutorialPromptOverride)
-            ? AI.Prompts.PromptLibrary.Tutorial
+            ? AI.Prompts.TutorialPrompts.Tutorial
             : tutorialPromptOverride;
 
         gptConnector.SetPhasePromptOverride(prompt, true);
