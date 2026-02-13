@@ -1,46 +1,23 @@
-﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.XR.Hands;
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 public class RightHandManager : MonoBehaviour
 {
     public bool isGrabbed_right = false;
-    private XRHandSubsystem m_HandSubsystem;
+    
+    [SerializeField] 
+    private NearFarInteractor handInteractor;
 
     void Update()
     {
-        if (m_HandSubsystem == null || !m_HandSubsystem.running)
+        if (handInteractor != null)
         {
-            var subsystems = new List<XRHandSubsystem>();
-            SubsystemManager.GetSubsystems(subsystems);
-            foreach (var s in subsystems)
-            {
-                if (s.running)
-                {
-                    m_HandSubsystem = s;
-                    Debug.Log("Right XR Hand Subsystem found and running.");
-                    break;
-                }
-            }
-            return;
-        }
+            // Sync position/rotation to the actual tracked hand interactor
+            transform.position = handInteractor.transform.position;
+            transform.rotation = handInteractor.transform.rotation;
 
-        var hand = m_HandSubsystem.rightHand;
-
-        if (hand.isTracked)
-        {
-            var thumbTip = hand.GetJoint(XRHandJointID.ThumbTip);
-            var indexTip = hand.GetJoint(XRHandJointID.IndexTip);
-
-            if (thumbTip.TryGetPose(out Pose thumbPose) && indexTip.TryGetPose(out Pose indexPose))
-            {
-                float distance = Vector3.Distance(thumbPose.position, indexPose.position);
-                isGrabbed_right = distance < 0.03f;
-            }
-        }
-        else
-        {
-            isGrabbed_right = false;
+            // XRI handles the pinch gesture; hasSelection is true when grabbing
+            isGrabbed_right = handInteractor.hasSelection;
         }
     }
 }

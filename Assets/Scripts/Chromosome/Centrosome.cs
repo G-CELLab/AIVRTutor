@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,7 +11,7 @@ public class Centrosome : MonoBehaviour
     public GameManager gameManager;
 
     public Image sliderImg;
-    float lodingTime = 3f;
+    float lodingTime = 5f; // Increased from 3f
     float timer = 0f;
     float timer2 = 0f;
     float delayTimer = 0f;
@@ -77,76 +77,76 @@ public class Centrosome : MonoBehaviour
         if (GameManager.eGameStatus == GameManager.GameState.Metaphase)
         {
             delayTimer += Time.deltaTime;
-            r_renderer.SetActive(true);
-            this.GetComponent<LineRenderer>().enabled = true;
-            this.GetComponent<BoxCollider>().size = new Vector3(1f, 1f, 1f);
-
+            // Automatically enable spindle fibers when Metaphase starts
+            EnableSpindleFibers(true);
         }
-        // 아나페이스가 된지 3초 후에 이 오브젝트 끄기
-        if (GameManager.eGameStatus == GameManager.GameState.Anaphase)
+        else if (GameManager.eGameStatus != GameManager.GameState.Anaphase && GameManager.eGameStatus != GameManager.GameState.Telophase)
         {
-            timer2 += Time.deltaTime;
-            if (timer2 >= 3.0f && rightHandManager.isGrabbed_right == false && leftHandManager.isGrabbed_left == false)
+            // Reset timers if not in Metaphase/Anaphase/Telophase
+            if (timer != 0 || timer2 != 0 || delayTimer != 0 || metaSuccess)
             {
-                this.gameObject.SetActive(false);
-                chromotid_L.SetActive(true);
-                chromotid_R.SetActive(true);
-            }
-            else if (rightHandManager.isGrabbed_right == true || leftHandManager.isGrabbed_left == true)
-            {
+                timer = 0f;
                 timer2 = 0f;
+                delayTimer = 0f;
+                metaSuccess = false;
+                EnableSpindleFibers(false);
             }
         }
     }
 
-
     //3초 이상 Metaphase 구역에 잘 충돌하고 있으면 Anaphase로 이동
     private void OnTriggerStay(Collider other)
     {
-        if (other.gameObject.CompareTag("Meta") && metaSuccess == false && delayTimer >= 6.0f)
+        if (GameManager.eGameStatus == GameManager.GameState.Metaphase && 
+            other.gameObject.CompareTag("Meta") && 
+            metaSuccess == false)
         {
-            sliderImg.sprite = loadingImg;
-            sliderImg.color = new Color32(0, 255, 0, 155);
-
-            timer += Time.deltaTime;
-            sliderImg.fillAmount = timer / lodingTime;
-
-            if (timer >= lodingTime)
+            if (sliderImg != null)
             {
-                metaSuccess = true;
-                particleEffect.SetActive(false);
+                if (!sliderImg.enabled) sliderImg.enabled = true;
+                sliderImg.sprite = loadingImg;
+                sliderImg.color = new Color32(0, 255, 0, 155);
                 
-                sliderImg.enabled = false;
-
-                gameManager.Anaphase();
-                timer = 0f;
+                timer += Time.deltaTime;
+                sliderImg.fillAmount = timer / lodingTime;
             }
-        }
 
-        /*
-        if (other.gameObject.CompareTag("Meta") && metaSuccess == false && hand.L_handTouched == true && hand.R_handTouched == true)
-        {
-            sliderImg.sprite = loadingImg;
-            sliderImg.color = new Color32(0, 255, 0, 155);
-
-            timer += Time.deltaTime;
-            sliderImg.fillAmount = timer / lodingTime;
-
+            // Once the timer hits 5 seconds (lodingTime), then we trigger Anaphase
             if (timer >= lodingTime)
             {
                 metaSuccess = true;
-                particleEffect.SetActive(false);
+                if (particleEffect != null) particleEffect.SetActive(false);
+                if (sliderImg != null) sliderImg.enabled = false;
 
-                tempTrans = ProphaseObjs.transform.parent;
-                this.transform.parent = ProphaseObjs.transform;
-
-                sliderImg.enabled = false;
-
-                gameManager.Anaphase();
+                Debug.Log("Metaphase Complete - Transitioning to Anaphase");
+                if (gameManager != null) gameManager.Anaphase();
                 timer = 0f;
             }
         }
-        */
+        else
+        {
+            // Reset the slider timer if they leave the zone
+            if (timer > 0 && !metaSuccess) 
+            {
+                timer = 0f;
+            }
+        }
+    }
+
+    private void EnableSpindleFibers(bool enable)
+    {
+        LineRenderer leftLR = GetComponent<LineRenderer>();
+        if (leftLR != null) leftLR.enabled = enable;
+
+        if (r_renderer != null)
+        {
+            // Ensure the right renderer object is active during Metaphase if we want to see it
+            if (GameManager.eGameStatus == GameManager.GameState.Metaphase) 
+                r_renderer.SetActive(true);
+                
+            LineRenderer rightLR = r_renderer.GetComponent<LineRenderer>();
+            if (rightLR != null) rightLR.enabled = enable;
+        }
     }
     
     private void OnTriggerExit(Collider other)
@@ -156,6 +156,4 @@ public class Centrosome : MonoBehaviour
             timer = 0f;
         }
     }
-    
-
 }

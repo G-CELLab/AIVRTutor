@@ -5,6 +5,9 @@ public class AnaphaseGrab : MonoBehaviour
     public LeftHandManager leftHand;
     public RightHandManager rightHand;
 
+    public enum HandSide { Left, Right, Both }
+    public HandSide allowedHand = HandSide.Both;
+
     private bool isBeingHeld = false;
     private Transform activeHand;
 
@@ -28,22 +31,36 @@ public class AnaphaseGrab : MonoBehaviour
 
     void CheckForGrab()
     {
+        bool leftPossible = (allowedHand == HandSide.Left || allowedHand == HandSide.Both);
+        bool rightPossible = (allowedHand == HandSide.Right || allowedHand == HandSide.Both);
+
+        // If already being held, check if we should release
+        if (isBeingHeld && activeHand != null)
+        {
+            bool stillGrabbed = false;
+            if (activeHand == leftHand.transform) stillGrabbed = leftHand.isGrabbed_left;
+            else if (activeHand == rightHand.transform) stillGrabbed = rightHand.isGrabbed_right;
+
+            if (!stillGrabbed)
+            {
+                isBeingHeld = false;
+                activeHand = null;
+            }
+            return;
+        }
+
+        // Not being held, check for new grab
         // Check Left Hand
-        if (leftHand.isGrabbed_left && IsHandNear(leftHand.transform))
+        if (leftPossible && leftHand.isGrabbed_left && IsHandNear(leftHand.transform))
         {
             isBeingHeld = true;
             activeHand = leftHand.transform;
         }
         // Check Right Hand
-        else if (rightHand.isGrabbed_right && IsHandNear(rightHand.transform))
+        else if (rightPossible && rightHand.isGrabbed_right && IsHandNear(rightHand.transform))
         {
             isBeingHeld = true;
             activeHand = rightHand.transform;
-        }
-        else
-        {
-            isBeingHeld = false;
-            activeHand = null;
         }
     }
 
