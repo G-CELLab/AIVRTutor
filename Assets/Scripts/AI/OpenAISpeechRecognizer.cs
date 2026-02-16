@@ -31,6 +31,8 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     [Header("TTS Interrupt")]
     [Tooltip("需要被打断的 TTS 播放器（可空；为空时仍会广播 OnUserSpeechLikely 事件）")]
     public TextToSpeechPlayer ttsToInterrupt;
+    [Tooltip("允许在 AI 说话时继续监听并打断（barge-in）")]
+    public bool allowBargeIn = true;
     [Tooltip("即使 VAD 还没判定开始，只要峰值短时间超过阈值也立刻打断 TTS (DISABLED for uninterruptible agent)")]
     public bool interruptEvenBeforeVAD = false; // DISABLED: Agent is uninterruptible
     [Tooltip("硬中断的瞬时阈值（0~1，可按设备调）")]
@@ -137,12 +139,14 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         float lastUtteranceTime = -999f;
         float cooldownSec = 1.0f; // 1 second cooldown after each utterance
         while (isRunning)
-        {            // Block recording while agent is busy (speaking or generating response)
-            if (gptConnector != null && gptConnector.IsAgentBusy)
+        {
+            // Block recording while agent is busy (unless barge-in is enabled)
+            if (!allowBargeIn && gptConnector != null && gptConnector.IsAgentBusy)
             {
                 yield return new WaitForSeconds(0.1f);
                 continue;
-            }            string wavPath = null;
+            }
+            string wavPath = null;
             _globalMax = 0f; _overStartCount = 0; _overStopCount = 0; _overInterruptCount = 0;
 
             // 录到“开始”+“结束”一段，保存到 wavPath
@@ -331,9 +335,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
 
                     if (interruptAboveTimer >= (interruptGraceMs / 1000f))
                     {
-                        // Only notify listeners, do NOT interrupt TTS if currently speaking
-                        OnUserSpeechLikely?.Invoke();
-                        // Removed TTS interruption logic to allow agent to finish speaking
+                        HandleUserInterrupt();
                         interruptAboveTimer = 0f;
                     }
                 }
@@ -370,9 +372,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                             started = true;
                             DT("[VAD]", $"✅ STARTED! preRoll={preRoll.Count} samples 将并入 capture");
 
-                            // Only notify listeners, do NOT interrupt TTS if currently speaking
-                            OnUserSpeechLikely?.Invoke();
-                            // Removed TTS interruption logic to allow agent to finish speaking
+                            HandleUserInterrupt();
 
                             while (preRoll.Count > 0)
                             {
@@ -452,6 +452,15 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         {
             Debug.LogError("保存 WAV 失败: " + e.Message);
             onSaved?.Invoke(null);
+        }
+    }
+
+    private void HandleUserInterrupt()
+    {
+        OnUserSpeechLikely?.Invoke();
+        if (gptConnector != null && gptConnector.IsAgentBusy)
+        {
+            gptConnector.InterruptForBargeIn();
         }
     }
 

@@ -2352,7 +2352,7 @@ MonoBehaviour:
   chatModel: gpt-5-mini
   requestTimeoutSeconds: 30
   useRealtime: 1
-  realtimeModel: gpt-realtime-2025-08-28
+  realtimeModel: gpt-realtime-mini
   realtimeSampleRate: 24000
   realtimeDumpEvents: 0
   outputText: {fileID: 0}
