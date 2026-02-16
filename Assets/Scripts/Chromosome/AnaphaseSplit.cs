@@ -9,7 +9,6 @@ public class AnaphaseSplit : MonoBehaviour
     public enum Side { Left, Right }
     public Side side;
 
-    private bool isGrabbed = false;
 
     void Update()
     {
@@ -33,12 +32,7 @@ public class AnaphaseSplit : MonoBehaviour
 
         if (canGrab && IsNear(grabbingHand))
         {
-            isGrabbed = true;
             transform.position = grabbingHand.position;
-        }
-        else
-        {
-            isGrabbed = false;
         }
     }
 

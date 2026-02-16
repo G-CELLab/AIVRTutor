@@ -28,6 +28,10 @@ public class Manager_Tutorial : MonoBehaviour
     public GameObject copy_obj2;
     public GameObject copy_obj3;
     public GameObject copy_obj4;
+    public GameObject content_Info;
+    public GameObject visual_Info;
+    public GameObject manipulation_Info;
+    public GameObject finish_Info;
 
     [Header("Question Tutorial Objects")]
     [Tooltip("Enable question tutorial stages")]
@@ -39,10 +43,16 @@ public class Manager_Tutorial : MonoBehaviour
     public GameObject img_Touch;
     public GameObject img_Grab;
     public GameObject img_Duplicate;
+    public GameObject img_Content;
+    public GameObject img_Visual;
+    public GameObject img_Manipulation;
 
     public Sprite touch_comp;
     public Sprite grab_comp;
     public Sprite duplicate_comp;
+    public Sprite content_comp;
+    public Sprite visual_comp;
+    public Sprite manipulation_comp;
 
     public GameObject change_Scene;
     public SceneTransitionManager sceneTransition;
@@ -203,22 +213,39 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(copy_obj4, false);
                 SetActiveSafe(grab_particle1, false);
                 SetActiveSafe(grab_particle2, false);
+                SetActiveSafe(img_Touch, false);
+                SetActiveSafe(img_Grab, false);
+                SetActiveSafe(img_Duplicate, false);
+                SetActiveSafe(img_Content, true);
+                SetActiveSafe(content_Info, true);
+                SetActiveSafe(visual_Info, false);
+                SetActiveSafe(manipulation_Info, false);
                 SetActiveSafe(chromatid_Object, true);
                 SetActiveSafe(centriole_Object, false);
                 SetActiveSafe(chromosome_Object, false);
                 SetActiveSafe(change_Scene, false);
                 break;
             case TutorialStage.VisualQuestions:
+                SetActiveSafe(content_Info, false);
+                SetActiveSafe(visual_Info, true);
+                SetActiveSafe(manipulation_Info, false);
                 SetActiveSafe(chromatid_Object, false);
                 SetActiveSafe(centriole_Object, true);
                 SetActiveSafe(chromosome_Object, true);
                 SetActiveSafe(change_Scene, false);
+                SetImageSpriteSafe(img_Content, content_comp);
+                SetActiveSafe(img_Visual, true);
                 break;
             case TutorialStage.ManipulationQuestions:
+                SetActiveSafe(content_Info, false);
+                SetActiveSafe(visual_Info, false);
+                SetActiveSafe(manipulation_Info, true);
                 SetActiveSafe(chromatid_Object, false);
                 SetActiveSafe(centriole_Object, true);
                 SetActiveSafe(chromosome_Object, false);
                 SetActiveSafe(change_Scene, false);
+                SetImageSpriteSafe(img_Visual, visual_comp);
+                SetActiveSafe(img_Manipulation, true);
                 break;
             case TutorialStage.Finish:
                 SetActiveSafe(copy_Info, false);
@@ -228,10 +255,14 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(copy_obj4, false);
                 SetActiveSafe(grab_particle1, false);
                 SetActiveSafe(grab_particle2, false);
+                SetActiveSafe(content_Info, false);
+                SetActiveSafe(visual_Info, false);
+                SetActiveSafe(manipulation_Info, false);
+                SetActiveSafe(finish_Info, true);
                 SetActiveSafe(chromatid_Object, false);
                 SetActiveSafe(centriole_Object, false);
                 SetActiveSafe(chromosome_Object, false);
-                SetImageSpriteSafe(img_Duplicate, duplicate_comp);
+                SetImageSpriteSafe(img_Manipulation, manipulation_comp);
                 SetActiveSafe(change_Scene, true);
                 break;
         }

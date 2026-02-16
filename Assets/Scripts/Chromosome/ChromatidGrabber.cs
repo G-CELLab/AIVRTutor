@@ -4,7 +4,6 @@ public class ChromatidGrabber : MonoBehaviour
 {
     private LeftHandManager left;
     private RightHandManager right;
-    private bool grabbed = false;
 
     void Start()
     {
@@ -37,11 +36,6 @@ public class ChromatidGrabber : MonoBehaviour
         if (isPinching && activeHand != null)
         {
             transform.position = activeHand.position;
-            grabbed = true;
-        }
-        else
-        {
-            grabbed = false;
         }
     }
 

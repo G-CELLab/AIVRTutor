@@ -94,7 +94,7 @@ public class PromptLibraryViewer : EditorWindow
             // Paste to Phase Prompt Override
             if (GUILayout.Button("Paste to Phase Prompt Override", GUILayout.Height(30)))
             {
-                var gptConnector = FindObjectOfType<GPTConnector>();
+                var gptConnector = Object.FindFirstObjectByType<GPTConnector>();
                 if (gptConnector != null)
                 {
                     gptConnector.phasePromptOverride = selectedPromptText;
