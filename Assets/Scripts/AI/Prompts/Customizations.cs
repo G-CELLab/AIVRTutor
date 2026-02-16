@@ -9,7 +9,7 @@ namespace AI.Prompts
 
         // Realtime
         public static bool DefaultUseRealtime = true;
-        public static string DefaultRealtimeModel = "openai/gpt-oss-120b";
+        public static string DefaultRealtimeModel = "gpt-realtime-mini";
         public static int DefaultRealtimeSampleRate = 24000;
         public static bool DefaultRealtimeDumpEvents = false;
 
