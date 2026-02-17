@@ -22,7 +22,16 @@ public class AnaphaseGrab : MonoBehaviour
         // 3. Move the chromatid if held
         if (isBeingHeld && activeHand != null)
         {
-            transform.position = activeHand.position;
+            if (activeHand == leftHand.transform)
+            {
+                transform.position = leftHand.GetActiveGrabPosition();
+                transform.rotation = leftHand.GetActiveGrabRotation();
+            }
+            else if (activeHand == rightHand.transform)
+            {
+                transform.position = rightHand.GetActiveGrabPosition();
+                transform.rotation = rightHand.GetActiveGrabRotation();
+            }
 
             // Check if we've pulled it far enough to finish the stage
             CheckCompletion();

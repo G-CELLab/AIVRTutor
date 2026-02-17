@@ -35,7 +35,16 @@ public class ChromatidAnaphaseGrab : MonoBehaviour
         // 3. Follow the hand if grabbed
         if (activeHand != null)
         {
-            transform.position = activeHand.position;
+            if (activeHand == leftHand.transform)
+            {
+                transform.position = leftHand.GetActiveGrabPosition();
+                transform.rotation = leftHand.GetActiveGrabRotation();
+            }
+            else if (activeHand == rightHand.transform)
+            {
+                transform.position = rightHand.GetActiveGrabPosition();
+                transform.rotation = rightHand.GetActiveGrabRotation();
+            }
             isGrabbed = true;
         }
         else

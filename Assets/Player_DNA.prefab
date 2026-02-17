@@ -1148,10 +1148,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameManager: {fileID: 0}
-  rightHandManager: {fileID: 0}
-  leftHandManager: {fileID: 0}
   text1: {fileID: 2151326631344384175}
   text2: {fileID: 3653059909664297940}
+  targetCondenseTime: 3
+  prophaseStartDelay: 2
 --- !u!114 &8609204631365923887
 MonoBehaviour:
   m_ObjectHideFlags: 0
