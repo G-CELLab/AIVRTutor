@@ -59,18 +59,37 @@ public class Restart : MonoBehaviour
 
         if (timer > touchingTime)
         {
-            
-            if (ScoreManager.HPtracking >= 0.95)
+            // Check if game is already over (user touching healed wound to close app)
+            if (GameManager.eGameStatus == GameManager.GameState.GameOver)
             {
+                Debug.Log("User touched healed wound. Closing application.");
+                Application.Quit();
+                return;
+            }
+            
+            // Increment the healing cycle counter FIRST
+            GameManager.IncrementHealingCycle();
+            
+            // Update HP tracking to reflect the completed cycle
+            ScoreManager.HPtracking = 0.3f + (GameManager.GetHealingCycleCount() * 0.3f);
+            
+            // Update the debug log round counter to match
+            WriteDebugToFile.round = GameManager.GetHealingCycleCount() + 1;
+            
+            // Log the current cycle
+            Debug.Log($"Cycle {GameManager.GetHealingCycleCount()}/{GameManager.MAX_HEALING_CYCLES} completed. HPtracking: {ScoreManager.HPtracking}");
+            
+            // Check if the wound is now fully healed (3 cycles completed)
+            if (GameManager.IsWoundHealed())
+            {
+                Debug.Log("Wound fully healed! Showing ending screen.");
                 gameManager.GameEnd();
             }
             else
             {
+                Debug.Log("Wound not yet healed. Continuing cell division process...");
                 triggerDetected = false;
-                WriteDebugToFile.round += 1;
                 RestartButton();
-                //HPbar.fillAmount += 0.3f;
-                
             } 
         }
     }

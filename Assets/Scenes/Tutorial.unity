@@ -15308,8 +15308,8 @@ MonoBehaviour:
   m_text: "Question Type 1: Content Knowledge\nWelcome to the next phase! In this
     part, you\u2019ll practice asking content knowledge questions. These are questions
     about biology terms or what happens during mitosis. See the chromatid floating
-    in front of you? Try asking a question like, \u201CWhat does \u2018chromatid\u2019
-    mean?\u201D or \u201CWhat happens during metaphase?\u201D\n"
+    in front of you? Try asking a question like, \u201CWhat is a chromatid?\u201D
+    or \u201CWhat happens during metaphase?\u201D\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

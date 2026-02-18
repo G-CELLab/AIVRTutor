@@ -30,7 +30,9 @@ public class ScoreManager : MonoBehaviour
 
     private void Start()
     {
+        // Sync HP bar visual with the static HPtracking value
         HPbar.fillAmount = HPtracking;
+        Debug.Log($"[ScoreManager] Scene started - HP: {HPtracking}, Cycle: {GameManager.GetHealingCycleCount()}/{GameManager.MAX_HEALING_CYCLES}");
     }
 
     private void Update()
@@ -49,6 +51,9 @@ public class ScoreManager : MonoBehaviour
             this.GetComponent<Canvas>().enabled = true;
             HPbar.GetComponent<Image>().enabled = true;
             hpText.SetActive(true);
+            
+            // Keep HP bar synchronized with healing progress
+            HPbar.fillAmount = HPtracking;
             /*
             if (HPbar.fillAmount > 0.8f)
             {
