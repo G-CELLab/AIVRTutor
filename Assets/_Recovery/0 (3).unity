@@ -13002,9 +13002,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RightHandManager
   isGrabbed_right: 0
   handInteractor: {fileID: 852775122}
-  palmOffset: {x: 0, y: 0, z: 0}
-  pinchOffset: {x: 0, y: 0, z: 0}
-  keepUpright: 1
 --- !u!64 &877523556
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -20597,9 +20594,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LeftHandManager
   isGrabbed_left: 0
   handInteractor: {fileID: 846178712}
-  palmOffset: {x: 0, y: 0, z: 0}
-  pinchOffset: {x: 0, y: 0, z: 0}
-  keepUpright: 1
 --- !u!1 &1411262053
 GameObject:
   m_ObjectHideFlags: 0
@@ -48900,7 +48894,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!223 &2027785755
 Canvas:
   m_ObjectHideFlags: 0

@@ -14,26 +14,39 @@ public class RightHandManager : MonoBehaviour
     [SerializeField] 
     private NearFarInteractor handInteractor;
 
+    [Header("Physical Alignment (Inspector)")]
+    [Tooltip("Manual offset for the palm contact point.")]
+    public Vector3 palmOffset = Vector3.zero;
+    [Tooltip("Manual offset for the pinch contact point.")]
+    public Vector3 pinchOffset = Vector3.zero;
+    [Tooltip("If true, objects will stay upright (world identity rotation) while held.")]
+    public bool keepUpright = true;
+
     private XRHandSubsystem m_HandSubsystem;
     private XROrigin m_XROrigin;
     private static List<XRHandSubsystem> s_Subsystems = new List<XRHandSubsystem>();
     
-    private Transform m_OriginalAttachTransform;
-    private GameObject m_GrabAnchor;
-    private IXRSelectInteractable m_ManualSelectedInteractable;
+    private GameObject m_SkeletalAnchor;
+    private IXRSelectInteractable m_ActiveInteractable;
+    private Vector3 m_ColliderLocalCenter;
 
-    // Relative offset to find the center of a closed fist from the palm joint.
-    private readonly Vector3 k_FistCenterOffset = new Vector3(0f, 0.02f, 0.03f); 
+    private const float k_SelectionRange = 0.12f;
+    private bool m_IsPinching = false;
+    private bool m_IsFisting = false;
 
     void Awake()
     {
         if (handInteractor != null)
         {
-            m_OriginalAttachTransform = handInteractor.attachTransform;
+            m_SkeletalAnchor = new GameObject("RightHand_Anchor");
+            m_SkeletalAnchor.transform.SetParent(transform);
+            handInteractor.attachTransform = m_SkeletalAnchor.transform;
             
-            // Create a dedicated anchor for the Grab gesture
-            m_GrabAnchor = new GameObject("RightHandGrabAnchor");
-            m_GrabAnchor.transform.SetParent(transform);
+            if (handInteractor.selectInput != null)
+            {
+                handInteractor.selectInput.manualPerformed = true;
+                handInteractor.selectInput.manualValue = 0f;
+            }
         }
     }
 
@@ -41,137 +54,129 @@ public class RightHandManager : MonoBehaviour
     {
         if (handInteractor == null) return;
 
-        // 1. Sync Tracking References
         if (m_HandSubsystem == null || !m_HandSubsystem.running)
         {
             SubsystemManager.GetSubsystems(s_Subsystems);
-            foreach (var s in s_Subsystems)
+            foreach (var s in s_Subsystems) { if (s.running) { m_HandSubsystem = s; break; } }
+        }
+        
+        if (m_XROrigin == null) m_XROrigin = GetComponentInParent<XROrigin>();
+
+        UpdateInteractionState();
+
+        if (m_IsPinching || m_IsFisting)
+        {
+            if (!handInteractor.hasSelection)
             {
-                if (s.running) { m_HandSubsystem = s; break; }
+                var target = GetValidTarget(m_SkeletalAnchor.transform.position);
+                if (target != null && target is XRGrabInteractable grab)
+                {
+                    var col = grab.GetComponentInChildren<Collider>();
+                    if (col != null)
+                        m_ColliderLocalCenter = grab.transform.InverseTransformPoint(col.bounds.center);
+                    else
+                        m_ColliderLocalCenter = Vector3.zero;
+
+                    grab.attachTransform = null;
+                    grab.useDynamicAttach = false;
+                    grab.snapToColliderVolume = false;
+                    
+                    handInteractor.StartManualInteraction(target);
+                    m_ActiveInteractable = target;
+                }
+            }
+            if (m_ActiveInteractable != null)
+            {
+                Vector3 h = GetHandContactPoint();
+                Quaternion r = keepUpright ? Quaternion.identity : m_SkeletalAnchor.transform.rotation;
+                
+                m_SkeletalAnchor.transform.rotation = r;
+                m_SkeletalAnchor.transform.position = h - (r * m_ColliderLocalCenter);
             }
         }
-
-        if (m_XROrigin == null)
+        else if (m_ActiveInteractable != null)
         {
-            m_XROrigin = GetComponentInParent<XROrigin>();
-            if (m_XROrigin == null) m_XROrigin = Object.FindFirstObjectByType<XROrigin>();
+            handInteractor.EndManualInteraction();
+            m_ActiveInteractable = null;
         }
 
-        bool isGrabbing = false;
-        Pose worldPalmPose = default;
-        bool hasHandData = false;
+        isGrabbed_right = handInteractor.hasSelection;
+    }
 
-        // 2. Gesture Detection & "Sticky" Pinch Prevention
+    private void UpdateInteractionState()
+    {
         if (m_HandSubsystem != null && m_HandSubsystem.rightHand.isTracked)
         {
             var hand = m_HandSubsystem.rightHand;
-            if (hand.GetJoint(XRHandJointID.Palm).TryGetPose(out Pose localPalmPose))
-            {
-                hasHandData = true;
-                if (m_XROrigin != null && m_XROrigin.Origin != null)
-                {
-                    worldPalmPose.position = m_XROrigin.Origin.transform.TransformPoint(localPalmPose.position);
-                    worldPalmPose.rotation = m_XROrigin.Origin.transform.rotation * localPalmPose.rotation;
-                }
-                else
-                {
-                    worldPalmPose = localPalmPose;
-                }
+            
+            var indexJoint = hand.GetJoint(XRHandJointID.IndexTip);
+            var thumbJoint = hand.GetJoint(XRHandJointID.ThumbTip);
+            var palmJoint = hand.GetJoint(XRHandJointID.Palm);
 
-                // Detect Fist Curl (Grab)
+            if (indexJoint.TryGetPose(out Pose indexPose) && thumbJoint.TryGetPose(out Pose thumbPose))
+            {
+                float d = Vector3.Distance(indexPose.position, thumbPose.position);
+                if (!m_IsPinching && d < 0.015f) m_IsPinching = true;
+                else if (m_IsPinching && d > 0.045f) m_IsPinching = false;
+            }
+
+            if (palmJoint.TryGetPose(out Pose palmPose))
+            {
+                int curled = 0;
                 XRHandJointID[] tips = { XRHandJointID.MiddleTip, XRHandJointID.RingTip, XRHandJointID.LittleTip };
-                int curledCount = 0;
-                foreach (var tipID in tips)
+                foreach (var id in tips)
                 {
-                    if (hand.GetJoint(tipID).TryGetPose(out Pose tipPose))
-                    {
-                        if (Vector3.Distance(tipPose.position, localPalmPose.position) < 0.1f)
-                            curledCount++;
-                    }
+                    if (hand.GetJoint(id).TryGetPose(out Pose tipPose) && Vector3.Distance(tipPose.position, palmPose.position) < 0.085f) curled++;
                 }
-                isGrabbing = curledCount >= 2;
-
-                // Release logic for Pinch
-                if (hand.GetJoint(XRHandJointID.IndexTip).TryGetPose(out Pose localIndexPose) && 
-                    hand.GetJoint(XRHandJointID.ThumbTip).TryGetPose(out Pose localThumbPose))
-                {
-                    float pinchDist = Vector3.Distance(localIndexPose.position, localThumbPose.position);
-                    if (pinchDist > 0.04f && handInteractor.hasSelection && m_ManualSelectedInteractable == null)
-                    {
-                        var interactionManager = handInteractor.interactionManager;
-                        var selected = new List<IXRSelectInteractable>(handInteractor.interactablesSelected);
-                        foreach (var interactable in selected)
-                        {
-                            interactionManager.SelectExit(handInteractor, interactable);
-                        }
-                    }
-                }
+                if (!m_IsFisting && curled >= 2) m_IsFisting = true;
+                else if (m_IsFisting && curled < 1) m_IsFisting = false;
             }
         }
-
-        // 3. Forced Selection Logic (Direct Grab)
-        if (isGrabbing)
-        {
-            if (!handInteractor.hasSelection && handInteractor.interactablesHovered.Count > 0)
-            {
-                var interactable = handInteractor.interactablesHovered[0] as XRGrabInteractable;
-                if (interactable != null)
-                {
-                    // Center the anchor in the fist
-                    m_GrabAnchor.transform.position = worldPalmPose.position + (worldPalmPose.rotation * k_FistCenterOffset);
-                    // Use parent Hand rotation to avoid the 45-degree ray tilt
-                    m_GrabAnchor.transform.rotation = transform.rotation;
-                    
-                    handInteractor.attachTransform = m_GrabAnchor.transform;
-
-                    // DEEP INVESTIGATION FIX: Disable snapping to collider surface for the Grab gesture.
-                    interactable.useDynamicAttach = false;
-                    interactable.snapToColliderVolume = false;
-
-                    handInteractor.StartManualInteraction(interactable);
-                    m_ManualSelectedInteractable = interactable;
-                }
-            }
-        }
-        else if (m_ManualSelectedInteractable != null)
-        {
-            handInteractor.EndManualInteraction();
-            m_ManualSelectedInteractable = null;
-        }
-
-        isGrabbed_right = handInteractor.hasSelection || isGrabbing;
-
-        // 4. Transform Sync
-        if (hasHandData)
-        {
-            if (isGrabbing)
-            {
-                m_GrabAnchor.transform.position = worldPalmPose.position + (worldPalmPose.rotation * k_FistCenterOffset);
-                m_GrabAnchor.transform.rotation = transform.rotation;
-                handInteractor.attachTransform = m_GrabAnchor.transform;
-            }
-            else
-            {
-                handInteractor.attachTransform = m_OriginalAttachTransform;
-            }
-        }
-        else
-        {
-            handInteractor.attachTransform = m_OriginalAttachTransform;
-        }
+        else { m_IsPinching = m_IsFisting = false; }
     }
 
-    public Vector3 GetActiveGrabPosition()
+    private Vector3 GetHandContactPoint()
     {
-        return handInteractor != null && handInteractor.attachTransform != null 
-            ? handInteractor.attachTransform.position 
-            : transform.position;
+        if (m_HandSubsystem == null || !m_HandSubsystem.rightHand.isTracked || m_XROrigin == null) return transform.position;
+        var hand = m_HandSubsystem.rightHand;
+
+        if (m_IsPinching)
+        {
+            var indexJoint = hand.GetJoint(XRHandJointID.IndexTip);
+            var thumbJoint = hand.GetJoint(XRHandJointID.ThumbTip);
+            if (indexJoint.TryGetPose(out Pose indexPose) && thumbJoint.TryGetPose(out Pose thumbPose))
+            {
+                Vector3 localMid = (indexPose.position + thumbPose.position) * 0.5f;
+                return m_XROrigin.Origin.transform.TransformPoint(localMid + (m_SkeletalAnchor.transform.parent.rotation * pinchOffset));
+            }
+        }
+
+        var palmJoint = hand.GetJoint(XRHandJointID.Palm);
+        if (palmJoint.TryGetPose(out Pose palmPose))
+        {
+            return m_XROrigin.Origin.transform.TransformPoint(palmPose.position + (m_SkeletalAnchor.transform.parent.rotation * palmOffset));
+        }
+
+        return transform.position;
     }
 
-    public Quaternion GetActiveGrabRotation()
+    private IXRSelectInteractable GetValidTarget(Vector3 worldPos)
     {
-        return handInteractor != null && handInteractor.attachTransform != null 
-            ? handInteractor.attachTransform.rotation 
-            : transform.rotation;
+        IXRSelectInteractable best = null;
+        float minDist = k_SelectionRange;
+        foreach (var h in handInteractor.interactablesHovered)
+        {
+            if (h is XRGrabInteractable grab)
+            {
+                var filter = grab.GetComponent<HandSideFilter>();
+                if (filter != null && filter.allowedSide != HandSideFilter.HandSide.Right) continue;
+                float d = Vector3.Distance(worldPos, grab.transform.position);
+                if (d < minDist) { minDist = d; best = grab; }
+            }
+        }
+        return best;
     }
+
+    public Vector3 GetActiveGrabPosition() => m_SkeletalAnchor.transform.position;
+    public Quaternion GetActiveGrabRotation() => m_SkeletalAnchor.transform.rotation;
 }
