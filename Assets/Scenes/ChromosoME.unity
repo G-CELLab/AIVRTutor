@@ -4774,7 +4774,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
-  m_ActiveFontFeatures: 00000000
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -6033,7 +6033,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!223 &465860095
 Canvas:
   m_ObjectHideFlags: 0
@@ -7440,15 +7440,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 543131219}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.5113316, z: -0, w: 0.85938346}
-  m_LocalPosition: {x: 69.005, y: 1.35, z: 78.673}
+  m_LocalRotation: {x: -0, y: -0.46866807, z: -0, w: 0.88337433}
+  m_LocalPosition: {x: 70.988, y: 1.35, z: 78.516}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 963651620}
   - {fileID: 465860096}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: -61.505, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -55.896, z: 0}
 --- !u!1 &570398373
 GameObject:
   m_ObjectHideFlags: 0
@@ -12238,7 +12238,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
-  m_ActiveFontFeatures: 00000000
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -47682,7 +47682,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 71.003
+      value: 71.091
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
@@ -47692,22 +47692,22 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 79.089
+      value: 79.413
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.7071068
+      value: -0.5351909
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.7071068
+      value: 0.84473115
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
@@ -47722,7 +47722,7 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 270
+      value: 244.71399
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
@@ -52828,6 +52828,11 @@ PrefabInstance:
       propertyPath: ATPsliderImg
       value: 
       objectReference: {fileID: 1131465110}
+    - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
+        type: 3}
+      propertyPath: gptConnector
+      value: 
+      objectReference: {fileID: 1434790981}
     - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
         type: 3}
       propertyPath: onAnaphase.m_PersistentCalls.m_Calls.Array.size
