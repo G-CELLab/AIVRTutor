@@ -151,9 +151,15 @@ namespace UnityEngine.XR.Hands.Samples.GestureSample
             }
         }
 
+        /// <summary>
+        /// Gets whether the gesture is currently performed.
+        /// </summary>
+        public bool isPerformed => m_PerformedTriggered;
+
         void Awake()
         {
-            m_BackgroundDefaultColor = m_Background.color;
+            if (m_Background)
+                m_BackgroundDefaultColor = m_Background.color;
 
             if (m_Highlight)
             {
@@ -176,48 +182,62 @@ namespace UnityEngine.XR.Hands.Samples.GestureSample
 
         void OnJointsUpdated(XRHandJointsUpdatedEventArgs eventArgs)
         {
-            if (!isActiveAndEnabled || Time.timeSinceLevelLoad < m_TimeOfLastConditionCheck + m_GestureDetectionInterval)
-                return;
-
-            var detected =
-                m_HandTrackingEvents.handIsTracked &&
-                m_HandShape != null && m_HandShape.CheckConditions(eventArgs) ||
-                m_HandPose != null && m_HandPose.CheckConditions(eventArgs);
-
-            if (!m_WasDetected && detected)
+            try
             {
-                m_HoldStartTime = Time.timeSinceLevelLoad;
-            }
-            else if (m_WasDetected && !detected)
-            {
-                m_PerformedTriggered = false;
-                m_GestureEnded?.Invoke();
-                m_Background.color = m_BackgroundDefaultColor;
-            }
+                if (!isActiveAndEnabled || Time.timeSinceLevelLoad < m_TimeOfLastConditionCheck + m_GestureDetectionInterval)
+                    return;
 
-            m_WasDetected = detected;
+                if (m_HandTrackingEvents == null) return;
 
-            if (!m_PerformedTriggered && detected)
-            {
-                var holdTimer = Time.timeSinceLevelLoad - m_HoldStartTime;
-                if (holdTimer > m_MinimumHoldTime)
+                var detected =
+                    m_HandTrackingEvents.handIsTracked &&
+                    ((m_HandShape != null && m_HandShape.CheckConditions(eventArgs)) ||
+                     (m_HandPose != null && m_HandPose.CheckConditions(eventArgs)));
+
+                if (!m_WasDetected && detected)
                 {
-                    m_GesturePerformed?.Invoke();
-                    m_PerformedTriggered = true;
-                    m_Background.color = m_BackgroundHighlightColor;
+                    m_HoldStartTime = Time.timeSinceLevelLoad;
+                }
+                else if (m_WasDetected && !detected)
+                {
+                    m_PerformedTriggered = false;
+                    m_GestureEnded?.Invoke();
+                    if (m_Background)
+                        m_Background.color = m_BackgroundDefaultColor;
+                }
 
-                    if (m_Highlight)
-                        m_Highlight.enabled = true;
+                m_WasDetected = detected;
 
-                    foreach (var gesture in m_StaticGestures)
+                if (!m_PerformedTriggered && detected)
+                {
+                    var holdTimer = Time.timeSinceLevelLoad - m_HoldStartTime;
+                    if (holdTimer > m_MinimumHoldTime)
                     {
-                        if (gesture != this)
-                            gesture.highlightVisible = false;
+                        m_GesturePerformed?.Invoke();
+                        m_PerformedTriggered = true;
+                        if (m_Background)
+                            m_Background.color = m_BackgroundHighlightColor;
+
+                        if (m_Highlight)
+                            m_Highlight.enabled = true;
+
+                        if (m_StaticGestures != null)
+                        {
+                            foreach (var gesture in m_StaticGestures)
+                            {
+                                if (gesture != null && gesture != this)
+                                    gesture.highlightVisible = false;
+                            }
+                        }
                     }
                 }
-            }
 
-            m_TimeOfLastConditionCheck = Time.timeSinceLevelLoad;
+                m_TimeOfLastConditionCheck = Time.timeSinceLevelLoad;
+            }
+            catch (System.Exception e)
+            {
+                UnityEngine.Debug.LogError($"[StaticHandGesture] Error in OnJointsUpdated: {e.Message}\n{e.StackTrace}");
+            }
         }
     }
 }
