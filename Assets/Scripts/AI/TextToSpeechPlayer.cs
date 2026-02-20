@@ -92,7 +92,9 @@ public class TextToSpeechPlayer : MonoBehaviour
 
     private void HandleUserSpeechLikely()
     {
-        // Do not interrupt TTS when agent is speaking
+        if (!IsSpeaking) return;
+        if (killAllTTSOnInterrupt) KillAllTTS();
+        else StopSpeaking();
     }
 
     // ====== 新增：播放模型直接返回的音频（base64） ======

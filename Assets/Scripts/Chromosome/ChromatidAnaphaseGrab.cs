@@ -4,7 +4,6 @@ public class ChromatidAnaphaseGrab : MonoBehaviour
 {
     private LeftHandManager leftHand;
     private RightHandManager rightHand;
-    private bool isGrabbed = false;
 
     void Start()
     {
@@ -35,21 +34,7 @@ public class ChromatidAnaphaseGrab : MonoBehaviour
         // 3. Follow the hand if grabbed
         if (activeHand != null)
         {
-            if (activeHand == leftHand.transform)
-            {
-                transform.position = leftHand.GetActiveGrabPosition();
-                transform.rotation = leftHand.GetActiveGrabRotation();
-            }
-            else if (activeHand == rightHand.transform)
-            {
-                transform.position = rightHand.GetActiveGrabPosition();
-                transform.rotation = rightHand.GetActiveGrabRotation();
-            }
-            isGrabbed = true;
-        }
-        else
-        {
-            isGrabbed = false;
+            transform.position = activeHand.position;
         }
     }
 

@@ -74,6 +74,14 @@ public class GPTConnector : MonoBehaviour
     [Tooltip("Skip TTS for responses shorter than this character count (0 = always TTS)")]
     public int minCharsForTts = 30; // Don't TTS if response is too short
 
+    [Header("Interrupt")]
+    [Tooltip("Allow user speech to interrupt the agent (barge-in)")]
+    public bool allowUserInterrupts = true;
+    [Tooltip("Clear queued requests when interrupting")]
+    public bool clearQueueOnInterrupt = true;
+    [Tooltip("Disconnect realtime WebSocket on interrupt to stop streaming responses")]
+    public bool disconnectRealtimeOnInterrupt = true;
+
     [Header("Debug")]
     public bool verboseDebug = AI.Prompts.Customizations.DefaultVerboseDebug;
     public bool dumpResponsesToFile = AI.Prompts.Customizations.DefaultDumpResponsesToFile;
@@ -138,6 +146,7 @@ public class GPTConnector : MonoBehaviour
     private StringBuilder _textAccum; // 累计 text.delta
     private float _nextLog = 0f;
     private float _lastUserAudioTime = 0f; // Track last time user sent audio (for silence timeout)
+    private int _httpRequestSerial = 0;
 
     // === Realtime ack gate ===
     private volatile bool _sessionReady = false;
@@ -161,6 +170,11 @@ public class GPTConnector : MonoBehaviour
     //         StartCoroutine(PrecacheAllPhaseAssets());
     //     }
     // }
+
+    private void OnEnable()
+    {
+        BindSpeechRecognizer();
+    }
 
     // ===== 语言策略（强制英文）=====
     private string ApplyLang(string instr)
@@ -231,6 +245,12 @@ public class GPTConnector : MonoBehaviour
     {
         if (_responseInProgress || (_isSpeaking && ttsPlayer != null && ttsPlayer.IsSpeaking))
         {
+            if (allowUserInterrupts)
+            {
+                InterruptForBargeIn();
+                ExecuteTextRequest(userInput, onComplete);
+                return;
+            }
             // Agent is busy - queue this request for later evaluation
             D($"[Queue] Queuing text request (agent busy): {userInput?.Substring(0, Math.Min(50, userInput?.Length ?? 0))}...");
             _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest
@@ -263,7 +283,8 @@ public class GPTConnector : MonoBehaviour
         else
         {
             D($"[SendText] HTTP model={chatModel}, history={history.Count}, len={userInput?.Length ?? 0}");
-            StartCoroutine(SendTextRequest(userInput));
+            int requestSerial = ++_httpRequestSerial;
+            StartCoroutine(SendTextRequest(userInput, requestSerial));
         }
     }
 
@@ -419,6 +440,12 @@ public class GPTConnector : MonoBehaviour
         }
         if (_responseInProgress || (_isSpeaking && ttsPlayer != null && ttsPlayer.IsSpeaking))
         {
+            if (allowUserInterrupts)
+            {
+                InterruptForBargeIn();
+                ExecuteAudioFileRequest(audioFilePath, onComplete);
+                return;
+            }
             D($"[Queue] Queuing audio file request (agent busy): {audioFilePath}");
             _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest
             {
@@ -463,7 +490,8 @@ public class GPTConnector : MonoBehaviour
         else
         {
             string b64 = Convert.ToBase64String(wav);
-            StartCoroutine(SendAudioRequest(b64, "wav"));
+            int requestSerial = ++_httpRequestSerial;
+            StartCoroutine(SendAudioRequest(b64, "wav", requestSerial));
         }
     }
 
@@ -485,6 +513,12 @@ public class GPTConnector : MonoBehaviour
 
         if (_responseInProgress || (_isSpeaking && ttsPlayer != null && ttsPlayer.IsSpeaking))
         {
+            if (allowUserInterrupts)
+            {
+                InterruptForBargeIn();
+                ExecuteAudioBytesRequest(audioBytes, format, onComplete);
+                return;
+            }
             D($"[Queue] Queuing audio bytes request (agent busy), transcript: {transcriptContext ?? "(none)"}");
             _requestQueue.Enqueue(new GPTRequestQueue.QueuedRequest
             {
@@ -521,7 +555,41 @@ public class GPTConnector : MonoBehaviour
             string fmt = string.IsNullOrEmpty(format) ? "wav" : format;
             string b64 = Convert.ToBase64String(audioBytes);
             D($"[SendAudioBytes] HTTP model={chatModel}, format={fmt}, base64Len={b64.Length}");
-            StartCoroutine(SendAudioRequest(b64, fmt));
+            int requestSerial = ++_httpRequestSerial;
+            StartCoroutine(SendAudioRequest(b64, fmt, requestSerial));
+        }
+    }
+
+    public void InterruptForBargeIn()
+    {
+        if (!allowUserInterrupts) return;
+        D("[Interrupt] User barge-in detected. Canceling current response.");
+
+        if (clearQueueOnInterrupt) _requestQueue.Clear();
+
+        _responseInProgress = false;
+        MarkSpeakingEnd();
+        try { ttsDriver?.CancelWait(); } catch { }
+        if (ttsPlayer != null) ttsPlayer.StopSpeaking();
+
+        _assistantTranscriptAccum.Length = 0;
+        _textAccum?.Clear();
+        _audioAccum?.Dispose();
+        _audioAccum = new MemoryStream();
+        _audioChunkCount = 0;
+
+        _httpRequestSerial++; // Invalidate any in-flight HTTP response
+
+        if (useRealtime)
+        {
+            if (disconnectRealtimeOnInterrupt)
+            {
+                StartCoroutine(InterruptRealtimeSession());
+            }
+            else
+            {
+                StartCoroutine(SendWsText("{\"type\":\"response.cancel\"}"));
+            }
         }
     }
 
@@ -540,7 +608,7 @@ public class GPTConnector : MonoBehaviour
     }
 
     // ========== HTTP ==========
-    private IEnumerator SendTextRequest(string userInput)
+    private IEnumerator SendTextRequest(string userInput, int requestSerial)
     {
         const string endpoint = "https://api.openai.com/v1/chat/completions";
         string messagesJson = BuildMessagesJson(userInput);
@@ -565,11 +633,17 @@ public class GPTConnector : MonoBehaviour
 #endif
         D($"[HTTP←] code={req.responseCode}, ok={ok}, err={req.error}, respBytes={(req.downloadHandler?.data?.Length ?? -1)}");
 
+        if (requestSerial != _httpRequestSerial)
+        {
+            D("[HTTP] Ignoring stale response (interrupted).");
+            yield break;
+        }
+
         if (dumpResponsesToFile) SafeWriteFile("gpt_last_response.json", req.downloadHandler?.text);
         HandleCompletionResponse(ok, req.downloadHandler?.text);
     }
 
-    private IEnumerator SendAudioRequest(string base64Audio, string format)
+    private IEnumerator SendAudioRequest(string base64Audio, string format, int requestSerial)
     {
         const string endpoint = "https://api.openai.com/v1/chat/completions";
         var sb = new StringBuilder(4096);
@@ -617,6 +691,12 @@ public class GPTConnector : MonoBehaviour
         ok = (!req.isNetworkError && !req.isHttpError);
 #endif
         D($"[HTTP←] code={req.responseCode}, ok={ok}, err={req.error}, respBytes={(req.downloadHandler?.data?.Length ?? -1)}");
+
+        if (requestSerial != _httpRequestSerial)
+        {
+            D("[HTTP] Ignoring stale response (interrupted).");
+            yield break;
+        }
         if (dumpResponsesToFile) SafeWriteFile("gpt_last_response.json", req.downloadHandler?.text);
         HandleCompletionResponse(ok, req.downloadHandler?.text);
     }
@@ -1510,6 +1590,27 @@ public class GPTConnector : MonoBehaviour
         try { _ws?.Dispose(); } catch { }
         _ws = null;
         _wsCts = null;
+    }
+
+    private void BindSpeechRecognizer()
+    {
+        if (speechRecognizer != null && ttsPlayer != null)
+        {
+            speechRecognizer.ttsToInterrupt = ttsPlayer;
+            ttsPlayer.BindRecognizer(speechRecognizer);
+        }
+    }
+
+    private IEnumerator InterruptRealtimeSession()
+    {
+        if (_ws == null || _ws.State != WebSocketState.Open) yield break;
+        yield return SendWsText("{\"type\":\"response.cancel\"}");
+        try { _wsCts?.Cancel(); } catch { }
+        try { _ws?.Dispose(); } catch { }
+        _ws = null;
+        _wsCts = null;
+        _sessionReady = false;
+        while (_eventQueue.TryDequeue(out _)) { }
     }
 
     // ================== 相位 → 说明文本 ==================

@@ -37,6 +37,14 @@ namespace AI.Prompts
                 "- The scene has text panels that display instructions. Do NOT repeat what's already written on the panels.\n" +
                 "- Instead, clarify or rephrase if the student seems confused, or add helpful context.\n" +
                 "- There is a green ATP bar that fills up during Interphase - reference it when relevant.\n\n" +
+                "HEALING CYCLE TRACKING:\n" +
+                $"- Cycles completed so far: {GameManager.GetHealingCycleCount()}\n" +
+                $"- Total cycles needed: {GameManager.MAX_HEALING_CYCLES}\n" +
+                $"- Cycles remaining: {GameManager.MAX_HEALING_CYCLES - GameManager.GetHealingCycleCount()}\n" +
+                "- IMPORTANT: Real wound healing requires MULTIPLE rounds of cell division, not just one.\n" +
+                "- After completing each round, explain that the wound needs more cell division to fully heal.\n" +
+                "- Only after the 3rd completion should you congratulate them on fully healing the wound.\n" +
+                "- When asked about progress, give specific cycle counts and encourage them.\n\n" +
                 "RESPONSE STYLE:\n" +
                 $"- Be warm and encouraging. {empathy}\n" +
                 "- Be concise but never cold. Every response should feel supportive.\n" +
@@ -104,9 +112,13 @@ namespace AI.Prompts
             "Welcome the student and explain the learning objectives.",
             "- The arm wound (the problem they will solve by learning about mitosis)",
             "1. Greet the student and introduce yourself as their tutor\n" +
-            "2. Briefly explain that they'll be learning about mitosis, the process of cell division, to help heal the arm wound\n",
-            "Hi there! I'm your AI Tutor, here to guide you through an exciting journey inside a cell to learn about mitosis—the process cells use to divide and heal wounds like yours! We'll explore different phases of mitosis together, and by the end, you'll understand how your body repairs itself at a cellular level. Touch the arm wound to get started!",
-            "- 'What are we doing here?' → 'We're going to learn about mitosis, which is how your body heals wounds by making new cells!'\n" +
+            "2. Explain that they'll be learning about mitosis to help heal the arm wound\n" +
+            "3. Mention that wound healing requires multiple rounds of cell division",
+            "Hi there! I'm your AI Tutor, here to guide you through mitosis—the process of cell division that heals wounds. " +
+            "To repair tissue damage, cells must divide multiple times to create enough new cells. " +
+            "You'll go through the mitosis process three times to fully heal this wound. Touch the arm wound to begin!",
+            "- 'What are we doing here?' → 'We're learning about mitosis to heal this wound by making new cells!'\\n" +
+            "- 'How long will this take?' → 'You'll complete the cell division process three times to fully heal the wound.'\\n" +
             HelpfulAnalogyHeader);
 
         public static string Interphase = BuildPhase(
@@ -173,14 +185,15 @@ namespace AI.Prompts
 
         public static string Telophase = BuildPhase(
             "Telophase",
-            "Complete the cell division and finish the healing process.",
+            "Complete the cell division and progress in the healing process.",
             "- Two groups of chromatids (one at each end of the cell)\n" +
-            "- The arm wound (needs to be touched to complete healing)",
+            "- The arm wound (needs to be touched to progress)",
             "1. Touch the wound on the arm for 3 seconds\n" +
-            "2. The healing process will complete and the ending scene starts automatically",
-            "Now that both sides have identical DNA, the cell can finish dividing. You're almost done!",
-            "- 'What do I do now?' → 'Touch the arm wound for 3 seconds to complete the healing.'\n" +
-            "- 'Is it working?' → 'Keep holding! The scene will change when it's complete.'\n" +
-            "- 'Why does this heal?' → 'Cell division is how your body repairs wounds—by making new cells!'");
+            "2. The AI will provide feedback based on your progress\n" +
+            "3. After 3 cycles, the wound is fully healed",
+            "The AI agent will automatically provide feedback when you reach this phase. Listen for encouragement and explanations about why multiple rounds of cell division are needed.",
+            "- 'What should I do?' → 'The AI will guide you automatically.'\n" +
+            "- 'Is it working?' → 'Keep holding! The scene will change when complete.'\n" +
+            "- 'Why multiple rounds?' → 'Real wound healing requires many cells to divide, not just one!'");
     }
 }

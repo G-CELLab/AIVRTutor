@@ -13,30 +13,12 @@ public class AnaPlayerCentrosomeDetect : MonoBehaviour
     public Image sliderImg;
     public Sprite checkedImg;
     public bool anaSuccess_L = false;
-    bool handTouchingDetect = false;
 
     public GameObject LeftHand;
     public GameObject RightHand;
     public AnaPlayerCentrosomeDetect_R ana;
 
     public Image HPbar;
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.tag == "Left" || other.gameObject.tag == "Right")
-        {
-            handTouchingDetect = true;
-        }
-
-    }
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.gameObject.tag == "Left" || other.gameObject.tag == "Right")
-        {
-            handTouchingDetect = false;
-        }
-    }
-
 
     private void OnTriggerStay(Collider other)
     {

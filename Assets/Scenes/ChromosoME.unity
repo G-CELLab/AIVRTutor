@@ -7517,7 +7517,7 @@ GameObject:
   m_Component:
   - component: {fileID: 543131220}
   m_Layer: 0
-  m_Name: Global Information Penel Transform
+  m_Name: Global Information Panel Transform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8060,9 +8060,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "Look at the arm in front of you!\nThere is a scar... and it looks painful 
-    :(\n\nYou can heal that wound by doing a role of chromosome during the cell division
-    process!\n\nIf you touch the wound for three seconds, you will be dive into the
-    human skin cell. \n\nLet's do this!!!"
+    :(\n\nYou can heal that wound by doing the role of a chromosome during the cell
+    division process!\n\nIf you touch the wound for three seconds, you will be dive
+    into the human skin cell. \n\nLet's do this!!!"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -10377,7 +10377,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0.52}
-  m_SizeDelta: {x: 3, y: 1}
+  m_SizeDelta: {x: 4, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &675232124
 MonoBehaviour:
@@ -10449,7 +10449,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
-  m_ActiveFontFeatures: 00000000
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -14116,7 +14116,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!223 &947219425
 Canvas:
   m_ObjectHideFlags: 0
@@ -15420,7 +15420,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -0.54}
-  m_SizeDelta: {x: 3, y: 1}
+  m_SizeDelta: {x: 4, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1008816452
 MonoBehaviour:
@@ -15442,7 +15442,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Thanks for participating this research:)
+  m_text: Thanks for participating in this research :)
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -15492,7 +15492,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
-  m_ActiveFontFeatures: 00000000
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -20829,7 +20829,7 @@ MonoBehaviour:
   chatModel: gpt-5-mini
   requestTimeoutSeconds: 30
   useRealtime: 1
-  realtimeModel: gpt-realtime-2025-08-28
+  realtimeModel: gpt-realtime-mini
   realtimeSampleRate: 24000
   realtimeDumpEvents: 0
   outputText: {fileID: 0}
@@ -20916,6 +20916,9 @@ MonoBehaviour:
   pendingUserPrompt: 
   realtimeSilenceTimeoutSec: 30
   minCharsForTts: 30
+  allowUserInterrupts: 1
+  clearQueueOnInterrupt: 1
+  disconnectRealtimeOnInterrupt: 1
   verboseDebug: 1
   dumpResponsesToFile: 1
   debugLogInterval: 0.25
@@ -20985,6 +20988,7 @@ MonoBehaviour:
   stopThreshold: 0.015
   stopSilenceTime: 1.2
   ttsToInterrupt: {fileID: 1434790982}
+  allowBargeIn: 1
   interruptEvenBeforeVAD: 0
   interruptThreshold: 0.05
   interruptGraceMs: 700
@@ -48469,7 +48473,7 @@ GameObject:
   - component: {fileID: 1986038464}
   - component: {fileID: 1986038463}
   m_Layer: 5
-  m_Name: Canvas (1)
+  m_Name: Ending_Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -48493,8 +48497,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 70.13, y: 4.532}
-  m_SizeDelta: {x: 7.434765, y: 2.131807}
+  m_AnchoredPosition: {x: 70.13, y: 2.5}
+  m_SizeDelta: {x: 10, y: 2.131807}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1986038463
 MonoBehaviour:
@@ -48535,7 +48539,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!223 &1986038465
 Canvas:
   m_ObjectHideFlags: 0
