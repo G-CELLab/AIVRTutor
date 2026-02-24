@@ -72,6 +72,7 @@ public class Condense : MonoBehaviour
     void FinishImmediately()
     {
         isFinished = true;
+        LogEventHelper.LogDNACondensed();
 
         // INSTANT DISAPPEARANCE: Old DNA goes away first
         if (prophaseDNA != null)

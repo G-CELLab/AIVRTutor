@@ -8,6 +8,19 @@ public class RightHandManager : MonoBehaviour
     [SerializeField] 
     private NearFarInteractor handInteractor;
 
+    void Start()
+    {
+        // Auto-find NearFarInteractor if not assigned
+        if (handInteractor == null)
+        {
+            handInteractor = GetComponentInChildren<NearFarInteractor>();
+            if (handInteractor == null)
+            {
+                Debug.LogWarning("[RightHandManager] NearFarInteractor not found in children!");
+            }
+        }
+    }
+
     void Update()
     {
         if (handInteractor != null)

@@ -20,6 +20,7 @@ public class Grab_Tutorial : MonoBehaviour
         if (other.gameObject.tag == "Wound")
         {
             triggerDetected = true;
+            LogEventHelper.LogTriggerEnterWound();
             Debug.Log("Trigger_Enter_Wound");
         }
     }
@@ -28,6 +29,7 @@ public class Grab_Tutorial : MonoBehaviour
         if (other.gameObject.tag == "Wound")
         {
             triggerDetected = false;
+            LogEventHelper.LogTriggerExitWound();
             Debug.Log("Trigger_Exit_Wound");
         }
     }

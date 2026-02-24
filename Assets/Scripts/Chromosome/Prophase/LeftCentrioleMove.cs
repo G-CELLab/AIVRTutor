@@ -72,6 +72,7 @@ public class LeftCentrioleMove : MonoBehaviour
 
             touchedL = true;
             if (hand != null) hand.L_handTouched = true;
+            LogEventHelper.LogCentrioleMoved();
 
             // DISABLE INTERACTION IMMEDIATELY
             if (GetComponent<BoxCollider>()) GetComponent<BoxCollider>().enabled = false;

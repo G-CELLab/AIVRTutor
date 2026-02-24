@@ -17,6 +17,7 @@ public class SceneChange_Tutorial : MonoBehaviour
         if (other.gameObject.tag == "Left" || other.gameObject.tag == "Right")
         {
             triggerDetected = true;
+            LogEventHelper.LogTriggerEnterWound();
             Debug.Log("Trigger_Enter_Wound");
         }
     }
@@ -25,6 +26,7 @@ public class SceneChange_Tutorial : MonoBehaviour
         if (other.gameObject.tag == "Left" || other.gameObject.tag == "Right")
         {
             triggerDetected = false;
+            LogEventHelper.LogTriggerExitWound();
             Debug.Log("Trigger_Exit_Wound");
         }
     }

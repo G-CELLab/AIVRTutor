@@ -109,6 +109,7 @@ public class GameManager : MonoBehaviour
 
     public void FoodCollision()
     {
+        LogEventHelper.LogATPCharged();
         Debug.Log("ATP_Charged");
         ATPsliderImg.fillAmount += 0.3f;
     }
