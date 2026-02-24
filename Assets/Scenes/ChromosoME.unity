@@ -11686,7 +11686,7 @@ MonoBehaviour:
   m_GrabPoint: {fileID: 1181112323}
   m_FistGesture: {fileID: 2227016443715010657}
   m_CondenseGesture: {fileID: 2227016443715010656}
-  m_CondenseSuppressionDistance: 0.45
+  m_CondenseSuppressionDistance: 0.85
   m_ForceDynamicPinchRotation: 1
   m_ApplyGrabRotationFix: 1
   m_LeftGrabRotationOffset: {x: 0, y: 45, z: 0}
@@ -19857,7 +19857,7 @@ MonoBehaviour:
   m_GrabPoint: {fileID: 1286590359}
   m_FistGesture: {fileID: 1839154971}
   m_CondenseGesture: {fileID: 2227016443715010656}
-  m_CondenseSuppressionDistance: 0.45
+  m_CondenseSuppressionDistance: 0.85
   m_ForceDynamicPinchRotation: 1
   m_ApplyGrabRotationFix: 1
   m_LeftGrabRotationOffset: {x: 0, y: 45, z: 0}
@@ -51300,7 +51300,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DualHandMotionGesture
   leftHandPose: {fileID: 2227016443715010654}
   rightHandPose: {fileID: 1839154964}
-  minDistance: 0.35
+  minDistance: 0.85
   minVelocity: 0.5
   onGesturePerformed:
     m_PersistentCalls:

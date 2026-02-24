@@ -71,6 +71,7 @@ public class DualHandMotionGesture : MonoBehaviour
             }
             else if (distance > minDistance + releaseDistanceOffset)
             {
+                if (m_IsGestureActive) Debug.Log($"[DualHandMotion] Gesture ended. Dist: {distance:F2}m (target > {minDistance + releaseDistanceOffset}m)");
                 m_IsGestureActive = false;
             }
         }
