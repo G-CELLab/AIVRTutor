@@ -40,6 +40,10 @@ public class TextToSpeechPlayer : MonoBehaviour
 
     private static readonly HashSet<TextToSpeechPlayer> INSTANCES = new HashSet<TextToSpeechPlayer>();
     public bool IsSpeaking { get; private set; } = false;
+    
+    // Track current speech for logging
+    private static string currentSpeechText = "";
+    public static string GetCurrentSpeech() => currentSpeechText;
 
     void Awake()
     {
@@ -62,6 +66,8 @@ public class TextToSpeechPlayer : MonoBehaviour
     {
         Debug.LogWarning($"[TTS] StopSpeaking() called! Stopping speech. StackTrace: {System.Environment.StackTrace}");
         IsSpeaking = false;
+        // Don't clear currentSpeechText here - keep it for logging purposes
+        // It will be replaced when new speech starts
         if (audioSource != null)
         {
             try
@@ -194,6 +200,8 @@ public class TextToSpeechPlayer : MonoBehaviour
     // ====== 旧功能：文本 → 本地TTS（保留以便回退） ======
     public void Speak(string text, Action onPlaybackComplete)
     {
+        currentSpeechText = text;
+        Debug.Log($"[TTS] Speech text set for logging: '{text.Substring(0, Mathf.Min(50, text.Length))}'...");
         StartCoroutine(SendTextToSpeech(text, onPlaybackComplete));
     }
 

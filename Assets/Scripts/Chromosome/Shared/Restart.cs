@@ -73,10 +73,7 @@ public class Restart : MonoBehaviour
             // Update HP tracking to reflect the completed cycle
             ScoreManager.HPtracking = 0.3f + (GameManager.GetHealingCycleCount() * 0.3f);
             
-            // Update the debug log round counter to match
-            WriteDebugToFile.round = GameManager.GetHealingCycleCount() + 1;
-            
-            // Log the current cycle
+            // Log the current cycle (logging system handles cycle tracking automatically)
             Debug.Log($"Cycle {GameManager.GetHealingCycleCount()}/{GameManager.MAX_HEALING_CYCLES} completed. HPtracking: {ScoreManager.HPtracking}");
             
             // Check if the wound is now fully healed (3 cycles completed)

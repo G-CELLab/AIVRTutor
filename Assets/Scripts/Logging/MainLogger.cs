@@ -33,13 +33,9 @@ public class MainLogger : MonoBehaviour
     private float timeSinceLastFrameLog = 0f;
     private float sessionStartTime;
     
-    // State tracking
-    private string lastLeftGesture = "";
-    private string lastRightGesture = "";
-    private string lastLeftTouch = "";
-    private string lastRightTouch = "";
-    private string lastInfoPanel = "";
-    private string lastPhase = "";
+    // Cycle tracking
+    private int currentCycle = 0;
+    private int lastCycle = -1;
     
     // Event queue for "Other" column
     private Queue<string> otherEventQueue = new Queue<string>();
@@ -74,10 +70,11 @@ public class MainLogger : MonoBehaviour
         Debug.Log("[MainLogger] Found Left Hand Manager");
         Debug.Log("[MainLogger] Found Right Hand Manager");
 
-        // Setup CSV file path
+        // Setup initial CSV file path
         if (logToCSV)
         {
-            csvFilePath = Path.Combine(Application.persistentDataPath, "MainLog.csv");
+            currentCycle = GameManager.GetHealingCycleCount();
+            lastCycle = currentCycle;
             InitializeCSVFile();
         }
 
@@ -86,6 +83,18 @@ public class MainLogger : MonoBehaviour
 
     private void Update()
     {
+        // Check if cycle changed and create new CSV file if needed
+        currentCycle = GameManager.GetHealingCycleCount();
+        if (currentCycle != lastCycle && currentCycle < GameManager.MAX_HEALING_CYCLES)
+        {
+            lastCycle = currentCycle;
+            if (logToCSV)
+            {
+                InitializeCSVFile();
+                Debug.Log($"[MainLogger] Started new cycle {currentCycle + 1}");
+            }
+        }
+        
         timeSinceLastFrameLog += Time.deltaTime;
 
         if (timeSinceLastFrameLog >= loggingInterval)
@@ -106,18 +115,19 @@ public class MainLogger : MonoBehaviour
         string rightTouch = GetRightTouch();
         string infoPanel = GetCurrentInfoPanel();
         string phase = GetCurrentPhase();
+        string aiSpeech = GetAISpeech();
         string otherEvent = otherEventQueue.Count > 0 ? otherEventQueue.Dequeue() : "";
         
         // Console logging
         if (logToConsole)
         {
-            Debug.Log($"[MainLog] T={elapsed:F2}s | L_Ges:{leftGesture} | R_Ges:{rightGesture} | L_Touch:{leftTouch} | R_Touch:{rightTouch} | Panel:{infoPanel} | Phase:{phase} | Other:{otherEvent}");
+            Debug.Log($"[MainLog] T={elapsed:F2}s | L_Ges:{leftGesture} | R_Ges:{rightGesture} | L_Touch:{leftTouch} | R_Touch:{rightTouch} | Panel:{infoPanel} | Phase:{phase} | AI:{aiSpeech} | Other:{otherEvent}");
         }
 
         // CSV logging - every frame
         if (logToCSV)
         {
-            WriteToCSV(elapsed, leftGesture, rightGesture, leftTouch, rightTouch, infoPanel, phase, otherEvent);
+            WriteToCSV(elapsed, leftGesture, rightGesture, leftTouch, rightTouch, infoPanel, phase, aiSpeech, otherEvent);
         }
     }
 
@@ -149,8 +159,12 @@ public class MainLogger : MonoBehaviour
 
     private string GetCurrentInfoPanel()
     {
-        // Tutorial panel logging removed
-        return "";
+        // Log the current game phase as info (since tutorial panels were removed)
+        // This helps track what's happening at each phase transition
+        if (gameManager == null)
+            return "";
+            
+        return GameManager.eGameStatus.ToString();
     }
 
     private string GetCurrentPhase()
@@ -161,17 +175,33 @@ public class MainLogger : MonoBehaviour
         return GameManager.eGameStatus.ToString();
     }
 
+    private string GetAISpeech()
+    {
+        string speech = TextToSpeechPlayer.GetCurrentSpeech();
+        if (string.IsNullOrEmpty(speech))
+            return "";
+        
+        // Truncate long speech to fit nicely in logs (increased from 60 to 100 chars)
+        if (speech.Length > 100)
+            return speech.Substring(0, 100) + "...";
+        return speech;
+    }
+
     private void InitializeCSVFile()
     {
         try
         {
+            // Create filename with cycle number (1-indexed for user readability)
+            string cycleNumber = (currentCycle + 1).ToString();
+            csvFilePath = Path.Combine(Application.persistentDataPath, $"MainLog_Cycle{cycleNumber}.csv");
+            
             string directory = Path.GetDirectoryName(csvFilePath);
             if (!Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
             using (StreamWriter writer = new StreamWriter(csvFilePath, false))
             {
-                writer.WriteLine("Time(s),Left_Gesture,Right_Gesture,Left_Touch,Right_Touch,Info_Panel,Phase,Other");
+                writer.WriteLine("Time(s),Left_Gesture,Right_Gesture,Left_Touch,Right_Touch,Info_Panel,Phase,AI_Speech,Other");
             }
         }
         catch (Exception ex)
@@ -181,13 +211,13 @@ public class MainLogger : MonoBehaviour
     }
 
     private void WriteToCSV(float elapsed, string leftGesture, string rightGesture, string leftTouch, 
-                           string rightTouch, string infoPanel, string phase, string otherEvent)
+                           string rightTouch, string infoPanel, string phase, string aiSpeech, string otherEvent)
     {
         try
         {
             using (StreamWriter writer = new StreamWriter(csvFilePath, true))
             {
-                writer.WriteLine($"{elapsed:F3},{leftGesture},{rightGesture},{leftTouch},{rightTouch},{infoPanel},{phase},{otherEvent}");
+                writer.WriteLine($"{elapsed:F3},{leftGesture},{rightGesture},{leftTouch},{rightTouch},{infoPanel},{phase},{aiSpeech},{otherEvent}");
             }
         }
         catch (Exception ex)

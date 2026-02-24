@@ -20,7 +20,10 @@ public class HandPositionLogger : MonoBehaviour
     private string csvFilePath;
     private float timeSinceLastLog = 0f;
     private float sessionStartTime;
-    private bool csvHeaderWritten = false;
+    
+    // Cycle tracking
+    private int currentCycle = 0;
+    private int lastCycle = -1;
 
     private void Start()
     {
@@ -38,10 +41,11 @@ public class HandPositionLogger : MonoBehaviour
         Debug.Log("[HandPositionLogger] Found Left Hand: " + leftHandTransform.name);
         Debug.Log("[HandPositionLogger] Found Right Hand: " + rightHandTransform.name);
 
-        // Setup CSV file path
+        // Setup initial CSV file path
         if (logToCSV)
         {
-            csvFilePath = Path.Combine(Application.persistentDataPath, "Hand_Position.csv");
+            currentCycle = GameManager.GetHealingCycleCount();
+            lastCycle = currentCycle;
             InitializeCSVFile();
         }
 
@@ -50,6 +54,18 @@ public class HandPositionLogger : MonoBehaviour
 
     private void Update()
     {
+        // Check if cycle changed and create new CSV file if needed
+        currentCycle = GameManager.GetHealingCycleCount();
+        if (currentCycle != lastCycle && currentCycle < GameManager.MAX_HEALING_CYCLES)
+        {
+            lastCycle = currentCycle;
+            if (logToCSV)
+            {
+                InitializeCSVFile();
+                Debug.Log($"[HandPositionLogger] Started new cycle {currentCycle + 1}");
+            }
+        }
+        
         timeSinceLastLog += Time.deltaTime;
 
         if (timeSinceLastLog >= loggingInterval)
@@ -87,6 +103,10 @@ public class HandPositionLogger : MonoBehaviour
     {
         try
         {
+            // Create filename with cycle number (1-indexed for user readability)
+            string cycleNumber = (currentCycle + 1).ToString();
+            csvFilePath = Path.Combine(Application.persistentDataPath, $"Hand_Position_Cycle{cycleNumber}.csv");
+            
             // Ensure directory exists
             string directory = Path.GetDirectoryName(csvFilePath);
             if (!Directory.Exists(directory))
@@ -97,7 +117,6 @@ public class HandPositionLogger : MonoBehaviour
             {
                 writer.WriteLine("Time(s),LeftX,LeftY,LeftZ,RightX,RightY,RightZ");
             }
-            csvHeaderWritten = true;
         }
         catch (Exception ex)
         {
