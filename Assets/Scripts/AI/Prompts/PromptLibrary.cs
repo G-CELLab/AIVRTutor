@@ -1,7 +1,6 @@
 // Contains all system and phase prompt text and related logic for GPTConnector
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 
 namespace AI.Prompts
 {
