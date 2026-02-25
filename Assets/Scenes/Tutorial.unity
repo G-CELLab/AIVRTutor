@@ -1213,6 +1213,7 @@ MonoBehaviour:
   img_Content: {fileID: 761684556}
   img_Visual: {fileID: 1157366723}
   img_Manipulation: {fileID: 2137693270}
+  ffe: {fileID: 436895149}
   touch_comp: {fileID: 21300000, guid: fceb4aaef0c70714590b91a82da7c84b, type: 3}
   grab_comp: {fileID: 21300000, guid: 5bfac4e3117a77346bf0f01f3db98705, type: 3}
   duplicate_comp: {fileID: 21300000, guid: 15385103223f79342b9a40ef5f60dad2, type: 3}
@@ -1287,90 +1288,98 @@ MonoBehaviour:
   contentPrompt: 'CURRENT PHASE: Tutorial: Content Questions
 
     GOAL: Teach the
-    learner how to ask content knowledge questions about mitosis terms.
+    learner how to ask content knowledge questions about biology terms without diving
+    into mitosis yet.
 
 
-    KEY
-    OBJECTS IN SCENE:
+    KEY OBJECTS IN SCENE:
 
-    - Chromatid (visible in front of the learner)
+    - Chromatid (visible in front
+    of the learner)
 
-    - Mitosis
-    phase terms like metaphase
-
-
-    STUDENT TASKS:
-
-    1. Briefly explain content
-    knowledge questions
-
-    2. Prompt them to ask: ''What is a chromatid?'' or ''What
-    happens during metaphase?''
-
-    3. If they ask a correct content question, answer
-    briefly and end with: ''That was a content question.''
-
-    4. If they struggle,
-    offer sentence starters like ''What is ___?'' or ''What happens during ___?''
+    - Biology terms like chromatid and metaphase
 
 
-    HELPFUL
-    EXPLANATION: ''Only use the exact phrase ''That was a content question.'' after
-    a correct content question. Do not say it during your explanation.''
+    STUDENT
+    TASKS:
+
+    1. Begin speaking immediately and explain that this phase is about
+    how to ask content knowledge questions
+
+    2. Prompt them to ask: ''What is
+    a chromatid?'' or ''What happens during metaphase?''
+
+    3. If they ask a correct
+    content question, answer briefly and end with: ''That was a content question.''
+
+    4.
+    If they struggle, offer sentence starters like ''What is ___?'' or ''What happens
+    during ___?''
 
 
-    COMMON
-    QUESTIONS:
+    HELPFUL EXPLANATION: ''When initiating this phase, do NOT
+    start with filler words like ''sure'', ''okay'', or ''alright''. Jump directly
+    into the explanation. Use ''That was a content question.'' or similar phrasing
+    to label correct content questions flexibly. Do not mention mitosis or teach
+    phase details beyond a one-sentence definition.''
 
-    - If they ask a content question, define the term in one short
-    sentence.
+
+    COMMON QUESTIONS:
+
+    -
+    If they ask a content question, define the term in one short sentence and keep
+    it brief.
 
     - If they ask a non-content question, guide them to rephrase it
     as a definition or process question.'
   visualPrompt: 'CURRENT PHASE: Tutorial: Visual Reference Questions
 
     GOAL: Teach
-    the learner how to connect biology terms to objects they can see.
+    the learner how to connect biology terms to objects they can see in the scene.
 
 
-    KEY OBJECTS
-    IN SCENE:
+    KEY
+    OBJECTS IN SCENE:
 
     - Centriole (small barrel-shaped object)
 
-    - Chromosome (X-shaped
-    object)
+    - Chromosome
+    (X-shaped object)
 
 
     STUDENT TASKS:
 
-    1. Explain visual reference questions
+    1. Begin speaking immediately and
+    explain visual reference questions
 
-    2.
-    Prompt them to ask: ''Which object here is the chromosome?'' or ''Which object
-    here duplicates to pull chromosomes apart?''
+    2. Prompt them to ask: ''Which object
+    here is the chromosome?'' or ''Which object here duplicates to pull chromosomes
+    apart?''
 
-    3. If they ask a correct visual
-    reference question, point out the object and end with: ''That was a visual reference
-    question.''
+    3. If they ask a correct visual reference question, point out the
+    object and end with: ''That was a visual reference question.''
 
-    4. If they struggle, encourage them to connect a biology term
-    to something they see
+    4. If they
+    struggle, encourage them to connect a biology term to something they see
 
 
-    HELPFUL EXPLANATION: ''Only use the exact phrase
-    ''That was a visual reference question.'' after a correct visual reference question.
-    Do not say it during your explanation.''
+    HELPFUL
+    EXPLANATION: ''When initiating this phase, do NOT start with filler words like
+    ''sure'', ''okay'', or ''alright''. Jump directly into the explanation. Use ''That
+    was a visual reference question.'' or similar phrasing to label correct visual
+    reference questions flexibly.''
 
 
     COMMON QUESTIONS:
 
-    - If they
-    ask about the chromosome, describe the X-shaped object and where it is.
+    - If they ask about
+    the chromosome, say it is the blue object on the left.
 
-    -
-    If they ask about the centriole, describe the barrel-shaped object and where
-    it is.'
+    - If they ask about
+    the yellow object, say it is the centriole on the right.
+
+    - If they ask about
+    the centriole, describe the barrel-shaped object on the right.'
   manipulationPrompt: 'CURRENT PHASE: Tutorial: Manipulation Questions
 
     GOAL:
@@ -1386,32 +1395,34 @@ MonoBehaviour:
     STUDENT
     TASKS:
 
-    1. Explain manipulation questions are for ''what should I do next?''
+    1. Begin speaking immediately and explain manipulation questions
+    are for ''what should I do next?''
 
-    2.
-    Prompt them to ask: ''What should I do next?'' or ''What do I do with the centriole?''
+    2. Prompt them to ask: ''What should
+    I do next?'' or ''What do I do with the centriole?''
 
-    3.
-    If they ask an appropriate manipulation question, give clear guidance and end
-    with: ''That was a manipulation question.''
+    3. If they ask an appropriate
+    manipulation question, give clear guidance and end with: ''That was a manipulation
+    question.''
 
-    4. If they are unsure, gently
-    prompt them to ask for guidance
-
-
-    HELPFUL EXPLANATION: ''Only use the exact
-    phrase ''That was a manipulation question.'' after a correct manipulation question.
-    End with a short summary of the three question types.''
+    4. If they are unsure, gently prompt them to ask for guidance
 
 
-    COMMON QUESTIONS:
+    HELPFUL
+    EXPLANATION: ''When initiating this phase, do NOT start with filler words like
+    ''sure'', ''okay'', or ''alright''. Jump directly into the explanation. Use ''That
+    was a manipulation question.'' or similar phrasing to label correct manipulation
+    questions flexibly. End with a short summary of the three question types.''
 
-    -
-    If they ask what to do next, give 1-2 clear steps and encourage them.
 
-    -
-    If they ask about the centriole, briefly explain how it will be used later to
-    pull chromosomes apart.'
+    COMMON
+    QUESTIONS:
+
+    - If they ask what to do next, give 1-2 clear steps and encourage
+    them.
+
+    - If they ask about the centriole, give a brief procedural cue without
+    teaching new biology content.'
   clearHistoryOnStageChange: 1
   autoGreetOnStageEnter: 1
   greetingDelay: 0.5
@@ -2451,10 +2462,10 @@ MonoBehaviour:
   maxLogChars: 600
   logTokenBreakdown: 1
   omitPhaseFromInstructionsWhenPinned: 1
-  delayFirstGroupSec: 5
-  delaySecondGroupSec: 3
-  delayThirdGroupSec: 2.5
-  delay4GroupSec: 3.35
+  delayEatGestureSec: 1.5
+  delayCondenseGestureSec: 2
+  delayLineUpGestureSec: 2
+  delaySplitOutwardGestureSec: 2.5
   speakingWaitGraceSec: 5
   logPrompts: 1
   promptEchoText: {fileID: 0}
@@ -2499,6 +2510,8 @@ MonoBehaviour:
   trigDZ18: doDZ18
   trigDZ20: doDZ20
   trigDZ22: doDZ22
+  lineUpGestureSpeedMultiplier: 0.5
+  animSpeedParam: gestureSpeed
   waitBeforeDZ2: 5
   lingerAfterEnd: 0.05
   verbose: 1

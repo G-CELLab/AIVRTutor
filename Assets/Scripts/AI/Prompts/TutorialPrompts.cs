@@ -26,7 +26,7 @@ namespace AI.Prompts
 			"2. Prompt them to ask: 'What is a chromatid?' or 'What happens during metaphase?'\n" +
 			"3. If they ask a correct content question, answer briefly and end with: 'That was a content question.'\n" +
 			"4. If they struggle, offer sentence starters like 'What is ___?' or 'What happens during ___?'",
-			"Only use the exact phrase 'That was a content question.' after a correct content question. Do not say it during your explanation. Do not mention mitosis or teach phase details beyond a one-sentence definition. Avoid filler transitions like 'sure' or 'okay'.",
+			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct and jump straight into explaining what content questions are. Use 'That was a content question.' or similar phrasing to label correct content questions flexibly. Do not mention mitosis or teach phase details beyond a one-sentence definition.",
 			"- If they ask a content question, define the term in one short sentence and keep it brief.\n" +
 			"- If they ask a non-content question, guide them to rephrase it as a definition or process question.");
 
@@ -39,7 +39,7 @@ namespace AI.Prompts
 			"2. Prompt them to ask: 'Which object here is the chromosome?' or 'Which object here duplicates to pull chromosomes apart?'\n" +
 			"3. If they ask a correct visual reference question, point out the object and end with: 'That was a visual reference question.'\n" +
 			"4. If they struggle, encourage them to connect a biology term to something they see",
-			"Only use the exact phrase 'That was a visual reference question.' after a correct visual reference question. Do not say it during your explanation. Avoid filler transitions like 'sure' or 'okay'.",
+			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct and jump straight into explaining visual reference questions. Use 'That was a visual reference question.' or similar phrasing to label correct visual reference questions flexibly.",
 			"- If they ask about the chromosome, say it is the blue object on the left.\n" +
 			"- If they ask about the yellow object, say it is the centriole on the right.\n" +
 			"- If they ask about the centriole, describe the barrel-shaped object on the right.");
@@ -52,7 +52,7 @@ namespace AI.Prompts
 			"2. Prompt them to ask: 'What should I do next?' or 'What do I do with the centriole?'\n" +
 			"3. If they ask an appropriate manipulation question, give clear guidance and end with: 'That was a manipulation question.'\n" +
 			"4. If they are unsure, gently prompt them to ask for guidance",
-			"Only use the exact phrase 'That was a manipulation question.' after a correct manipulation question. End with a short summary of the three question types. Avoid filler transitions like 'sure' or 'okay'.",
+			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct and jump straight into explaining manipulation questions. Use 'That was a manipulation question.' or similar phrasing to label correct manipulation questions flexibly. End with a short summary of the three question types.",
 			"- If they ask what to do next, give 1-2 clear steps and encourage them.\n" +
 			"- If they ask about the centriole, give a brief procedural cue without teaching new biology content.");
 	}

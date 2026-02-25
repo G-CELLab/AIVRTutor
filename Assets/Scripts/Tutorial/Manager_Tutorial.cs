@@ -47,6 +47,9 @@ public class Manager_Tutorial : MonoBehaviour
     public GameObject img_Visual;
     public GameObject img_Manipulation;
 
+    [Header("AI Agent")]
+    public GameObject ffe;
+
     public Sprite touch_comp;
     public Sprite grab_comp;
     public Sprite duplicate_comp;
@@ -178,6 +181,7 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(centriole_Object, false);
                 SetActiveSafe(chromosome_Object, false);
                 SetActiveSafe(change_Scene, false);
+                SetActiveSafe(ffe, false);
                 break;
             case TutorialStage.GrabTutorial:
                 SetActiveSafe(touch_Info, false);
@@ -187,6 +191,7 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(grab_particle2, false);
                 SetImageSpriteSafe(img_Touch, touch_comp);
                 SetActiveSafe(img_Grab, true);
+                SetActiveSafe(ffe, false);
                 break;
             case TutorialStage.CopyTutorial:
                 copyTargetsCompleted = 0;
@@ -204,6 +209,7 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(chromatid_Object, false);
                 SetActiveSafe(centriole_Object, false);
                 SetActiveSafe(chromosome_Object, false);
+                SetActiveSafe(ffe, false);
                 break;
             case TutorialStage.ContentQuestions:
                 SetActiveSafe(copy_Info, false);
@@ -224,6 +230,7 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(centriole_Object, false);
                 SetActiveSafe(chromosome_Object, false);
                 SetActiveSafe(change_Scene, false);
+                SetActiveSafe(ffe, true);
                 break;
             case TutorialStage.VisualQuestions:
                 SetActiveSafe(content_Info, false);
@@ -235,6 +242,7 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(change_Scene, false);
                 SetImageSpriteSafe(img_Content, content_comp);
                 SetActiveSafe(img_Visual, true);
+                SetActiveSafe(ffe, true);
                 break;
             case TutorialStage.ManipulationQuestions:
                 SetActiveSafe(content_Info, false);
@@ -246,6 +254,7 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(change_Scene, false);
                 SetImageSpriteSafe(img_Visual, visual_comp);
                 SetActiveSafe(img_Manipulation, true);
+                SetActiveSafe(ffe, true);
                 break;
             case TutorialStage.Finish:
                 SetActiveSafe(copy_Info, false);
@@ -264,6 +273,7 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(chromosome_Object, false);
                 SetImageSpriteSafe(img_Manipulation, manipulation_comp);
                 SetActiveSafe(change_Scene, true);
+                SetActiveSafe(ffe, true);
                 break;
         }
     }
