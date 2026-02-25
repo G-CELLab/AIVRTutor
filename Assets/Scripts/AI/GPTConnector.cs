@@ -161,6 +161,7 @@ public class GPTConnector : MonoBehaviour
 
     // === 助理字幕累积 ===
     private readonly StringBuilder _assistantTranscriptAccum = new StringBuilder(256);
+    private bool _assistantGestureTriggeredForResponse = false;
 
     // -------- 生命周期：启动即预缓存 --------
     // private void Start()
@@ -269,6 +270,7 @@ public class GPTConnector : MonoBehaviour
     private void ExecuteTextRequest(string userInput, Action onComplete)
     {
         _responseInProgress = true;
+        _assistantGestureTriggeredForResponse = false;
         onReplyComplete = () => {
             _responseInProgress = false;
             onComplete?.Invoke();
@@ -463,6 +465,7 @@ public class GPTConnector : MonoBehaviour
     private void ExecuteAudioFileRequest(string audioFilePath, Action onComplete)
     {
         _responseInProgress = true;
+        _assistantGestureTriggeredForResponse = false;
         onReplyComplete = () => {
             _responseInProgress = false;
             onComplete?.Invoke();
@@ -537,6 +540,7 @@ public class GPTConnector : MonoBehaviour
     private void ExecuteAudioBytesRequest(byte[] audioBytes, string format, Action onComplete)
     {
         _responseInProgress = true;
+        _assistantGestureTriggeredForResponse = false;
         onReplyComplete = () => {
             _responseInProgress = false;
             onComplete?.Invoke();
@@ -568,6 +572,7 @@ public class GPTConnector : MonoBehaviour
         if (clearQueueOnInterrupt) _requestQueue.Clear();
 
         _responseInProgress = false;
+        _assistantGestureTriggeredForResponse = false;
         MarkSpeakingEnd();
         try { ttsDriver?.CancelWait(); } catch { }
         if (ttsPlayer != null) ttsPlayer.StopSpeaking();
@@ -999,7 +1004,7 @@ public class GPTConnector : MonoBehaviour
             if (!string.IsNullOrEmpty(full) && reactToAssistantTranscript)
             {
                 Debug.Log("[STT][assistant] " + full);
-                TryFireFromAssistantTranscript(full);
+                _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(full);
             }
             return;
         }
@@ -1014,6 +1019,11 @@ public class GPTConnector : MonoBehaviour
             {
                 history.Add(new Message { role = "assistant", content = replyText });
                 TrimHistory();
+            }
+
+            if (!string.IsNullOrEmpty(replyText) && reactToAssistantTranscript && !_assistantGestureTriggeredForResponse)
+            {
+                _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(replyText);
             }
 
             Action afterPlayback = () =>
@@ -1147,7 +1157,7 @@ public class GPTConnector : MonoBehaviour
         if (!string.IsNullOrEmpty(replyText))
         {
             // HTTP 模式：直接用助理文本匹配（此处只做匹配与调度，真正触发会在语音开始后延时）
-            TryFireFromAssistantTranscript(replyText);
+            _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(replyText);
             history.Add(new Message { role = "assistant", content = replyText });
             TrimHistory();
             D($"[Cost] Response length: {replyText.Length} chars (TTS threshold: {minCharsForTts} chars)");
@@ -1204,12 +1214,13 @@ public class GPTConnector : MonoBehaviour
     // ========= 仅基于“助理字幕/文本”的 4 个动作（延时触发实现） =========
     public event Action<string> OnAssistantTranscript;
 
-    private void TryFireFromAssistantTranscript(string transcript)
+    private bool TryFireFromAssistantTranscript(string transcript)
     {
-        if (string.IsNullOrWhiteSpace(transcript)) return;
+        if (string.IsNullOrWhiteSpace(transcript)) return false;
         OnAssistantTranscript?.Invoke(transcript);
-        if (ttsDriver == null) return;
+        if (ttsDriver == null) return false;
         string t = Normalize(transcript); // 去标点/小写/压空白
+        bool triggered = false;
 
         switch (GameManager.eGameStatus)
         {
@@ -1218,6 +1229,7 @@ public class GPTConnector : MonoBehaviour
                 {
                     Debug.Log("[React][assistant] Interphase → DZ13 EAT gesture (eating food for energy)");
                     ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ13(), delayEatGestureSec, "Interphase:EAT");
+                    triggered = true;
                 }
                 break;
 
@@ -1226,6 +1238,7 @@ public class GPTConnector : MonoBehaviour
                 {
                     Debug.Log("[React][assistant] Prophase → DZ18 CONDENSE gesture (X-shape condense)");
                     ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ18(), delayCondenseGestureSec, "Prophase:CONDENSE");
+                    triggered = true;
                 }
                 break;
 
@@ -1234,6 +1247,7 @@ public class GPTConnector : MonoBehaviour
                 {
                     Debug.Log("[React][assistant] Metaphase → DZ20 LINE UP gesture (line up at center)");
                     ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ20(), delayLineUpGestureSec, "Metaphase:LINE_UP");
+                    triggered = true;
                 }
                 break;
 
@@ -1242,12 +1256,15 @@ public class GPTConnector : MonoBehaviour
                 {
                     Debug.Log("[React][assistant] Anaphase → DZ22 SPLIT OUTWARD gesture (move to opposite ends)");
                     ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ22(), delaySplitOutwardGestureSec, "Anaphase:SPLIT_OUTWARD");
+                    triggered = true;
                 }
                 break;
 
             default:
                 break; // 其它阶段不触发
         }
+
+        return triggered;
     }
 
     // ====== Speaking 标记与延时调度 ======

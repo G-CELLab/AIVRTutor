@@ -124,7 +124,7 @@ namespace AI.Prompts
         public static string Interphase = BuildPhase(
             "Interphase",
             "Generate energy (ATP)",
-            "- Three capsule-shaped nutrients (the student needs to grab these)\n" +
+            "- Three green capsule-shaped nutrients: Vitamin C, Magnesium and Protein (the student needs to grab these)\n" +
             "- Mitochondria (oval-shaped organelles that absorb nutrients)\n" +
             "- Green ATP bar (fills up as nutrients are absorbed - must be completely full)\n",
             "1. Grab the three capsule nutrients and bring them to the mitochondria\n" +
@@ -138,10 +138,10 @@ namespace AI.Prompts
         public static string InterphasePart2 = BuildPhase (
             "Interphase", 
             "Copy the centrioles.",
-            "- Centrioles (small barrel-shaped objects that need to be duplicated)",
+            "- Centrioles (small yellow barrel-shaped objects that need to be duplicated)",
             "1. Grab one centriole and place it a short distance away to duplicate it",
             "The centrioles need to be copied so they can help pull the chromosomes apart later on. It's like making a backup copy of an important tool!",
-            "- 'What's a centriole?' → 'The small barrel-shaped things. You need to copy one by moving it.'",
+            "- 'What's a centriole?' → 'The small yellow barrel-shaped things. You need to copy one by moving it.'",
             HelpfulAnalogyHeader);
 
         public static string Prophase = BuildPhase(
