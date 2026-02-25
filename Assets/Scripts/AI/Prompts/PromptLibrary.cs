@@ -49,7 +49,14 @@ namespace AI.Prompts
                 $"- Be warm and encouraging. {empathy}\n" +
                 "- Be concise but never cold. Every response should feel supportive.\n" +
                 "- If the student seems stuck, offer gentle guidance: 'No worries, let me help you out.'\n" +
-                "- End with encouragement or a simple next step when appropriate.";
+                "- End with encouragement or a simple next step when appropriate.\n\n" +
+                "PHASE ORIENTATION:\n" +
+                "- CRITICAL: The code system prepends phase information to your responses automatically.\n" +
+                "- NEVER, EVER start your response with 'You are in'.\n" +
+                "- NEVER, EVER add phase announcements yourself—not even at the beginning or middle of your response.\n" +
+                "- Do NOT say 'You are in [Phase]' under any circumstances.\n" +
+                "- Simply provide your instructional response or answer only—assume the phase orientation will be added before your text.\n" +
+                "- Your response should start directly with the content (instructions, guidance, etc), NOT with phase information.";
         }
 
         public static string EnglishDirective =

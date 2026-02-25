@@ -133,6 +133,12 @@ public class GPTConnector : MonoBehaviour
     private readonly Dictionary<GameManager.GameState, string> _phaseTextCache = new Dictionary<GameManager.GameState, string>(); // 文本缓存
     private readonly Dictionary<GameManager.GameState, string> _phaseAudioPathCache = new Dictionary<GameManager.GameState, string>(); // 音频缓存（本地路径）
 
+    // ===== PHASE ANNOUNCEMENT TRACKING =====
+    // Tracks how many times each phase has been announced during the current cycle.
+    // Max 3 announcements per phase per cycle. Resets when phase changes or new cycle begins.
+    private readonly Dictionary<GameManager.GameState, int> _phaseAnnouncementCount = new Dictionary<GameManager.GameState, int>();
+    private GameManager.GameState _lastPhaseForAnnouncement = GameManager.GameState.Intro;
+
     // 内部
     private readonly List<Message> history = new List<Message>();
     private Action onReplyComplete;
@@ -218,6 +224,100 @@ public class GPTConnector : MonoBehaviour
     {
         if (usePhasePromptOverride) return phasePromptOverride ?? "";
         return PhaseText(gs);
+    }
+
+    // ===== PHASE ANNOUNCEMENT HELPERS =====
+    /// <summary>
+    /// Gets the display name for a phase, mapping InterphasePart2 to "Interphase".
+    /// </summary>
+    private string GetPhaseDisplayName(GameManager.GameState phase)
+    {
+        return phase == GameManager.GameState.InterphasePart2 ? "Interphase" : phase.ToString();
+    }
+
+    /// <summary>
+    /// Checks if the phase has changed since the last announcement.
+    /// If it has, resets the counter for the new phase.
+    /// </summary>
+    private void UpdatePhaseForAnnouncement()
+    {
+        if (GameManager.eGameStatus != _lastPhaseForAnnouncement)
+        {
+            _lastPhaseForAnnouncement = GameManager.eGameStatus;
+            // Reset counter for this phase when it changes
+            _phaseAnnouncementCount[GameManager.eGameStatus] = 0;
+            D($"[PhaseAnnounce] Phase changed to {GetPhaseDisplayName(GameManager.eGameStatus)}, counter reset");
+        }
+    }
+
+    /// <summary>
+    /// Determines if the current phase should be announced and returns the announcement text.
+    /// Increments the counter if announced.
+    /// Returns null if the phase should not be announced (max 3 per cycle).
+    /// </summary>
+    private string GetPhaseAnnouncementIfNeeded()
+    {
+        UpdatePhaseForAnnouncement();
+
+        // Get current count for this phase
+        if (!_phaseAnnouncementCount.ContainsKey(GameManager.eGameStatus))
+        {
+            _phaseAnnouncementCount[GameManager.eGameStatus] = 0;
+        }
+
+        int currentCount = _phaseAnnouncementCount[GameManager.eGameStatus];
+        const int MAX_ANNOUNCEMENTS_PER_PHASE = 3;
+
+        if (currentCount < MAX_ANNOUNCEMENTS_PER_PHASE)
+        {
+            // Announce the phase and increment counter
+            _phaseAnnouncementCount[GameManager.eGameStatus]++;
+            string phaseName = GetPhaseDisplayName(GameManager.eGameStatus);
+            string announcement = $"You are in {phaseName}. ";
+            D($"[PhaseAnnounce] Announcing phase: {phaseName} (count: {_phaseAnnouncementCount[GameManager.eGameStatus]}/{MAX_ANNOUNCEMENTS_PER_PHASE})");
+            return announcement;
+        }
+        else
+        {
+            // Already announced 3 times for this phase
+            D($"[PhaseAnnounce] Phase {GetPhaseDisplayName(GameManager.eGameStatus)} already announced {currentCount} times, skipping");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Resets all phase announcement counters. Call this when a new cycle begins.
+    /// </summary>
+    public void ResetPhaseAnnouncementCounters()
+    {
+        _phaseAnnouncementCount.Clear();
+        _lastPhaseForAnnouncement = GameManager.eGameStatus;
+        D("[PhaseAnnounce] All phase announcement counters reset (new cycle started)");
+    }
+
+    /// <summary>
+    /// Removes any "You are in [Phase]" statements from the AI response.
+    /// Safety filter to prevent AI from adding duplicate phase announcements.
+    /// </summary>
+    private string StripPhaseAnnouncementsFromResponse(string response)
+    {
+        if (string.IsNullOrEmpty(response)) return response;
+
+        // Remove patterns like "You are in Interphase.", "You are in Prophase.", etc.
+        // This handles the case where the AI adds phase info despite instructions not to
+        string result = System.Text.RegularExpressions.Regex.Replace(
+            response,
+            @"You are in \w+\.?\s*",
+            "",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase
+        );
+
+        if (result != response)
+        {
+            D($"[PhaseAnnounce] Stripped duplicate phase announcement from AI response");
+        }
+
+        return result;
     }
 
     // ===== 为“指定相位”构造最终 instructions（用于预缓存） =====
@@ -1015,6 +1115,21 @@ public class GPTConnector : MonoBehaviour
             DT("[RT]", "response completed/done");
 
             string replyText = _textAccum != null && _textAccum.Length > 0 ? _textAccum.ToString() : null;
+            
+            // ===== STRIP DUPLICATE PHASE ANNOUNCEMENTS =====
+            replyText = StripPhaseAnnouncementsFromResponse(replyText);
+            
+            // ===== PREPEND PHASE ANNOUNCEMENT IF NEEDED =====
+            if (!string.IsNullOrEmpty(replyText))
+            {
+                string phaseAnnouncement = GetPhaseAnnouncementIfNeeded();
+                if (!string.IsNullOrEmpty(phaseAnnouncement))
+                {
+                    replyText = phaseAnnouncement + replyText;
+                    D($"[PhaseAnnounce] Prepended phase announcement to response (Realtime)");
+                }
+            }
+
             if (!string.IsNullOrEmpty(replyText))
             {
                 history.Add(new Message { role = "assistant", content = replyText });
@@ -1150,6 +1265,20 @@ public class GPTConnector : MonoBehaviour
         catch (Exception e)
         {
             Warn("JSON 解析失败: " + e.Message);
+        }
+
+        // ===== STRIP DUPLICATE PHASE ANNOUNCEMENTS =====
+        replyText = StripPhaseAnnouncementsFromResponse(replyText);
+        
+        // ===== PREPEND PHASE ANNOUNCEMENT IF NEEDED =====
+        if (!string.IsNullOrEmpty(replyText))
+        {
+            string phaseAnnouncement = GetPhaseAnnouncementIfNeeded();
+            if (!string.IsNullOrEmpty(phaseAnnouncement))
+            {
+                replyText = phaseAnnouncement + replyText;
+                D($"[PhaseAnnounce] Prepended phase announcement to response");
+            }
         }
 
         if (outputText) outputText.text = string.IsNullOrEmpty(replyText) ? "(empty)" : replyText;

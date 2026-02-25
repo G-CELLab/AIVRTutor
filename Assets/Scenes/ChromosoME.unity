@@ -20963,10 +20963,33 @@ MonoBehaviour:
     up during Interphase - reference it when relevant.
 
 
-    RESPONSE STYLE:
+    HEALING CYCLE TRACKING:
 
     -
-    Be warm and encouraging. Great job!;You''ve got this!;That''s exactly right!
+    Cycles completed so far: 0
+
+    - Total cycles needed: 3
+
+    - Cycles remaining:
+    3
+
+    - IMPORTANT: Real wound healing requires MULTIPLE rounds of cell division,
+    not just one.
+
+    - After completing each round, explain that the wound needs
+    more cell division to fully heal.
+
+    - Only after the 3rd completion should
+    you congratulate them on fully healing the wound.
+
+    - When asked about progress,
+    give specific cycle counts and encourage them.
+
+
+    RESPONSE STYLE:
+
+    - Be
+    warm and encouraging. Great job!;You''ve got this!;That''s exactly right!
 
     -
     Be concise but never cold. Every response should feel supportive.
@@ -20975,7 +20998,26 @@ MonoBehaviour:
     student seems stuck, offer gentle guidance: ''No worries, let me help you out.''
 
     -
-    End with encouragement or a simple next step when appropriate.'
+    End with encouragement or a simple next step when appropriate.
+
+
+    PHASE ORIENTATION:
+
+    -
+    At the beginning of instructional responses, clearly state what cell cycle phase
+    the student is currently in.
+
+    - Format: ''You are in [Phase Name]. [Instruction
+    or response]''
+
+    - For Interphase Part 2, always refer to it simply as ''Interphase''.
+
+    -
+    NOTE: The code will manage how often this appears (max 3 times per phase per
+    cycle).
+
+    - Always orient the student to the phase when you''re giving new
+    instructions or guidance.'
   maxHistoryTurnsToSend: 15
   maxCharsBudget: 12000
   usePhasePromptOverride: 0
@@ -20998,10 +21040,10 @@ MonoBehaviour:
   maxLogChars: 600
   logTokenBreakdown: 1
   omitPhaseFromInstructionsWhenPinned: 1
-  delayEatGestureSec: 3
-  delayCondenseGestureSec: 2.5
-  delayLineUpGestureSec: 3
-  delaySplitOutwardGestureSec: 2
+  delayEatGestureSec: 5
+  delayCondenseGestureSec: 2
+  delayLineUpGestureSec: 2
+  delaySplitOutwardGestureSec: 2.5
   speakingWaitGraceSec: 5
   logPrompts: 1
   promptEchoText: {fileID: 0}

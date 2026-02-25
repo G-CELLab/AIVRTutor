@@ -125,6 +125,12 @@ public class GameManager : MonoBehaviour
         // Log the current healing cycle for debugging and AI agent tracking
         Debug.Log($"[GameManager] Starting - Healing Cycle: {healingCycleCount}/{MAX_HEALING_CYCLES}, HPtracking: {ScoreManager.HPtracking}");
         
+        // Reset phase announcement counters when a new cycle begins (new scene load)
+        if (gptConnector != null)
+        {
+            gptConnector.ResetPhaseAnnouncementCounters();
+        }
+        
         // Start at Intro only for the very first time (cycle 0)
         // After first completion (cycle 1+), always start at Interphase
         if(healingCycleCount == 0)
