@@ -129,8 +129,9 @@ namespace AI.Prompts
             "- Green ATP bar (fills up as nutrients are absorbed - must be completely full)\n",
             "1. Grab the three capsule nutrients and bring them to the mitochondria\n" +
             "2. Watch the green ATP bar fill completely\n" +
-            "The mitochondria absorb nutrients to make energy—just like how you eat food to get energy!",
-            "- 'What are the capsules?' → 'Those are nutrients! Bring them to the mitochondria.'\n" +
+            "The mitochondria absorb nutrients to make energy—just like how cells need to eat food to get energy!",
+            "IMPORTANT: Use gesture-trigger language: Mention 'eat food', 'eating food', 'food for energy', or 'get energy' to cue the AI to perform the EAT gesture.\n" +
+            "- 'What are the capsules?' → 'Those are nutrients! The cell needs to eat food to get energy. Bring them to the mitochondria.'\n" +
             "- 'Is the bar full?' → Check the green ATP bar and give warm feedback.\n",
             HelpfulAnalogyHeader);
 
@@ -151,9 +152,10 @@ namespace AI.Prompts
             "1. Find the red, thread-like DNA\n" +
             "2. Hold it for 3 seconds so it condenses into an X-shaped chromosome",
             "Think of it like winding up a loose string into a tight bundle!",
-            "- 'Where is the DNA?' → 'Look for the red stringy stuff. That's the loose DNA.'\n" +
-            "- 'What should it look like?' → 'It should turn into an X-shape, like the blue ones.'\n" +
-            "- 'Why does it condense?' → 'So it's easier to move when the cell divides!'");
+            "IMPORTANT: Use gesture-trigger language: Mention 'condense into X-shape', 'X-shaped condense', or 'X-shaped chromosome' to cue the AI to perform the CONDENSE gesture.\n" +
+            "- 'Where is the DNA?' → 'Look for the red stringy stuff. That's the loose DNA that will condense into an X-shape.'\n" +
+            "- 'What should it look like?' → 'It will condense into an X-shaped chromosome, just like the blue examples!'\n" +
+            "- 'Why does it condense?' → 'The DNA needs to condense into tight X-shapes so it's easier to move when the cell divides!'");
 
         public static string Metaphase = BuildPhase(
             "Metaphase",
@@ -164,10 +166,11 @@ namespace AI.Prompts
             "- Spindle fibers (attached to chromosomes from the centrioles)",
             "1. Find the red chromosome that's out of place\n" +
             "2. Move it to the glowing yellow center line (slightly above the marker)\n" +
-            "3. All chromosomes should line up in a single row",
+            "3. All chromosomes should be lined up at the center",
             "The spindle fibers pull the chromosomes to the middle, like lining up for a photo!",
-            "- 'Which one do I move?' → 'The red one! It's the only one not in line.'\n" +
-            "- 'Where exactly?' → 'See the glowing yellow spot? Put it just above that.'");
+            "IMPORTANT: Use gesture-trigger language: Mention 'line up at the center', 'line them up', 'align at the center', or ensure they all 'line up' to cue the AI to perform the LINE UP gesture.\n" +
+            "- 'Which one do I move?' → 'The red chromosome! All of them need to line up at the center.'\n" +
+            "- 'Where exactly?' → 'See the glowing yellow spot? Line them up there—they should all be in a row at the center!'");
 
         public static string Anaphase = BuildPhase(
             "Anaphase",
@@ -180,8 +183,9 @@ namespace AI.Prompts
             "2. Move chromatids to opposite ends of the cell\n" +
             "3. Place them on the glowing yellow markers at each end",
             "Each half of the X goes to a different side—so both new cells get a complete copy!",
-            "- 'How do I split them?' → 'Grab and pull them apart. Each half goes to a different end.'\n" +
-            "- 'Where do they go?' → 'See the glowing yellow spots at each end? Put them there.'");
+            "IMPORTANT: Use gesture-trigger language: Mention 'move to opposite ends', 'pull apart to opposite ends', 'pull to opposite poles', or 'separate to opposite' to cue the AI to perform the SPLIT OUTWARD gesture.\n" +
+            "- 'How do I split them?' → 'Grab and pull them apart to opposite ends. Each half needs to move to a different side.'\n" +
+            "- 'Where do they go?' → 'See the glowing yellow markers? Move them to opposite ends—one half to each side!'");
 
         public static string Telophase = BuildPhase(
             "Telophase",

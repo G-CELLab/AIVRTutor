@@ -95,14 +95,14 @@ public class GPTConnector : MonoBehaviour
 
     // ===== 延时触发：基于 isSpeaking 的延时调度 =====
     [Header("Speaking & Delayed Triggers")]
-    [Tooltip("前两动作（Interphase: DZ13, Prophase: DZ18）在 isSpeaking 触发后延时秒数")]
-    public float delayFirstGroupSec = 10f;
-    [Tooltip("后两动作（Metaphase: DZ20, Telophase: DZ22）在 isSpeaking 触发后延时秒数")]
-    public float delaySecondGroupSec = 3f;
-    [Tooltip("后两动作（Metaphase: DZ20, Telophase: DZ22）在 isSpeaking 触发后延时秒数")]
-    public float delayThirdGroupSec = 3f;
-    [Tooltip("后两动作（Metaphase: DZ20, Telophase: DZ22）在 isSpeaking 触发后延时秒数")]
-    public float delay4GroupSec = 3f;
+    [Tooltip("INTERPHASE - DZ13 (EAT gesture): Delay after speech starts. Gesture should sync with 'eat food' phrase.")]
+    public float delayEatGestureSec = 1.5f;
+    [Tooltip("PROPHASE - DZ18 (CONDENSE gesture): Delay after speech starts. Gesture should sync with 'X-shape condense' phrase.")]
+    public float delayCondenseGestureSec = 2.0f;
+    [Tooltip("METAPHASE - DZ20 (LINE UP gesture): Delay after speech starts. Gesture should sync with 'line up at the center' phrase.")]
+    public float delayLineUpGestureSec = 2.0f;
+    [Tooltip("ANAPHASE - DZ22 (SPLIT OUTWARD gesture): Delay after speech starts. Gesture should sync with 'move to opposite ends' phrase.")]
+    public float delaySplitOutwardGestureSec = 2.5f;
     [Tooltip("若当前还未开始说话，最多等待多少秒以等到 isSpeaking=true；超时也会照常延时触发")]
     public float speakingWaitGraceSec = 5f;
 
@@ -1214,34 +1214,34 @@ public class GPTConnector : MonoBehaviour
         switch (GameManager.eGameStatus)
         {
             case GameManager.GameState.Interphase:
-                if (IsNutrient(t))
+                if (IsEatGesture(t))
                 {
-                    Debug.Log("[React][assistant] Interphase → DZ13 (will delay after isSpeaking)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ13(), delayFirstGroupSec, "Interphase:DZ13");
+                    Debug.Log("[React][assistant] Interphase → DZ13 EAT gesture (eating food for energy)");
+                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ13(), delayEatGestureSec, "Interphase:EAT");
                 }
                 break;
 
             case GameManager.GameState.Prophase:
-                if (IsXShape(t))
+                if (IsCondenseGesture(t))
                 {
-                    Debug.Log("[React][assistant] Prophase → DZ18 (will delay after isSpeaking)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ18(), delay4GroupSec, "Metaphase:DZ18");
+                    Debug.Log("[React][assistant] Prophase → DZ18 CONDENSE gesture (X-shape condense)");
+                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ18(), delayCondenseGestureSec, "Prophase:CONDENSE");
                 }
                 break;
 
             case GameManager.GameState.Metaphase:
-                if (IsRowArrange(t))
+                if (IsLineUpGesture(t))
                 {
-                    Debug.Log("[React][assistant] Metaphase → DZ20 (will delay after isSpeaking)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ20(), delaySecondGroupSec, "Metaphase:DZ20");
+                    Debug.Log("[React][assistant] Metaphase → DZ20 LINE UP gesture (line up at center)");
+                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ20(), delayLineUpGestureSec, "Metaphase:LINE_UP");
                 }
                 break;
 
             case GameManager.GameState.Anaphase:
-                if (IsApartSeparate(t))
+                if (IsSplitOutwardGesture(t))
                 {
-                    Debug.Log("[React][assistant] Telophase → DZ22 (will delay after isSpeaking)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ22(), delayThirdGroupSec, "Telophase:DZ22");
+                    Debug.Log("[React][assistant] Anaphase → DZ22 SPLIT OUTWARD gesture (move to opposite ends)");
+                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ22(), delaySplitOutwardGestureSec, "Anaphase:SPLIT_OUTWARD");
                 }
                 break;
 
@@ -1307,29 +1307,104 @@ public class GPTConnector : MonoBehaviour
         catch (Exception e) { Debug.LogWarning($"[Trigger:{tag}] 调用失败: {e.Message}"); }
     }
 
-    // ========= 4 个匹配函数（仅保留这些） =========
-    private bool IsNutrient(string s)
+    // ========= 4 个匹配函数 - Aligned with spoken phrases for gesture synchronization =========
+    
+    /// <summary>
+    /// INTERPHASE: Detects eating-related phrases to trigger eating gesture.
+    /// Optimized for phrases like "eat food to get energy" or "eating food"
+    /// </summary>
+    private bool IsEatGesture(string s)
     {
-        // 营养/能量/喂/吃（英文）；已小写和去标点
-        string[] keys = { "eat food", "eats", "eating", "food" };
+        // Priority given to more specific multi-word phrases
+        string[] keys = { 
+            "eat food",           // Primary trigger phrase
+            "eating food",        // Continuous form
+            "eat the food",       // With article
+            "eats food",          // Third person
+            "get energy",         // Energy context
+            "needs food",         // Need context
+            "food for energy",    // Complete phrase
+            "eat to get",         // Process phrase
+            "need to eat",        // Necessity
+            "must eat",           // Requirement
+            "energy from food"    // Energy + food connection
+        };
         return ContainsAnyNormalized(s, keys);
     }
 
-    private bool IsXShape(string s)
+    /// <summary>
+    /// PROPHASE: Detects condensing/X-shape phrases to trigger condense gesture.
+    /// Optimized for phrases like "condenses into X-shape" or "X-shaped chromosome"
+    /// </summary>
+    private bool IsCondenseGesture(string s)
     {
-        string[] keys = { "condense", "x shaped", "x-shaped", "x-shaped chromosome", "x shaped chromosome", "condenses into" };
+        string[] keys = { 
+            "x shape condense",           // Ideal trigger phrase
+            "x shaped condense",          // Variation
+            "condense into x",            // Common phrasing
+            "condenses into x",           // Third person
+            "condense into an x",         // With article
+            "x shaped chromosome",        // Full phrase
+            "x shaped",                   // Shorter form
+            "x shape",                    // Alternate spacing
+            "condense",                   // Fallback - single word
+            "condenses",                  // Third person single word
+            "condensed"                   // Past tense
+        };
         return ContainsAnyNormalized(s, keys);
     }
 
-    private bool IsRowArrange(string s)
+    /// <summary>
+    /// METAPHASE: Detects alignment phrases to trigger line-up gesture.
+    /// Optimized for phrases like "line up at the center" or "align in the middle"
+    /// </summary>
+    private bool IsLineUpGesture(string s)
     {
-        string[] keys = { "arrange them in a neat row", "arrange them in a row", "line them up", "line up", "single row", "in a single row", "align in a row", "align at the center", "line up at the center", "line up in the middle", "align in the middle" };
+        // Much more permissive - any mention of "line" with "center/middle/row" or standalone "line up" triggers it
+        string[] keys = { 
+            "line up at the center",     // Primary phrase
+            "line up at center",         // Without "the"
+            "line up in the middle",     // Alternative
+            "line up in middle",         // Without "the"
+            "line up at the centre",     // British spelling
+            "line up at centre",         // British without "the"
+            "align at the center",       // Alignment variant
+            "align at center",           // Without "the"
+            "line them up",              // Direct instruction
+            "line up",                   // Simple phrase (standalone trigger)
+            "lined up",                  // Past tense
+            "line up in a row",          // Complete phrase
+            "all line up",               // Collective action
+            "should line up",            // Instructional
+            "need to line up",           // Necessity
+            "in a row"                   // Key phrase
+        };
         return ContainsAnyNormalized(s, keys);
     }
 
-    private bool IsApartSeparate(string s)
+    /// <summary>
+    /// ANAPHASE: Detects separation/splitting phrases to trigger outward spreading gesture.
+    /// Optimized for phrases like "move to opposite ends" or "pull apart"
+    /// </summary>
+    private bool IsSplitOutwardGesture(string s)
     {
-        string[] keys = { "apart", "move apart", "pull apart", "separate", "separating", "separate them", "separate the chromatids", "split", "split them", "to opposite ends", "to opposite sides", "to opposite poles", "move to opposite", "pull to opposite" };
+        string[] keys = { 
+            "move them to opposite ends",    // Primary phrase
+            "move to opposite ends",         // Shortened
+            "pull to opposite ends",         // Alternative action
+            "to opposite ends",              // Key phrase
+            "to opposite sides",             // Variation
+            "to opposite poles",             // Scientific term
+            "move them to opposite",         // Partial
+            "pull to opposite",              // Pull variant
+            "pull apart",                    // Simple action
+            "split apart",                   // Alternative
+            "separate them",                 // Basic instruction
+            "move apart",                    // Move variation
+            "go to opposite",                // Movement phrase
+            "ends of the cell",              // Location reference
+            "each end"                       // Directional phrase
+        };
         return ContainsAnyNormalized(s, keys);
     }
 

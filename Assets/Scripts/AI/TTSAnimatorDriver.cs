@@ -24,6 +24,14 @@ public class TTSAnimatorDriver : MonoBehaviour
     public string trigDZ20 = "doDZ20";  // row/line up
     public string trigDZ22 = "doDZ22";  // apart/separate
 
+    [Header("Gesture Animation Speed Control")]
+    [Tooltip("Animation speed multiplier for DZ20 (LINE UP gesture). Lower = slower/longer. 0.5 = twice as long.")]
+    public float lineUpGestureSpeedMultiplier = 0.5f;  // Make line up gesture play twice as long
+    [Tooltip("Optional: Animator float parameter name for controlling animation speed. Leave empty if not using.")]
+    public string animSpeedParam = "gestureSpeed";
+    private int _animSpeedHash;
+    private bool _hasAnimSpeed;
+
     [Header("Timing")]
     public float waitBeforeDZ2 = 10f;   // 超时阈值（秒）
     public float lingerAfterEnd = 0.05f; // 说完收尾延迟
@@ -93,7 +101,19 @@ public class TTSAnimatorDriver : MonoBehaviour
     public void TriggerDZ14() { TriggerByHash(_dz14, _hasDZ14, trigDZ14); }
     public void TriggerDZ15() { TriggerByHash(_dz15, _hasDZ15, trigDZ15); }
     public void TriggerDZ18() { TriggerByHash(_dz18, _hasDZ18, trigDZ18); }
-    public void TriggerDZ20() { TriggerByHash(_dz20, _hasDZ20, trigDZ20); }
+    
+    // DZ20 (LINE UP) with custom speed control for longer gesture duration
+    public void TriggerDZ20() 
+    { 
+        // Set slower speed for line up gesture to make it play longer (research requirement)
+        if (_hasAnimSpeed)
+        {
+            animator.SetFloat(_animSpeedHash, lineUpGestureSpeedMultiplier);
+            if (verbose) Debug.Log($"[TTSAnimatorDriver] 🐌 Setting LINE UP gesture speed to {lineUpGestureSpeedMultiplier}x");
+        }
+        TriggerByHash(_dz20, _hasDZ20, trigDZ20); 
+    }
+    
     public void TriggerDZ22() { TriggerByHash(_dz22, _hasDZ22, trigDZ22); }
 
     void TriggerByHash(int hash, bool hasParam, string nameForLog)
@@ -154,6 +174,7 @@ public class TTSAnimatorDriver : MonoBehaviour
         _dz18 = Animator.StringToHash(trigDZ18);
         _dz20 = Animator.StringToHash(trigDZ20);
         _dz22 = Animator.StringToHash(trigDZ22);
+        _animSpeedHash = Animator.StringToHash(animSpeedParam);
     }
 
     void ValidateParameters()
@@ -169,6 +190,8 @@ public class TTSAnimatorDriver : MonoBehaviour
         _hasDZ18 = HasParam(trigDZ18, AnimatorControllerParameterType.Trigger);
         _hasDZ20 = HasParam(trigDZ20, AnimatorControllerParameterType.Trigger);
         _hasDZ22 = HasParam(trigDZ22, AnimatorControllerParameterType.Trigger);
+        
+        _hasAnimSpeed = HasParam(animSpeedParam, AnimatorControllerParameterType.Float);
 
         if (verbose)
         {
@@ -183,6 +206,10 @@ public class TTSAnimatorDriver : MonoBehaviour
             LogParamCheck(trigDZ18, _hasDZ18, "Trigger");
             LogParamCheck(trigDZ20, _hasDZ20, "Trigger");
             LogParamCheck(trigDZ22, _hasDZ22, "Trigger");
+            
+            LogParamCheck(animSpeedParam, _hasAnimSpeed, "Float");
+            if (!_hasAnimSpeed) 
+                Debug.LogWarning("[TTSAnimatorDriver] ⚠️ gestureSpeed Float parameter not found - LINE UP gesture speed control disabled. Add 'gestureSpeed' Float parameter to Animator to enable.");
         }
     }
 

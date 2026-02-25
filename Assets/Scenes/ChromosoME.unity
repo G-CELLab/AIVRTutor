@@ -20881,6 +20881,8 @@ MonoBehaviour:
   trigDZ18: doDZ18
   trigDZ20: doDZ20
   trigDZ22: doDZ22
+  lineUpGestureSpeedMultiplier: 0.5
+  animSpeedParam: gestureSpeed
   waitBeforeDZ2: 5
   lingerAfterEnd: 0.05
   verbose: 1
@@ -20996,10 +20998,10 @@ MonoBehaviour:
   maxLogChars: 600
   logTokenBreakdown: 1
   omitPhaseFromInstructionsWhenPinned: 1
-  delayFirstGroupSec: 5
-  delaySecondGroupSec: 3
-  delayThirdGroupSec: 2.5
-  delay4GroupSec: 3.35
+  delayEatGestureSec: 3
+  delayCondenseGestureSec: 2.5
+  delayLineUpGestureSec: 3
+  delaySplitOutwardGestureSec: 2
   speakingWaitGraceSec: 5
   logPrompts: 1
   promptEchoText: {fileID: 0}
