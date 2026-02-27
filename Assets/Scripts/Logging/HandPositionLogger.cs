@@ -20,6 +20,10 @@ public class HandPositionLogger : MonoBehaviour
     private string csvFilePath;
     private float timeSinceLastLog = 0f;
     private float sessionStartTime;
+
+    // Keep one time anchor across cycle file rollovers/re-creations
+    private static bool hasGlobalSessionStartTime;
+    private static float globalSessionStartTime;
     
     // Cycle tracking
     private int currentCycle = 0;
@@ -35,9 +39,14 @@ public class HandPositionLogger : MonoBehaviour
             enabled = false;
             return;
         }
-        
-        sessionStartTime = Time.time;
-        
+
+        if (!hasGlobalSessionStartTime)
+        {
+            globalSessionStartTime = Time.time;
+            hasGlobalSessionStartTime = true;
+        }
+        sessionStartTime = globalSessionStartTime;
+
         Debug.Log("[HandPositionLogger] Found Left Hand: " + leftHandTransform.name);
         Debug.Log("[HandPositionLogger] Found Right Hand: " + rightHandTransform.name);
 
@@ -50,6 +59,15 @@ public class HandPositionLogger : MonoBehaviour
         }
 
         Debug.Log("[HandPositionLogger] Initialized. Logging to: " + csvFilePath);
+    }
+
+    private void OnDisable()
+    {
+        if (!Application.isPlaying)
+        {
+            hasGlobalSessionStartTime = false;
+            globalSessionStartTime = 0f;
+        }
     }
 
     private void Update()

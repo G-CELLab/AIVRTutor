@@ -43,7 +43,19 @@ public class TextToSpeechPlayer : MonoBehaviour
     
     // Track current speech for logging
     private static string currentSpeechText = "";
-    public static string GetCurrentSpeech() => currentSpeechText;
+    private static string lastSpeechText = ""; // Keep last speech for logging persistence
+    public static string GetCurrentSpeech() => !string.IsNullOrEmpty(currentSpeechText) ? currentSpeechText : lastSpeechText;
+    public static void SetCurrentSpeech(string text)
+    {
+        currentSpeechText = text;
+        lastSpeechText = text;
+    }
+
+    public static void ClearCurrentSpeech()
+    {
+        currentSpeechText = "";
+        lastSpeechText = "";
+    }
 
     void Awake()
     {
@@ -106,6 +118,14 @@ public class TextToSpeechPlayer : MonoBehaviour
     // ====== 新增：播放模型直接返回的音频（base64） ======
     public void PlayModelAudioBase64(string base64Data, string format, Action onPlaybackComplete)
     {
+        StartCoroutine(PlayModelAudioBase64_Co(base64Data, format, onPlaybackComplete));
+    }
+
+    // Overload that accepts speech text for logging
+    public void PlayModelAudioBase64(string base64Data, string format, string speechText, Action onPlaybackComplete)
+    {
+        currentSpeechText = speechText;
+        lastSpeechText = speechText; // Store for persistent logging
         StartCoroutine(PlayModelAudioBase64_Co(base64Data, format, onPlaybackComplete));
     }
 
@@ -201,6 +221,7 @@ public class TextToSpeechPlayer : MonoBehaviour
     public void Speak(string text, Action onPlaybackComplete)
     {
         currentSpeechText = text;
+        lastSpeechText = text; // Store for persistent logging
         Debug.Log($"[TTS] Speech text set for logging: '{text.Substring(0, Mathf.Min(50, text.Length))}'...");
         StartCoroutine(SendTextToSpeech(text, onPlaybackComplete));
     }

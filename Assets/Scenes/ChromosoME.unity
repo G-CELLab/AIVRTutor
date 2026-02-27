@@ -12131,6 +12131,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RightHandManager
   isGrabbed_right: 0
   handInteractor: {fileID: 852775122}
+  pinchPressDistance: 0.025
+  pinchReleaseDistance: 0.04
 --- !u!64 &877523556
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -19584,6 +19586,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LeftHandManager
   isGrabbed_left: 0
   handInteractor: {fileID: 846178712}
+  pinchPressDistance: 0.025
+  pinchReleaseDistance: 0.04
 --- !u!1 &1411262053
 GameObject:
   m_ObjectHideFlags: 0
@@ -52494,6 +52498,11 @@ PrefabInstance:
         type: 3}
       propertyPath: onMetaphase.m_PersistentCalls.m_Calls.Array.data[15].m_TargetAssemblyTypeName
       value: UnityEngine.GameObject, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
+        type: 3}
+      propertyPath: onProphase.m_PersistentCalls.m_Calls.Array.data[2].m_Arguments.m_BoolArgument
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
         type: 3}

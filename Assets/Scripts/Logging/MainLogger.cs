@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using UnityEngine;
 
 /// <summary>
@@ -32,6 +33,10 @@ public class MainLogger : MonoBehaviour
     private string csvFilePath;
     private float timeSinceLastFrameLog = 0f;
     private float sessionStartTime;
+
+    // Keep one time anchor across cycle file rollovers/re-creations
+    private static bool hasGlobalSessionStartTime;
+    private static float globalSessionStartTime;
     
     // Cycle tracking
     private int currentCycle = 0;
@@ -51,7 +56,12 @@ public class MainLogger : MonoBehaviour
     private void Start()
     {
         Debug.Log("[MainLogger] START called");
-        sessionStartTime = Time.time;
+        if (!hasGlobalSessionStartTime)
+        {
+            globalSessionStartTime = Time.time;
+            hasGlobalSessionStartTime = true;
+        }
+        sessionStartTime = globalSessionStartTime;
         
         // Validate references
         if (leftHandManager == null)
@@ -79,6 +89,15 @@ public class MainLogger : MonoBehaviour
         }
 
         Debug.Log("[MainLogger] Initialized. Logging to: " + csvFilePath);
+    }
+
+    private void OnDisable()
+    {
+        if (!Application.isPlaying)
+        {
+            hasGlobalSessionStartTime = false;
+            globalSessionStartTime = 0f;
+        }
     }
 
     private void Update()
@@ -113,7 +132,6 @@ public class MainLogger : MonoBehaviour
         string rightGesture = GetRightGesture();
         string leftTouch = GetLeftTouch();
         string rightTouch = GetRightTouch();
-        string infoPanel = GetCurrentInfoPanel();
         string phase = GetCurrentPhase();
         string aiSpeech = GetAISpeech();
         string otherEvent = otherEventQueue.Count > 0 ? otherEventQueue.Dequeue() : "";
@@ -121,13 +139,19 @@ public class MainLogger : MonoBehaviour
         // Console logging
         if (logToConsole)
         {
-            Debug.Log($"[MainLog] T={elapsed:F2}s | L_Ges:{leftGesture} | R_Ges:{rightGesture} | L_Touch:{leftTouch} | R_Touch:{rightTouch} | Panel:{infoPanel} | Phase:{phase} | AI:{aiSpeech} | Other:{otherEvent}");
+            Debug.Log($"[MainLog] T={elapsed:F2}s | L_Ges:{leftGesture} | R_Ges:{rightGesture} | L_Touch:{leftTouch} | R_Touch:{rightTouch} | Phase:{phase} | AI:{aiSpeech} | Other:{otherEvent}");
         }
 
         // CSV logging - every frame
         if (logToCSV)
         {
-            WriteToCSV(elapsed, leftGesture, rightGesture, leftTouch, rightTouch, infoPanel, phase, aiSpeech, otherEvent);
+            WriteToCSV(elapsed, leftGesture, rightGesture, leftTouch, rightTouch, phase, aiSpeech, otherEvent);
+        }
+
+        // Clear AI speech after logging so it only appears once
+        if (!string.IsNullOrEmpty(aiSpeech))
+        {
+            TextToSpeechPlayer.ClearCurrentSpeech();
         }
     }
 
@@ -157,16 +181,6 @@ public class MainLogger : MonoBehaviour
         return TouchTracker.GetRightTouchObject();
     }
 
-    private string GetCurrentInfoPanel()
-    {
-        // Log the current game phase as info (since tutorial panels were removed)
-        // This helps track what's happening at each phase transition
-        if (gameManager == null)
-            return "";
-            
-        return GameManager.eGameStatus.ToString();
-    }
-
     private string GetCurrentPhase()
     {
         if (gameManager == null)
@@ -180,11 +194,23 @@ public class MainLogger : MonoBehaviour
         string speech = TextToSpeechPlayer.GetCurrentSpeech();
         if (string.IsNullOrEmpty(speech))
             return "";
-        
-        // Truncate long speech to fit nicely in logs (increased from 60 to 100 chars)
-        if (speech.Length > 100)
-            return speech.Substring(0, 100) + "...";
+
+        if (ShouldIgnoreTutorialSpeech(speech))
+            return "";
+
         return speech;
+    }
+
+    private bool ShouldIgnoreTutorialSpeech(string speech)
+    {
+        if (string.IsNullOrEmpty(speech))
+            return false;
+
+        string normalized = speech.Trim().ToLowerInvariant();
+
+        return normalized.Contains("let's start by touching and holding the sphere") ||
+               normalized.Contains("im your ai tutor, here to guide you") ||
+               normalized.Contains("i'm your ai tutor, here to guide you");
     }
 
     private void InitializeCSVFile()
@@ -199,9 +225,9 @@ public class MainLogger : MonoBehaviour
             if (!Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            using (StreamWriter writer = new StreamWriter(csvFilePath, false))
+            using (StreamWriter writer = new StreamWriter(csvFilePath, false, new UTF8Encoding(true)))
             {
-                writer.WriteLine("Time(s),Left_Gesture,Right_Gesture,Left_Touch,Right_Touch,Info_Panel,Phase,AI_Speech,Other");
+                writer.WriteLine("Time(s),Left_Gesture,Right_Gesture,Left_Touch,Right_Touch,Phase,AI_Speech,Other");
             }
         }
         catch (Exception ex)
@@ -211,19 +237,36 @@ public class MainLogger : MonoBehaviour
     }
 
     private void WriteToCSV(float elapsed, string leftGesture, string rightGesture, string leftTouch, 
-                           string rightTouch, string infoPanel, string phase, string aiSpeech, string otherEvent)
+                           string rightTouch, string phase, string aiSpeech, string otherEvent)
     {
         try
         {
-            using (StreamWriter writer = new StreamWriter(csvFilePath, true))
+            using (StreamWriter writer = new StreamWriter(csvFilePath, true, new UTF8Encoding(true)))
             {
-                writer.WriteLine($"{elapsed:F3},{leftGesture},{rightGesture},{leftTouch},{rightTouch},{infoPanel},{phase},{aiSpeech},{otherEvent}");
+                writer.WriteLine(
+                    $"{elapsed:F3}," +
+                    $"{EscapeCsvField(leftGesture)}," +
+                    $"{EscapeCsvField(rightGesture)}," +
+                    $"{EscapeCsvField(leftTouch)}," +
+                    $"{EscapeCsvField(rightTouch)}," +
+                    $"{EscapeCsvField(phase)}," +
+                    $"{EscapeCsvField(aiSpeech)}," +
+                    $"{EscapeCsvField(otherEvent)}");
             }
         }
         catch (Exception ex)
         {
             Debug.LogError("[MainLogger] Failed to write to CSV: " + ex.Message);
         }
+    }
+
+    private string EscapeCsvField(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return "";
+
+        string escaped = value.Replace("\"", "\"\"");
+        return $"\"{escaped}\"";
     }
 
     /// <summary>

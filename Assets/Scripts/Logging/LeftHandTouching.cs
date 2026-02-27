@@ -9,6 +9,28 @@ public class LeftHandTouching : MonoBehaviour
     private Collider priorityCollider;
     private string currentObjectName = "";
 
+    private void Update()
+    {
+        if (activeColliders.Count == 0)
+            return;
+
+        bool removedStale = activeColliders.RemoveWhere(IsColliderStale) > 0;
+        bool priorityIsStale = IsColliderStale(priorityCollider);
+
+        if (removedStale || priorityIsStale)
+            UpdatePriorityCollider();
+    }
+
+    private void OnDisable()
+    {
+        ResetTouchState();
+    }
+
+    private void OnDestroy()
+    {
+        ResetTouchState();
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         // Ignore platform and hand-to-hand collisions
@@ -38,6 +60,19 @@ public class LeftHandTouching : MonoBehaviour
         activeColliders.Remove(other);
         UpdatePriorityCollider();
     }
+
+    private bool IsColliderStale(Collider collider)
+    {
+        return collider == null || !collider.enabled || !collider.gameObject.activeInHierarchy;
+    }
+
+    private void ResetTouchState()
+    {
+        activeColliders.Clear();
+        priorityCollider = null;
+        currentObjectName = "";
+        TouchTracker.ClearLeftTouchObject();
+    }
     
     private bool ShouldIgnore(Collider other)
     {
@@ -50,7 +85,7 @@ public class LeftHandTouching : MonoBehaviour
     private void UpdatePriorityCollider()
     {
         // Clean up null references  
-        activeColliders.RemoveWhere(c => c == null);
+        activeColliders.RemoveWhere(IsColliderStale);
         
         // Find highest priority collider (non-platform, non-hand objects)
         Collider bestCollider = null;

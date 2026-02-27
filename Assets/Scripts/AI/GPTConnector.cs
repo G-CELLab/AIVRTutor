@@ -1104,6 +1104,7 @@ public class GPTConnector : MonoBehaviour
             if (!string.IsNullOrEmpty(full) && reactToAssistantTranscript)
             {
                 Debug.Log("[STT][assistant] " + full);
+                TextToSpeechPlayer.SetCurrentSpeech(full); // Capture for MainLog
                 _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(full);
             }
             return;

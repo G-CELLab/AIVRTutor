@@ -27,6 +27,10 @@ public class PlayerPositionLogger : MonoBehaviour
     private string csvFilePath;
     private float timeSinceLastLog = 0f;
     private float sessionStartTime;
+
+    // Keep one time anchor across cycle file rollovers/re-creations
+    private static bool hasGlobalSessionStartTime;
+    private static float globalSessionStartTime;
     
     // Cycle tracking
     private int currentCycle = 0;
@@ -35,7 +39,12 @@ public class PlayerPositionLogger : MonoBehaviour
     private void Start()
     {
         Debug.Log("[PlayerPositionLogger] START called");
-        sessionStartTime = Time.time;
+        if (!hasGlobalSessionStartTime)
+        {
+            globalSessionStartTime = Time.time;
+            hasGlobalSessionStartTime = true;
+        }
+        sessionStartTime = globalSessionStartTime;
 
         // Auto-find player head if not assigned
         if (playerHeadTransform == null)
@@ -63,6 +72,15 @@ public class PlayerPositionLogger : MonoBehaviour
         }
 
         Debug.Log("[PlayerPositionLogger] Initialized. Logging to: " + csvFilePath);
+    }
+
+    private void OnDisable()
+    {
+        if (!Application.isPlaying)
+        {
+            hasGlobalSessionStartTime = false;
+            globalSessionStartTime = 0f;
+        }
     }
 
     private void Update()
