@@ -34,7 +34,16 @@ public class WhisperGestureSync : MonoBehaviour
     
     [Header("Timing Adjustments")]
     [Tooltip("Offset in seconds to sync gestures with speech (positive = delay, negative = earlier)")]
-    public float gestureTimingOffset = 0.1f;
+    public float gestureTimingOffset = 0.05f;
+
+    [Tooltip("Ignore duplicate scheduling calls for the same clip within this window")]
+    public float duplicateClipWindowSeconds = 0.35f;
+
+    [Tooltip("Merge near-identical gesture schedules inside one utterance (seconds)")]
+    public float scheduleMergeWindowSeconds = 0.75f;
+
+    [Tooltip("Suppress repeated firing of the same gesture within this cooldown (seconds)")]
+    public float sameGestureCooldownSeconds = 0.9f;
     
     [Tooltip("Minimum confidence threshold for word detection (0-1)")]
     [Range(0f, 1f)]
@@ -58,6 +67,11 @@ public class WhisperGestureSync : MonoBehaviour
     // Gesture scheduling
     private List<ScheduledGesture> scheduledGestures = new List<ScheduledGesture>();
     private Coroutine playbackCoroutine;
+    private Coroutine processingCoroutine;
+    private int scheduleRequestId;
+    private string lastScheduledClipKey;
+    private float lastScheduledClipTime = -999f;
+    private readonly Dictionary<string, float> lastGestureFiredAt = new Dictionary<string, float>();
     
     // Gesture definitions by phase
     private Dictionary<GameManager.GameState, List<GestureKeyword>> phaseGestures;
@@ -185,7 +199,7 @@ public class WhisperGestureSync : MonoBehaviour
                 Debug.Log($"[WhisperGesture] Processing queued first clip after init: {clipToProcess.name}");
             }
 
-            StartCoroutine(ProcessAudioClip(clipToProcess));
+            TranscribeAndScheduleGestures(clipToProcess);
         }
     }
 
@@ -241,6 +255,20 @@ public class WhisperGestureSync : MonoBehaviour
             return;
         }
 
+        string clipKey = BuildClipKey(clip);
+        float nowRealtime = Time.realtimeSinceStartup;
+        if (clipKey == lastScheduledClipKey && (nowRealtime - lastScheduledClipTime) <= duplicateClipWindowSeconds)
+        {
+            if (verboseLogging)
+            {
+                Debug.Log($"[WhisperGesture] Skipping duplicate schedule call for clip '{clip.name}' ({nowRealtime - lastScheduledClipTime:F2}s apart)");
+            }
+            return;
+        }
+
+        lastScheduledClipKey = clipKey;
+        lastScheduledClipTime = nowRealtime;
+
         if (!isInitialized)
         {
             TryAdoptLoadedWhisperManager();
@@ -265,11 +293,30 @@ public class WhisperGestureSync : MonoBehaviour
             Debug.LogWarning("[WhisperGesture] No TTSAnimatorDriver assigned");
             return;
         }
-        
-        StartCoroutine(ProcessAudioClip(clip));
+
+        scheduleRequestId++;
+
+        if (processingCoroutine != null)
+        {
+            StopCoroutine(processingCoroutine);
+            processingCoroutine = null;
+        }
+
+        if (playbackCoroutine != null)
+        {
+            StopCoroutine(playbackCoroutine);
+            playbackCoroutine = null;
+        }
+
+        processingCoroutine = StartCoroutine(ProcessAudioClip(clip, scheduleRequestId));
     }
-    
-    IEnumerator ProcessAudioClip(AudioClip clip)
+
+    string BuildClipKey(AudioClip clip)
+    {
+        return $"{clip.GetInstanceID()}_{clip.samples}_{clip.frequency}_{clip.channels}_{clip.length:F3}";
+    }
+
+    IEnumerator ProcessAudioClip(AudioClip clip, int requestId)
     {
         if (verboseLogging) Debug.Log($"[WhisperGesture] Processing audio clip: {clip.name} (length: {clip.length:F2}s)");
         
@@ -279,6 +326,12 @@ public class WhisperGestureSync : MonoBehaviour
         // Transcribe with word timestamps
         var transcriptionTask = whisperManager.GetTextAsync(clip);
         yield return new WaitUntil(() => transcriptionTask.IsCompleted);
+
+        if (requestId != scheduleRequestId)
+        {
+            if (verboseLogging) Debug.Log("[WhisperGesture] Ignoring stale transcription result (newer request exists)");
+            yield break;
+        }
         
         if (transcriptionTask.IsFaulted)
         {
@@ -307,10 +360,14 @@ public class WhisperGestureSync : MonoBehaviour
             Debug.LogWarning("[WhisperGesture] No word segments available. Falling back to text-only analysis.");
             AnalyzeTextAndScheduleGestures(fullText, clip.length);
         }
-        
+
+        scheduledGestures = DeduplicateScheduledGestures(scheduledGestures);
+
         // Start gesture playback coroutine
         if (playbackCoroutine != null) StopCoroutine(playbackCoroutine);
-        playbackCoroutine = StartCoroutine(PlaybackScheduledGestures());
+        var snapshot = scheduledGestures.Select(g => g.Clone()).ToList();
+        playbackCoroutine = StartCoroutine(PlaybackScheduledGestures(snapshot, requestId));
+        processingCoroutine = null;
     }
     
     void ProcessSegmentsAndScheduleGestures(List<WhisperSegment> segments, string fullText)
@@ -336,20 +393,35 @@ public class WhisperGestureSync : MonoBehaviour
         
         var keywords = phaseGestures[currentPhase];
         
+        var timedWords = BuildTimedWords(segments);
+        
+        // Track which gestures have been scheduled in this response to prevent duplicates
+        var scheduledGestureNames = new HashSet<string>();
+
         // Analyze segments for keyword matches
         foreach (var keyword in keywords)
         {
-            // Check if keyword phrase exists in full text
-            if (!normalizedFull.Contains(NormalizeText(keyword.phrase)))
+            // Check if this gesture is already scheduled in this response
+            if (scheduledGestureNames.Contains(keyword.gestureName))
+            {
+                if (verboseLogging)
+                {
+                    Debug.Log($"[WhisperGesture] Skipping duplicate gesture in response: {keyword.gestureName}");
+                }
+                continue;
+            }
+            
+            // Check if keyword phrase exists in full text (loose check: all phrase words must be present)
+            if (!ContainsAllWords(normalizedFull, NormalizeText(keyword.phrase)))
                 continue;
             
-            // Find the segment(s) containing this phrase
-            var matchingSegments = FindSegmentsForPhrase(segments, keyword.phrase);
-            
-            if (matchingSegments.Count > 0)
+            // Match phrase against estimated per-word timeline (finer than segment-only timing)
+            var matchingWordTimes = FindPhraseWordTimes(timedWords, keyword.phrase);
+
+            if (matchingWordTimes.Count > 0)
             {
                 // Calculate timing based on phrase position
-                float triggerTime = CalculateTriggerTime(matchingSegments, keyword);
+                float triggerTime = CalculateTriggerTime(matchingWordTimes, keyword);
                 
                 scheduledGestures.Add(new ScheduledGesture
                 {
@@ -358,6 +430,8 @@ public class WhisperGestureSync : MonoBehaviour
                     phrase = keyword.phrase,
                     triggerAction = keyword.action
                 });
+                
+                scheduledGestureNames.Add(keyword.gestureName);
                 
                 if (verboseLogging)
                 {
@@ -369,67 +443,119 @@ public class WhisperGestureSync : MonoBehaviour
         // Sort gestures by trigger time
         scheduledGestures = scheduledGestures.OrderBy(g => g.triggerTime).ToList();
     }
-    
-    List<WhisperSegment> FindSegmentsForPhrase(List<WhisperSegment> segments, string phrase)
+
+    List<TimedWord> BuildTimedWords(List<WhisperSegment> segments)
     {
-        var result = new List<WhisperSegment>();
-        string normalizedPhrase = NormalizeText(phrase);
-        string[] phraseWords = normalizedPhrase.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
-        
-        // Try to find consecutive segments that match the phrase words
-        for (int i = 0; i < segments.Count; i++)
+        var words = new List<TimedWord>();
+
+        foreach (var seg in segments)
         {
-            string segmentText = NormalizeText(segments[i].Text);
-            
-            // Check if this segment starts matching the phrase
-            if (phraseWords.Length > 0 && segmentText.Contains(phraseWords[0]))
+            string normalizedSegment = NormalizeText(seg.Text);
+            if (string.IsNullOrWhiteSpace(normalizedSegment))
+                continue;
+
+            var segmentWords = normalizedSegment.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+            if (segmentWords.Length == 0)
+                continue;
+
+            float start = (float)seg.Start.TotalSeconds;
+            float end = (float)seg.End.TotalSeconds;
+            float duration = Mathf.Max(0.01f, end - start);
+
+            for (int i = 0; i < segmentWords.Length; i++)
             {
-                result.Clear();
-                result.Add(segments[i]);
-                
-                // Try to match additional words if phrase has multiple words
-                int wordIdx = 1;
-                for (int j = i + 1; j < segments.Count && wordIdx < phraseWords.Length; j++)
-                {
-                    string nextSegText = NormalizeText(segments[j].Text);
-                    if (nextSegText.Contains(phraseWords[wordIdx]))
-                    {
-                        result.Add(segments[j]);
-                        wordIdx++;
-                    }
-                    else
-                    {
-                        break; // Phrase match broken
-                    }
-                }
-                
-                // If we matched all words, return
-                if (wordIdx >= phraseWords.Length)
-                {
-                    return result;
-                }
-                
-                result.Clear();
+                float t = start + duration * ((i + 0.5f) / segmentWords.Length);
+                words.Add(new TimedWord { word = segmentWords[i], time = t });
             }
         }
-        
-        return result;
+
+        return words;
     }
-    
-    float CalculateTriggerTime(List<WhisperSegment> segments, GestureKeyword keyword)
+
+    List<float> FindPhraseWordTimes(List<TimedWord> timedWords, string phrase)
     {
-        if (segments.Count == 0) return 0f;
-        
-        // Use the start time of the phrase, optionally with keyword-specific offset
-        float baseTime = (float)segments[0].Start.TotalSeconds;
-        
-        // For multi-word phrases, optionally trigger on the last word for better sync
-        if (keyword.triggerOnLastWord && segments.Count > 1)
+        var result = new List<float>();
+        string normalizedPhrase = NormalizeText(phrase);
+        string[] phraseWords = normalizedPhrase.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+
+        if (phraseWords.Length == 0 || timedWords.Count == 0)
+            return result;
+
+        // First try exact consecutive match
+        for (int i = 0; i <= timedWords.Count - phraseWords.Length; i++)
         {
-            baseTime = (float)segments[segments.Count - 1].Start.TotalSeconds;
+            bool allMatch = true;
+            for (int j = 0; j < phraseWords.Length; j++)
+            {
+                if (timedWords[i + j].word != phraseWords[j])
+                {
+                    allMatch = false;
+                    break;
+                }
+            }
+
+            if (!allMatch)
+                continue;
+
+            for (int j = 0; j < phraseWords.Length; j++)
+            {
+                result.Add(timedWords[i + j].time);
+            }
+            return result;
         }
-        
+
+        // Fallback: loose match (words in order, but non-consecutive; allows intervening words)
+        int wordIdx = 0;
+        var looseMatch = new List<float>();
+        for (int i = 0; i < timedWords.Count && wordIdx < phraseWords.Length; i++)
+        {
+            if (timedWords[i].word == phraseWords[wordIdx])
+            {
+                looseMatch.Add(timedWords[i].time);
+                wordIdx++;
+            }
+        }
+
+        // Only return loose match if all phrase words were found
+        if (wordIdx >= phraseWords.Length)
+        {
+            return looseMatch;
+        }
+
+        return result; // Empty result if no match
+    }
+
+    float CalculateTriggerTime(List<float> matchedWordTimes, GestureKeyword keyword)
+    {
+        if (matchedWordTimes.Count == 0) return 0f;
+
+        // Use the start time of the phrase, optionally with keyword-specific offset
+        float baseTime = matchedWordTimes[0];
+
+        // For multi-word phrases, optionally trigger on the last word for better sync
+        if (keyword.triggerOnLastWord && matchedWordTimes.Count > 1)
+        {
+            baseTime = matchedWordTimes[matchedWordTimes.Count - 1];
+        }
+
         return baseTime + keyword.wordOffset;
+    }
+
+    bool ContainsAllWords(string text, string phrase)
+    {
+        if (string.IsNullOrWhiteSpace(text) || string.IsNullOrWhiteSpace(phrase))
+            return false;
+
+        var phraseWords = phrase.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+        var textWords = text.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var phraseWord in phraseWords)
+        {
+            if (!textWords.Contains(phraseWord))
+                return false;
+        }
+
+        return true;
     }
     
     void AnalyzeTextAndScheduleGestures(string text, float clipLength)
@@ -442,8 +568,21 @@ public class WhisperGestureSync : MonoBehaviour
         var keywords = phaseGestures[currentPhase];
         string normalized = NormalizeText(text);
         
+        // Track which gestures have been scheduled in this response to prevent duplicates
+        var scheduledGestureNames = new HashSet<string>();
+        
         foreach (var keyword in keywords)
         {
+            // Check if this gesture is already scheduled in this response
+            if (scheduledGestureNames.Contains(keyword.gestureName))
+            {
+                if (verboseLogging)
+                {
+                    Debug.Log($"[WhisperGesture] Skipping duplicate gesture in response: {keyword.gestureName}");
+                }
+                continue;
+            }
+            
             if (normalized.Contains(NormalizeText(keyword.phrase)))
             {
                 // Estimate timing based on text position
@@ -456,6 +595,8 @@ public class WhisperGestureSync : MonoBehaviour
                     phrase = keyword.phrase,
                     triggerAction = keyword.action
                 });
+                
+                scheduledGestureNames.Add(keyword.gestureName);
                 
                 if (verboseLogging)
                 {
@@ -477,9 +618,38 @@ public class WhisperGestureSync : MonoBehaviour
         return ratio * totalDuration;
     }
     
-    IEnumerator PlaybackScheduledGestures()
+    List<ScheduledGesture> DeduplicateScheduledGestures(List<ScheduledGesture> gestures)
     {
-        if (scheduledGestures.Count == 0)
+        if (gestures == null || gestures.Count <= 1)
+            return gestures ?? new List<ScheduledGesture>();
+
+        var ordered = gestures.OrderBy(g => g.triggerTime).ToList();
+        var deduped = new List<ScheduledGesture>();
+
+        foreach (var gesture in ordered)
+        {
+            bool isNearDuplicate = deduped.Any(existing =>
+                existing.gestureName == gesture.gestureName &&
+                Mathf.Abs(existing.triggerTime - gesture.triggerTime) <= scheduleMergeWindowSeconds);
+
+            if (isNearDuplicate)
+            {
+                if (verboseLogging)
+                {
+                    Debug.Log($"[WhisperGesture] Skipping near-duplicate schedule: {gesture.gestureName} at {gesture.triggerTime:F2}s (phrase: '{gesture.phrase}')");
+                }
+                continue;
+            }
+
+            deduped.Add(gesture);
+        }
+
+        return deduped;
+    }
+
+    IEnumerator PlaybackScheduledGestures(List<ScheduledGesture> gestures, int requestId)
+    {
+        if (gestures.Count == 0)
         {
             if (verboseLogging) Debug.Log("[WhisperGesture] No gestures scheduled");
             yield break;
@@ -487,16 +657,22 @@ public class WhisperGestureSync : MonoBehaviour
         
         if (verboseLogging)
         {
-            Debug.Log($"[WhisperGesture] 🎬 Starting gesture playback, {scheduledGestures.Count} gestures scheduled");
+            Debug.Log($"[WhisperGesture] 🎬 Starting gesture playback, {gestures.Count} gestures scheduled");
         }
         
         float startTime = Time.time;
         int gestureIndex = 0;
         
-        while (gestureIndex < scheduledGestures.Count)
+        while (gestureIndex < gestures.Count)
         {
+            if (requestId != scheduleRequestId)
+            {
+                if (verboseLogging) Debug.Log("[WhisperGesture] Stopping stale playback (newer request exists)");
+                yield break;
+            }
+
             float elapsed = Time.time - startTime;
-            var gesture = scheduledGestures[gestureIndex];
+            var gesture = gestures[gestureIndex];
             
             if (elapsed >= gesture.triggerTime)
             {
@@ -513,6 +689,20 @@ public class WhisperGestureSync : MonoBehaviour
     
     void TriggerGesture(ScheduledGesture gesture)
     {
+        string gestureKey = gesture.gestureName ?? string.Empty;
+        float now = Time.time;
+        if (lastGestureFiredAt.TryGetValue(gestureKey, out float previousTime) &&
+            now - previousTime <= sameGestureCooldownSeconds)
+        {
+            if (verboseLogging)
+            {
+                Debug.Log($"[WhisperGesture] Skipping duplicate trigger for {gesture.gestureName} ({now - previousTime:F2}s apart)");
+            }
+            return;
+        }
+
+        lastGestureFiredAt[gestureKey] = now;
+
         if (verboseLogging)
         {
             Debug.Log($"[WhisperGesture] 🎭 Triggering: {gesture.gestureName} (phrase: '{gesture.phrase}')");
@@ -540,7 +730,7 @@ public class WhisperGestureSync : MonoBehaviour
                 phrase = "eat food",
                 gestureName = "DZ13 (Eat)",
                 action = () => animatorDriver?.TriggerDZ13(),
-                wordOffset = 0.2f,
+                wordOffset = 0.1f,
                 triggerOnLastWord = true
             },
             new GestureKeyword
@@ -548,7 +738,7 @@ public class WhisperGestureSync : MonoBehaviour
                 phrase = "get energy",
                 gestureName = "DZ13 (Eat)",
                 action = () => animatorDriver?.TriggerDZ13(),
-                wordOffset = 0.1f
+                wordOffset = 0.05f
             },
             new GestureKeyword
             {
@@ -567,14 +757,14 @@ public class WhisperGestureSync : MonoBehaviour
                 phrase = "condense",
                 gestureName = "DZ18 (X-Shape Condense)",
                 action = () => animatorDriver?.TriggerDZ18(),
-                wordOffset = 0.2f
+                wordOffset = 0.1f
             },
             new GestureKeyword
             {
                 phrase = "x shape",
                 gestureName = "DZ18 (X-Shape Condense)",
                 action = () => animatorDriver?.TriggerDZ18(),
-                wordOffset = 0.1f,
+                wordOffset = 0.05f,
                 triggerOnLastWord = true
             },
             new GestureKeyword
@@ -582,7 +772,7 @@ public class WhisperGestureSync : MonoBehaviour
                 phrase = "condense into x",
                 gestureName = "DZ18 (X-Shape Condense)",
                 action = () => animatorDriver?.TriggerDZ18(),
-                wordOffset = 0.3f,
+                wordOffset = 0.15f,
                 triggerOnLastWord = true
             }
         };
@@ -595,7 +785,7 @@ public class WhisperGestureSync : MonoBehaviour
                 phrase = "line up",
                 gestureName = "DZ20 (Line Up)",
                 action = () => animatorDriver?.TriggerDZ20(),
-                wordOffset = 0.2f,
+                wordOffset = 0.1f,
                 triggerOnLastWord = true
             },
             new GestureKeyword
@@ -619,10 +809,18 @@ public class WhisperGestureSync : MonoBehaviour
         {
             new GestureKeyword
             {
+                phrase = "split",
+                gestureName = "DZ22 (Split Outward)",
+                action = () => animatorDriver?.TriggerDZ22(),
+                wordOffset = 0.05f,
+                triggerOnLastWord = false
+            },
+            new GestureKeyword
+            {
                 phrase = "move to opposite",
                 gestureName = "DZ22 (Split Outward)",
                 action = () => animatorDriver?.TriggerDZ22(),
-                wordOffset = 0.3f,
+                wordOffset = 0.15f,
                 triggerOnLastWord = true
             },
             new GestureKeyword
@@ -630,7 +828,7 @@ public class WhisperGestureSync : MonoBehaviour
                 phrase = "pull apart",
                 gestureName = "DZ22 (Split Outward)",
                 action = () => animatorDriver?.TriggerDZ22(),
-                wordOffset = 0.2f,
+                wordOffset = 0.1f,
                 triggerOnLastWord = true
             },
             new GestureKeyword
@@ -638,7 +836,7 @@ public class WhisperGestureSync : MonoBehaviour
                 phrase = "opposite ends",
                 gestureName = "DZ22 (Split Outward)",
                 action = () => animatorDriver?.TriggerDZ22(),
-                wordOffset = 0.1f
+                wordOffset = 0.05f
             }
         };
         
@@ -650,14 +848,14 @@ public class WhisperGestureSync : MonoBehaviour
                 phrase = "split",
                 gestureName = "DZ15 (Split)",
                 action = () => animatorDriver?.TriggerDZ15(),
-                wordOffset = 0.2f
+                wordOffset = 0.1f
             },
             new GestureKeyword
             {
                 phrase = "divide",
                 gestureName = "DZ15 (Split)",
                 action = () => animatorDriver?.TriggerDZ15(),
-                wordOffset = 0.2f
+                wordOffset = 0.1f
             }
         };
     }
@@ -665,12 +863,79 @@ public class WhisperGestureSync : MonoBehaviour
     string NormalizeText(string text)
     {
         if (string.IsNullOrEmpty(text)) return "";
-        
-        // Convert to lowercase and remove punctuation
+
         text = text.ToLower();
         text = System.Text.RegularExpressions.Regex.Replace(text, @"[^\w\s]", " ");
-        text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ");
-        return text.Trim();
+        text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ").Trim();
+
+        if (string.IsNullOrEmpty(text)) return "";
+
+        var tokens = text
+            .Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries)
+            .Select(CanonicalizeToken)
+            .ToArray();
+
+        return string.Join(" ", tokens);
+    }
+
+    string CanonicalizeToken(string token)
+    {
+        if (string.IsNullOrEmpty(token)) return "";
+
+        switch (token)
+        {
+            // Eat variants
+            case "eating": return "eat";
+            case "ate": return "eat";
+            
+            // Get variants
+            case "getting": return "get";
+            case "got": return "get";
+            case "gathered": return "gather";
+            case "gathering": return "gather";
+            
+            // Condense variants
+            case "condense": return "condense";
+            case "condenses": return "condense";
+            case "condensing": return "condense";
+            case "condensed": return "condense";
+            
+            // Line variants
+            case "line": return "line";
+            case "lines": return "line";
+            case "lining": return "line";
+            case "lined": return "line";
+            
+            // Pull variants
+            case "pulling": return "pull";
+            case "pulled": return "pull";
+            
+            // Move variants
+            case "moves": return "move";
+            case "moved": return "move";
+            case "moving": return "move";
+            
+            // Shape variants
+            case "shape": return "shape";
+            case "shaped": return "shape";
+            case "shapes": return "shape";
+            
+            // Split variants
+            case "splitting": return "split";
+            case "divide": return "divide";
+            case "dividing": return "divide";
+            case "divided": return "divide";
+            
+            // Opposite variants
+            case "opposites": return "opposite";
+            
+            // Spatial variants
+            case "poles": return "ends";
+            case "pole": return "ends";
+            case "opposingends": return "opposite";
+            
+            default: return token;
+        }
     }
     
     /// <summary>
@@ -678,6 +943,14 @@ public class WhisperGestureSync : MonoBehaviour
     /// </summary>
     public void StopGesturePlayback()
     {
+        scheduleRequestId++;
+
+        if (processingCoroutine != null)
+        {
+            StopCoroutine(processingCoroutine);
+            processingCoroutine = null;
+        }
+
         if (playbackCoroutine != null)
         {
             StopCoroutine(playbackCoroutine);
@@ -700,6 +973,23 @@ public class WhisperGestureSync : MonoBehaviour
         public string gestureName;
         public string phrase;
         public System.Action triggerAction;
+
+        public ScheduledGesture Clone()
+        {
+            return new ScheduledGesture
+            {
+                triggerTime = triggerTime,
+                gestureName = gestureName,
+                phrase = phrase,
+                triggerAction = triggerAction
+            };
+        }
+    }
+
+    struct TimedWord
+    {
+        public string word;
+        public float time;
     }
     
     class GestureKeyword

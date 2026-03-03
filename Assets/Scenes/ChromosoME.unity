@@ -20180,29 +20180,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.1, y: 0.3, z: 0.1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1434790990
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1434790979}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98d74337f6aa3b34ba95025a54aa6d08, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WhisperGestureSync
-  whisperModelPath: Assets/StreamingAssets/Whisper/ggml-tiny.bin
-  language: en
-  enableWordTimestamps: 1
-  animatorDriver: {fileID: 1434790980}
-  gptConnector: {fileID: 1434790981}
-  ttsAudioSource: {fileID: 1434790984}
-  gestureTimingOffset: 0.1
-  confidenceThreshold: 0.5
-  enablePhaseGestures: 1
-  verboseLogging: 1
-  logWordTimestamps: 1
 --- !u!114 &1434790991
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20215,8 +20192,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc0e0b2c9f8b21844ae0006579e5db2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TTSWhisperIntegration
-  ttsPlayer: {fileID: 0}
-  gestureSync: {fileID: 0}
+  ttsPlayer: {fileID: 1434790982}
+  gestureSync: {fileID: 1434790992}
   autoTranscribe: 1
   recordFromAudioSource: 1
   useFallbackText: 1
@@ -47180,10 +47157,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1434790991}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: fa9486789a9f2ad42ba0f9442e8f031e,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1434790990}
   m_SourcePrefab: {fileID: 100100000, guid: fa9486789a9f2ad42ba0f9442e8f031e, type: 3}
 --- !u!1 &1982885688
 GameObject:

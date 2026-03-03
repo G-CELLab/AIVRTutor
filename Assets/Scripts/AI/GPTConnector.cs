@@ -129,6 +129,8 @@ public class GPTConnector : MonoBehaviour
     // ===== 触发来源：仅用“助理字幕/文本” =====
     [Header("Reactions")]
     public bool reactToAssistantTranscript = true; // 用助理回复字幕触发动作
+    [Tooltip("If enabled, GPTConnector will not fire transcript gestures when WhisperGestureSync is active (prevents double triggers).")]
+    public bool suppressTranscriptGesturesWhenWhisperSyncActive = true;
 
     private readonly Dictionary<GameManager.GameState, string> _phaseTextCache = new Dictionary<GameManager.GameState, string>(); // 文本缓存
     private readonly Dictionary<GameManager.GameState, string> _phaseAudioPathCache = new Dictionary<GameManager.GameState, string>(); // 音频缓存（本地路径）
@@ -1347,6 +1349,17 @@ public class GPTConnector : MonoBehaviour
     private bool TryFireFromAssistantTranscript(string transcript)
     {
         if (string.IsNullOrWhiteSpace(transcript)) return false;
+
+        if (suppressTranscriptGesturesWhenWhisperSyncActive)
+        {
+            var whisperSync = FindAnyObjectByType<WhisperGestureSync>();
+            if (whisperSync != null && whisperSync.isActiveAndEnabled)
+            {
+                D("[React][assistant] Skipping GPTConnector gesture trigger because WhisperGestureSync is active");
+                return false;
+            }
+        }
+
         OnAssistantTranscript?.Invoke(transcript);
         if (ttsDriver == null) return false;
         string t = Normalize(transcript); // 去标点/小写/压空白
