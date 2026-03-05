@@ -80,22 +80,23 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     private IEnumerator InitMicrophoneAndStartLoop()
     {
 #if UNITY_ANDROID && !UNITY_EDITOR
-        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
+        // Permission should have been requested at app startup via PermissionManager
+        // Wait a frame to ensure permission state is updated
+        yield return null;
+        
+        if (!PermissionManager.HasMicrophonePermission())
         {
-            Debug.LogWarning("[Mic] Requesting microphone permission...");
-            Permission.RequestUserPermission(Permission.Microphone);
-            float t = 0f;
-            while (!Permission.HasUserAuthorizedPermission(Permission.Microphone) && t < 5f)
+            Debug.LogError("[SpeechRecognizer] ❌ Microphone permission NOT granted. Waiting next frame to retry...");
+            // Wait a bit and try again once
+            yield return new WaitForSeconds(1f);
+            if (!PermissionManager.HasMicrophonePermission())
             {
-                t += Time.deltaTime;
-                yield return null;
+                Debug.LogError("[SpeechRecognizer] ❌ Microphone permission STILL not granted. User must enable in Quest settings.");
+                enabled = false;
+                yield break;
             }
         }
-        if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
-        {
-            Debug.LogError("❌ Microphone permission denied. Enable it in Quest app permissions.");
-            yield break;
-        }
+        Debug.Log("[SpeechRecognizer] ✅ Microphone permission verified - proceeding with initialization");
 #endif
 
         // 打印设备列表

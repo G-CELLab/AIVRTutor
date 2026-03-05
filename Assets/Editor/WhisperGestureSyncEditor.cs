@@ -244,9 +244,9 @@ public class WhisperGestureSyncEditor : Editor
         EditorGUILayout.EndHorizontal();
         
         EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("DZ20\n(Line Up)", GUILayout.Height(40)))
+        if (GUILayout.Button("DZ12\n(Line Up)", GUILayout.Height(40)))
         {
-            if (Application.isPlaying) sync.animatorDriver?.TriggerDZ20();
+            if (Application.isPlaying) sync.animatorDriver?.TriggerDZ12();
         }
         if (GUILayout.Button("DZ22\n(Split)", GUILayout.Height(40)))
         {

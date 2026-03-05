@@ -2392,7 +2392,7 @@ Transform:
   m_GameObject: {fileID: 231152405}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0, z: -0}
+  m_LocalPosition: {x: 0, y: -0, z: 0.869}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -7549,7 +7549,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Look at the arm in front of you!\nThere is a scar... and it looks painful 
     :(\n\nYou can heal that wound by doing the role of a chromosome during the cell
-    division process!\n\nIf you touch the wound for three seconds, you will be dive
+    division process!\n\nIf you touch the wound for three seconds, you will dive
     into the human skin cell. \n\nLet's do this!!!"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -19796,7 +19796,7 @@ MonoBehaviour:
   trigDZ14: doDZ14
   trigDZ15: doDZ15
   trigDZ18: doDZ18
-  trigDZ20: doDZ20
+  trigDZ12: doDZ12
   trigDZ22: doDZ22
   lineUpGestureSpeedMultiplier: 0.5
   animSpeedParam: gestureSpeed
@@ -19975,6 +19975,7 @@ MonoBehaviour:
   prependPhaseTextAsDeveloperItem: 1
   prependPhaseInstructionAudio: 1
   reactToAssistantTranscript: 1
+  suppressTranscriptGesturesWhenWhisperSyncActive: 1
   evaluateQueuedRequests: 1
   maxQueuedRequestAgeSec: 30
   queueEvaluationPrompt: Respond ONLY in English. Do not use any other language under
@@ -20219,6 +20220,9 @@ MonoBehaviour:
   gptConnector: {fileID: 1434790981}
   ttsAudioSource: {fileID: 1434790984}
   gestureTimingOffset: 0.1
+  duplicateClipWindowSeconds: 0.35
+  scheduleMergeWindowSeconds: 0.75
+  sameGestureCooldownSeconds: 0.9
   confidenceThreshold: 0.5
   enablePhaseGestures: 1
   verboseLogging: 1

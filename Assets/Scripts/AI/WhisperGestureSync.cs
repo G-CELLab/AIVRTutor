@@ -78,6 +78,15 @@ public class WhisperGestureSync : MonoBehaviour
     
     void Awake()
     {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Whisper is too slow on Quest 3 mobile hardware (~2 minutes to transcribe 10s audio)
+        // Gestures fire long after speech ends. Disable and let GPTConnector handle gestures via text.
+        Debug.LogWarning("[WhisperGesture] ⚠️ Whisper disabled on Android - transcription too slow for real-time gestures.");
+        Debug.LogWarning("[WhisperGesture] GPT text-based gestures will be used instead (GPTConnector handles this).");
+        enabled = false;
+        return;
+#endif
+
         InitializePhaseGestures();
         
         // Auto-find components if not assigned
@@ -127,7 +136,8 @@ public class WhisperGestureSync : MonoBehaviour
     
     IEnumerator InitializeWhisper()
     {
-        if (verboseLogging) Debug.Log("[WhisperGesture] Initializing Whisper...");
+        Debug.Log("[WhisperGesture] 🚀 ===== WHISPER INITIALIZATION START =====");
+        if (verboseLogging) Debug.Log($"[WhisperGesture] Platform: {Application.platform}, Streaming Assets: {Application.streamingAssetsPath}");
 
         whisperManager = GetComponent<WhisperManager>();
         if (!whisperManager)
@@ -137,29 +147,67 @@ public class WhisperGestureSync : MonoBehaviour
 
         if (!whisperManager)
         {
+            Debug.Log("[WhisperGesture] ⚙️ No WhisperManager found. Creating new one...");
             whisperManager = gameObject.AddComponent<WhisperManager>();
-            if (verboseLogging) Debug.Log("[WhisperGesture] No WhisperManager found. Auto-added one to this GameObject.");
+            if (verboseLogging) Debug.Log("[WhisperGesture] ✓ Auto-added WhisperManager component");
             yield return null;
+        }
+        else
+        {
+            Debug.Log("[WhisperGesture] ✓ WhisperManager found");
         }
 
         if (whisperManager.IsLoading)
         {
-            if (verboseLogging) Debug.Log("[WhisperGesture] WhisperManager is already loading. Waiting...");
-            yield return new WaitUntil(() => !whisperManager.IsLoading);
+            Debug.Log("[WhisperGesture] ⏳ WhisperManager is already loading. Waiting for completion...");
+            float timeout = 0f;
+            float maxWait = 30f;
+            while (whisperManager.IsLoading && timeout < maxWait)
+            {
+                timeout += Time.deltaTime;
+                yield return null;
+            }
+            if (timeout >= maxWait)
+            {
+                Debug.LogError("[WhisperGesture] ❌ Whisper loading timeout after 30 seconds!");
+                initializationStarted = false;
+                yield break;
+            }
         }
 
         if (whisperManager.IsLoaded)
         {
             isInitialized = true;
             pendingInitWarningLogged = false;
-            if (verboseLogging) Debug.Log("[WhisperGesture] ✅ Whisper already initialized");
+            Debug.Log("[WhisperGesture] ✅✅✅ WHISPER ALREADY LOADED AND READY ✅✅✅");
             yield break;
         }
 
         var resolved = ResolveModelPathForWhisper(whisperModelPath);
-        if (verboseLogging)
+        Debug.Log($"[WhisperGesture] 📂 Model Path Resolution:");
+        Debug.Log($"  Config: '{whisperModelPath}'");
+        Debug.Log($"  Resolved: '{resolved.resolvedPath}'");
+        Debug.Log($"  In StreamingAssets: {resolved.isInStreamingAssets}");
+        Debug.Log($"  StreamingAssets Path: '{Application.streamingAssetsPath}'");
+        
+        // Check if file exists (diagnostic for APK issues)
+        if (resolved.isInStreamingAssets)
         {
-            Debug.Log($"[WhisperGesture] Model config='{whisperModelPath}', resolved='{resolved.resolvedPath}', inStreamingAssets={resolved.isInStreamingAssets}");
+            string fullPath = Path.Combine(Application.streamingAssetsPath, resolved.resolvedPath);
+            Debug.Log($"[WhisperGesture] 🔍 Checking model file exists at: {fullPath}");
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // On Android, StreamingAssets are in a compressed archive, check differently
+            StartCoroutine(CheckAndroidFileExists(resolved.resolvedPath));
+#else
+            if (File.Exists(fullPath))
+            {
+                Debug.Log($"[WhisperGesture] ✅ Model file EXISTS ({new FileInfo(fullPath).Length / 1024 / 1024:F1} MB)");
+            }
+            else
+            {
+                Debug.LogError($"[WhisperGesture] ❌❌❌ MODEL FILE DOES NOT EXIST! Check if it's included in build!");
+            }
+#endif
         }
 
         whisperManager.ModelPath = resolved.resolvedPath;
@@ -167,26 +215,47 @@ public class WhisperGestureSync : MonoBehaviour
         whisperManager.language = string.IsNullOrEmpty(language) ? "en" : language;
         whisperManager.enableTokens = enableWordTimestamps;
 
+        Debug.Log("[WhisperGesture] 🔄 Starting model initialization...");
         var initTask = whisperManager.InitModel();
-        yield return new WaitUntil(() => initTask.IsCompleted);
+        
+        float elapsed = 0f;
+        float maxInitTime = 60f; // 60 second max init time
+        while (!initTask.IsCompleted && elapsed < maxInitTime)
+        {
+            elapsed += Time.deltaTime;
+            if (elapsed % 5 < Time.deltaTime)
+            {
+                Debug.Log($"[WhisperGesture] ⏳ Initializing... ({elapsed:F1}s / {maxInitTime}s)");
+            }
+            yield return null;
+        }
         
         if (initTask.IsFaulted)
         {
-            Debug.LogError($"[WhisperGesture] Initialization failed: {initTask.Exception}");
+            Debug.LogError($"[WhisperGesture] ❌❌❌ INITIALIZATION FAILED ❌❌❌");
+            Debug.LogError($"[WhisperGesture] Exception: {initTask.Exception}");
+            if (initTask.Exception.InnerException != null)
+            {
+                Debug.LogError($"[WhisperGesture] Inner Exception: {initTask.Exception.InnerException}");
+            }
             initializationStarted = false;
             yield break;
         }
 
         if (!whisperManager.IsLoaded)
         {
-            Debug.LogError("[WhisperGesture] Initialization completed but model is not loaded. Check model path and WhisperManager logs.");
+            Debug.LogError("[WhisperGesture] ❌ Init completed but IsLoaded is FALSE. Checking if this is a timeout or load issue...");
+            if (elapsed >= maxInitTime)
+            {
+                Debug.LogError($"[WhisperGesture] ❌ TIMEOUT: Took longer than {maxInitTime}s to load model. Model file may be too large or missing.");
+            }
             initializationStarted = false;
             yield break;
         }
         
         isInitialized = true;
         pendingInitWarningLogged = false;
-        if (verboseLogging) Debug.Log("[WhisperGesture] ✅ Whisper initialized successfully");
+        Debug.Log("[WhisperGesture] ✅✅✅ WHISPER INITIALIZATION COMPLETE ✅✅✅");
 
         if (hasPendingClip && pendingClip != null)
         {
@@ -194,14 +263,42 @@ public class WhisperGestureSync : MonoBehaviour
             pendingClip = null;
             hasPendingClip = false;
 
-            if (verboseLogging)
-            {
-                Debug.Log($"[WhisperGesture] Processing queued first clip after init: {clipToProcess.name}");
-            }
-
+            Debug.Log($"[WhisperGesture] 🎬 Processing queued first clip after init: {clipToProcess.name}");
             TranscribeAndScheduleGestures(clipToProcess);
         }
     }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+    IEnumerator CheckAndroidFileExists(string relativePath)
+    {
+        string url = Path.Combine(Application.streamingAssetsPath, relativePath);
+        Debug.Log($"[WhisperGesture] 🔍 Checking Android file via UnityWebRequest: {url}");
+        
+        using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequest.Head(url))
+        {
+            yield return www.SendWebRequest();
+            
+            if (www.result == UnityEngine.Networking.UnityWebRequest.Result.Success)
+            {
+                string contentLength = www.GetResponseHeader("Content-Length");
+                if (!string.IsNullOrEmpty(contentLength) && long.TryParse(contentLength, out long bytes))
+                {
+                    Debug.Log($"[WhisperGesture] ✅ Model file EXISTS in APK ({bytes / 1024 / 1024:F1} MB)");
+                }
+                else
+                {
+                    Debug.Log($"[WhisperGesture] ✅ Model file EXISTS in APK (size unknown)");
+                }
+            }
+            else
+            {
+                Debug.LogError($"[WhisperGesture] ❌❌❌ MODEL FILE NOT FOUND IN APK! Error: {www.error}");
+                Debug.LogError("[WhisperGesture] ❌ The Whisper model was NOT included in the APK build!");
+                Debug.LogError("[WhisperGesture] ❌ Make sure Assets/StreamingAssets/Whisper/ggml-tiny.bin exists and is included in build.");
+            }
+        }
+    }
+#endif
 
     private (string resolvedPath, bool isInStreamingAssets) ResolveModelPathForWhisper(string configuredPath)
     {
@@ -259,10 +356,7 @@ public class WhisperGestureSync : MonoBehaviour
         float nowRealtime = Time.realtimeSinceStartup;
         if (clipKey == lastScheduledClipKey && (nowRealtime - lastScheduledClipTime) <= duplicateClipWindowSeconds)
         {
-            if (verboseLogging)
-            {
-                Debug.Log($"[WhisperGesture] Skipping duplicate schedule call for clip '{clip.name}' ({nowRealtime - lastScheduledClipTime:F2}s apart)");
-            }
+            Debug.Log($"[WhisperGesture] ⏭️ Skipping duplicate schedule for '{clip.name}' ({nowRealtime - lastScheduledClipTime:F2}s apart)");
             return;
         }
 
@@ -271,18 +365,20 @@ public class WhisperGestureSync : MonoBehaviour
 
         if (!isInitialized)
         {
+            Debug.Log("[WhisperGesture] ⏳ Whisper not ready yet, checking for existing WhisperManager...");
             TryAdoptLoadedWhisperManager();
         }
 
         if (!isInitialized)
         {
+            Debug.LogWarning($"[WhisperGesture] ⚠️ Whisper still not initialized, queueing clip for later: {clip.name}");
             pendingClip = clip;
             hasPendingClip = true;
             EnsureInitializationStarted();
 
-            if (verboseLogging && !pendingInitWarningLogged)
+            if (!pendingInitWarningLogged)
             {
-                Debug.LogWarning($"[WhisperGesture] Whisper not initialized yet. Queued clip: {clip.name}");
+                Debug.LogWarning($"[WhisperGesture] ⚠️ Whisper initialization in progress. Gesture sync will happen after initialization completes.");
                 pendingInitWarningLogged = true;
             }
             return;
@@ -290,9 +386,11 @@ public class WhisperGestureSync : MonoBehaviour
         
         if (!animatorDriver)
         {
-            Debug.LogWarning("[WhisperGesture] No TTSAnimatorDriver assigned");
+            Debug.LogError("[WhisperGesture] ❌ No TTSAnimatorDriver assigned. Cannot schedule gestures!");
             return;
         }
+
+        Debug.Log($"[WhisperGesture] 🎬 Starting Whisper transcription for: {clip.name} ({clip.length:F2}s)");
 
         scheduleRequestId++;
 
@@ -318,46 +416,93 @@ public class WhisperGestureSync : MonoBehaviour
 
     IEnumerator ProcessAudioClip(AudioClip clip, int requestId)
     {
-        if (verboseLogging) Debug.Log($"[WhisperGesture] Processing audio clip: {clip.name} (length: {clip.length:F2}s)");
+        Debug.Log($"[WhisperGesture] 📝 ProcessAudioClip START: {clip.name} ({clip.length:F2}s, {clip.frequency}Hz, {clip.channels}ch, {clip.samples} samples)");
         
         // Clear previous scheduled gestures
         scheduledGestures.Clear();
         
         // Transcribe with word timestamps
-        var transcriptionTask = whisperManager.GetTextAsync(clip);
-        yield return new WaitUntil(() => transcriptionTask.IsCompleted);
+        Debug.Log($"[WhisperGesture] 🔄 Calling whisperManager.GetTextAsync()...");
+        System.Threading.Tasks.Task<WhisperResult> transcriptionTask = null;
+        
+        try
+        {
+            transcriptionTask = whisperManager.GetTextAsync(clip);
+            Debug.Log($"[WhisperGesture] ✓ GetTextAsync() called successfully, waiting for completion...");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[WhisperGesture] ❌ Exception calling GetTextAsync: {e.Message}\n{e.StackTrace}");
+            yield break;
+        }
+        
+        // Wait for transcription with timeout and periodic logging
+        float elapsed = 0f;
+        float timeout = 30f; // 30 second timeout
+        float lastLogTime = 0f;
+        
+        while (!transcriptionTask.IsCompleted && elapsed < timeout)
+        {
+            elapsed += Time.deltaTime;
+            
+            // Log every 2 seconds
+            if (elapsed - lastLogTime >= 2f)
+            {
+                Debug.Log($"[WhisperGesture] ⏳ Transcribing... {elapsed:F1}s / {timeout}s (Status: {transcriptionTask.Status})");
+                lastLogTime = elapsed;
+            }
+            
+            yield return null;
+        }
+        
+        if (!transcriptionTask.IsCompleted)
+        {
+            Debug.LogError($"[WhisperGesture] ❌ TRANSCRIPTION TIMEOUT after {elapsed:F1}s! Task status: {transcriptionTask.Status}");
+            yield break;
+        }
+        
+        Debug.Log($"[WhisperGesture] ✓ Transcription completed in {elapsed:F1}s");
 
         if (requestId != scheduleRequestId)
         {
-            if (verboseLogging) Debug.Log("[WhisperGesture] Ignoring stale transcription result (newer request exists)");
+            Debug.Log("[WhisperGesture] ⏭️ Ignoring stale transcription result (newer request exists)");
             yield break;
         }
         
         if (transcriptionTask.IsFaulted)
         {
-            Debug.LogError($"[WhisperGesture] Transcription failed: {transcriptionTask.Exception}");
+            Debug.LogError($"[WhisperGesture] ❌ Transcription FAULTED!");
+            if (transcriptionTask.Exception != null)
+            {
+                Debug.LogError($"[WhisperGesture] Exception: {transcriptionTask.Exception}");
+                if (transcriptionTask.Exception.InnerException != null)
+                {
+                    Debug.LogError($"[WhisperGesture] Inner: {transcriptionTask.Exception.InnerException}");
+                }
+            }
             yield break;
         }
         
         WhisperResult result = transcriptionTask.Result;
         if (result == null)
         {
-            Debug.LogError("[WhisperGesture] Transcription result is null");
+            Debug.LogError("[WhisperGesture] ❌ Transcription result is NULL!");
             yield break;
         }
         
         string fullText = result.Result;
-        if (verboseLogging) Debug.Log($"[WhisperGesture] Transcription: {fullText}");
+        Debug.Log($"[WhisperGesture] 📄 Transcription text: '{fullText}'");
         
         // Get word-level segments (requires Whisper with timestamp support)
         var segments = result.Segments;
         if (segments != null && segments.Count > 0)
         {
+            Debug.Log($"[WhisperGesture] ✓ Got {segments.Count} word segments, processing...");
             ProcessSegmentsAndScheduleGestures(segments, fullText);
         }
         else
         {
-            Debug.LogWarning("[WhisperGesture] No word segments available. Falling back to text-only analysis.");
+            Debug.LogWarning("[WhisperGesture] ⚠️ No word segments available. Falling back to text-only analysis.");
             AnalyzeTextAndScheduleGestures(fullText, clip.length);
         }
 
@@ -783,23 +928,23 @@ public class WhisperGestureSync : MonoBehaviour
             new GestureKeyword
             {
                 phrase = "line up",
-                gestureName = "DZ20 (Line Up)",
-                action = () => animatorDriver?.TriggerDZ20(),
+                gestureName = "DZ12 (Line Up)",
+                action = () => animatorDriver?.TriggerDZ12(),
                 wordOffset = 0.1f,
                 triggerOnLastWord = true
             },
             new GestureKeyword
             {
                 phrase = "at the center",
-                gestureName = "DZ20 (Line Up)",
-                action = () => animatorDriver?.TriggerDZ20(),
+                gestureName = "DZ12 (Line Up)",
+                action = () => animatorDriver?.TriggerDZ12(),
                 wordOffset = 0.0f
             },
             new GestureKeyword
             {
                 phrase = "in the middle",
-                gestureName = "DZ20 (Line Up)",
-                action = () => animatorDriver?.TriggerDZ20(),
+                gestureName = "DZ12 (Line Up)",
+                action = () => animatorDriver?.TriggerDZ12(),
                 wordOffset = 0.0f
             }
         };

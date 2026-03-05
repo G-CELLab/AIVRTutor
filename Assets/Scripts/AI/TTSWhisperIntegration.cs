@@ -39,6 +39,14 @@ public class TTSWhisperIntegration : MonoBehaviour
     
     void Awake()
     {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Whisper disabled on Android - too slow for real-time gestures
+        // Disabling TTSWhisperIntegration to prevent timeout errors
+        Debug.LogWarning("[TTSWhisper] Disabled on Android - using GPTConnector text-based gestures instead");
+        enabled = false;
+        return;
+#endif
+
         if (!gestureSync) gestureSync = GetComponent<WhisperGestureSync>();
         if (!ttsPlayer) ttsPlayer = FindAnyObjectByType<TextToSpeechPlayer>();
         
@@ -52,10 +60,17 @@ public class TTSWhisperIntegration : MonoBehaviour
     
     void Start()
     {
+        Debug.Log("[TTSWhisper] 🚀 Starting TTSWhisperIntegration...");
+        
         // Hook into TTS player events if available
         if (ttsPlayer && autoTranscribe)
         {
+            Debug.Log("[TTSWhisper] ✓ TTS Player found, monitoring playback");
             StartCoroutine(MonitorTTSPlayback());
+        }
+        else
+        {
+            Debug.LogWarning("[TTSWhisper] ⚠️ TTS Player not found, auto-transcribe disabled");
         }
     }
     
@@ -64,10 +79,11 @@ public class TTSWhisperIntegration : MonoBehaviour
         AudioSource audioSource = ttsPlayer.audioSource;
         if (!audioSource)
         {
-            Debug.LogWarning("[TTSWhisper] TTS AudioSource not found");
+            Debug.LogError("[TTSWhisper] ❌ TTS AudioSource not found!");
             yield break;
         }
         
+        Debug.Log("[TTSWhisper] ✓ AudioSource found, starting playback monitor");
         bool wasPlaying = false;
         
         while (true)
@@ -77,11 +93,13 @@ public class TTSWhisperIntegration : MonoBehaviour
             // Detect TTS start
             if (isPlaying && !wasPlaying)
             {
+                Debug.Log("[TTSWhisper] 🎬 TTS PLAYBACK STARTED");
                 OnTTSStarted(audioSource);
             }
             // Detect TTS stop
             else if (!isPlaying && wasPlaying)
             {
+                Debug.Log("[TTSWhisper] ⏹️ TTS PLAYBACK STOPPED");
                 OnTTSStopped();
             }
             
@@ -92,28 +110,36 @@ public class TTSWhisperIntegration : MonoBehaviour
     
     void OnTTSStarted(AudioSource audioSource)
     {
-        if (verboseLogging) Debug.Log("[TTSWhisper] 🎙️ TTS started, preparing to transcribe...");
+        Debug.Log("[TTSWhisper] 🎙️ ==> OnTTSStarted called");
         
         // Get the audio clip
         AudioClip clip = audioSource.clip;
         
-        if (clip != null && recordFromAudioSource)
+        if (clip == null)
         {
+            Debug.LogError("[TTSWhisper] ❌ AudioSource has NO clip assigned!");
+            return;
+        }
+        
+        Debug.Log($"[TTSWhisper] ✓ Clip: {clip.name} ({clip.length:F2}s)");
+        
+        if (recordFromAudioSource)
+        {
+            Debug.Log("[TTSWhisper] 🔄 Recording from audio source for transcription...");
             // Record from audio source and transcribe
             if (recordingCoroutine != null) StopCoroutine(recordingCoroutine);
             recordingCoroutine = StartCoroutine(RecordAndTranscribe(audioSource, clip));
         }
         else if (useFallbackText && ttsPlayer != null)
         {
-            // Fallback: Use text-based analysis
-            Debug.LogWarning("[TTSWhisper] Audio clip unavailable, using fallback text analysis");
+            Debug.LogWarning("[TTSWhisper] ⚠️ Audio recording disabled, using fallback text analysis");
             // Note: You may need to add a method to get the current speech text from TTS player
         }
     }
     
     void OnTTSStopped()
     {
-        if (verboseLogging) Debug.Log("[TTSWhisper] TTS stopped");
+        Debug.Log("[TTSWhisper] Cleanup on TTS stop");
         
         if (recordingCoroutine != null)
         {
@@ -124,24 +150,24 @@ public class TTSWhisperIntegration : MonoBehaviour
     
     IEnumerator RecordAndTranscribe(AudioSource audioSource, AudioClip originalClip)
     {
+        Debug.Log("[TTSWhisper] ⏳ Waiting for audio playback to stabilize...");
+        
         // Wait a tiny bit for audio to start playing
         yield return new WaitForSeconds(0.05f);
         
         // For pre-recorded TTS clips, we can directly transcribe the clip
         if (originalClip != null && !originalClip.name.Contains("Microphone"))
         {
-            if (verboseLogging)
-            {
-                Debug.Log($"[TTSWhisper] Transcribing TTS clip: {originalClip.name} ({originalClip.length:F2}s)");
-            }
+            Debug.Log($"[TTSWhisper] 📝 Transcribing TTS clip: {originalClip.name} ({originalClip.length:F2}s, {originalClip.frequency}Hz, {originalClip.channels}ch)");
             
             // Convert to Whisper-compatible format if needed
             AudioClip processedClip = ConvertAudioClip(originalClip);
+            Debug.Log($"[TTSWhisper] ✓ Clip prepared, sending to WhisperGestureSync...");
             gestureSync.TranscribeAndScheduleGestures(processedClip);
         }
         else
         {
-            Debug.LogWarning("[TTSWhisper] Real-time recording from AudioSource not yet supported. Using direct clip transcription.");
+            Debug.LogError("[TTSWhisper] ❌ Real-time recording from AudioSource not yet supported. Using direct clip transcription.");
         }
     }
     
@@ -150,14 +176,12 @@ public class TTSWhisperIntegration : MonoBehaviour
         // If clip already matches required format, return as-is
         if (original.frequency == sampleRate && original.channels == channels)
         {
+            Debug.Log($"[TTSWhisper] ✓ Clip already in correct format ({sampleRate}Hz/{channels}ch), no conversion needed");
             return original;
         }
         
         // Otherwise, resample (basic implementation)
-        if (verboseLogging)
-        {
-            Debug.Log($"[TTSWhisper] Converting audio: {original.frequency}Hz/{original.channels}ch -> {sampleRate}Hz/{channels}ch");
-        }
+        Debug.Log($"[TTSWhisper] 🔄 Converting audio: {original.frequency}Hz/{original.channels}ch -> {sampleRate}Hz/{channels}ch");
         
         float[] originalData = new float[original.samples * original.channels];
         original.GetData(originalData, 0);

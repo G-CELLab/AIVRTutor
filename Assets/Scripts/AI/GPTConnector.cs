@@ -99,7 +99,7 @@ public class GPTConnector : MonoBehaviour
     public float delayEatGestureSec = 1.5f;
     [Tooltip("PROPHASE - DZ18 (CONDENSE gesture): Delay after speech starts. Gesture should sync with 'X-shape condense' phrase.")]
     public float delayCondenseGestureSec = 2.0f;
-    [Tooltip("METAPHASE - DZ20 (LINE UP gesture): Delay after speech starts. Gesture should sync with 'line up at the center' phrase.")]
+    [Tooltip("METAPHASE - DZ12 (LINE UP gesture): Delay after speech starts. Gesture should sync with 'line up at the center' phrase.")]
     public float delayLineUpGestureSec = 2.0f;
     [Tooltip("ANAPHASE - DZ22 (SPLIT OUTWARD gesture): Delay after speech starts. Gesture should sync with 'move to opposite ends' phrase.")]
     public float delaySplitOutwardGestureSec = 2.5f;
@@ -131,6 +131,12 @@ public class GPTConnector : MonoBehaviour
     public bool reactToAssistantTranscript = true; // 用助理回复字幕触发动作
     [Tooltip("If enabled, GPTConnector will not fire transcript gestures when WhisperGestureSync is active (prevents double triggers).")]
     public bool suppressTranscriptGesturesWhenWhisperSyncActive = true;
+    [Tooltip("🎯 NEW: Use real-time streaming deltas for precise gesture timing (triggers as words arrive, not after speech completes). Recommended for Realtime API.")]
+    public bool useStreamingGestureTiming = true;
+    [Tooltip("Streaming-only delay for Interphase eat gesture (DZ13). Adds a small natural offset after keyword detection.")]
+    public float streamingInterphaseEatDelaySec = 1.0f;
+    [Tooltip("Streaming-only delay for Prophase condense gesture (DZ18). Adds a small natural offset after keyword detection.")]
+    public float streamingProphaseCondenseDelaySec = 1.0f;
 
     private readonly Dictionary<GameManager.GameState, string> _phaseTextCache = new Dictionary<GameManager.GameState, string>(); // 文本缓存
     private readonly Dictionary<GameManager.GameState, string> _phaseAudioPathCache = new Dictionary<GameManager.GameState, string>(); // 音频缓存（本地路径）
@@ -815,6 +821,8 @@ public class GPTConnector : MonoBehaviour
         // Do not check or set it again here
         try
         {
+            _assistantTranscriptAccum.Length = 0;
+            _assistantGestureTriggeredForResponse = false;
             yield return EnsureRealtimeConnected();
             yield return WaitForSessionReady(3f); // 等待会话指令就绪
 
@@ -860,6 +868,8 @@ public class GPTConnector : MonoBehaviour
         // Do not check or set it again here
         try
         {
+            _assistantTranscriptAccum.Length = 0;
+            _assistantGestureTriggeredForResponse = false;
             _lastUserAudioTime = Time.realtimeSinceStartup; // Track user audio for silence timeout
             yield return EnsureRealtimeConnected();
             yield return WaitForSessionReady(3f); // 等待会话指令就绪
@@ -1046,6 +1056,13 @@ public class GPTConnector : MonoBehaviour
         string type = ExtractJsonString(json, "type");
         if (string.IsNullOrEmpty(type)) return;
 
+        if (type == "response.created" || type.Contains("response.created"))
+        {
+            _assistantTranscriptAccum.Length = 0;
+            _assistantGestureTriggeredForResponse = false;
+            return;
+        }
+
         // === 文本增量（兼容新旧命名）
         if (type == "response.text.delta" || type.Contains("response.output_text.delta"))
         {
@@ -1084,7 +1101,7 @@ public class GPTConnector : MonoBehaviour
             return;
         }
 
-        // === 模型语音字幕（delta）
+        // === 模型语音字幕（delta）- REAL-TIME GESTURE TIMING
         if (type == "response.audio_transcript.delta")
         {
             string delta = ExtractJsonString(json, "delta") ?? ExtractJsonString(json, "text");
@@ -1092,22 +1109,40 @@ public class GPTConnector : MonoBehaviour
             {
                 _assistantTranscriptAccum.Append(delta);
                 Debug.Log("[STT][assistant/delta] " + delta);
+                
+                // 🎯 REAL-TIME GESTURE DETECTION: Process delta immediately for word-level timing
+                if (useStreamingGestureTiming && reactToAssistantTranscript && !_assistantGestureTriggeredForResponse)
+                {
+                    string currentTranscript = _assistantTranscriptAccum.ToString();
+                    bool gestureTriggered = TryFireFromStreamingDelta(currentTranscript);
+                    if (gestureTriggered)
+                    {
+                        _assistantGestureTriggeredForResponse = true; // Prevent duplicate triggers
+                        Debug.Log($"[Gesture/Streaming] ✓ Triggered gesture from streaming delta at word: '{delta}'");
+                    }
+                }
             }
             return;
         }
 
-        // === 模型语音字幕（done）→ 触发动作（仅助理）
+        // === 模型语音字幕（done）→ 触发动作（仅助理）FALLBACK if streaming didn't catch it
         if (type == "response.audio_transcript.done")
         {
             string full = ExtractJsonString(json, "transcript") ?? ExtractJsonString(json, "text");
             if (string.IsNullOrEmpty(full) && _assistantTranscriptAccum.Length > 0) full = _assistantTranscriptAccum.ToString();
             _assistantTranscriptAccum.Length = 0;
 
-            if (!string.IsNullOrEmpty(full) && reactToAssistantTranscript)
+            if (!string.IsNullOrEmpty(full))
             {
-                Debug.Log("[STT][assistant] " + full);
-                TextToSpeechPlayer.SetCurrentSpeech(full); // Capture for MainLog
-                _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(full);
+                Debug.Log("[STT][assistant/done] " + full);
+                TextToSpeechPlayer.SetCurrentSpeech(full);
+                
+                // Only trigger if streaming delta didn't already catch it
+                if (reactToAssistantTranscript && !_assistantGestureTriggeredForResponse)
+                {
+                    Debug.Log("[Gesture/Fallback] Streaming didn't trigger, using fallback detection");
+                    _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(full);
+                }
             }
             return;
         }
@@ -1388,8 +1423,8 @@ public class GPTConnector : MonoBehaviour
             case GameManager.GameState.Metaphase:
                 if (IsLineUpGesture(t))
                 {
-                    Debug.Log("[React][assistant] Metaphase → DZ20 LINE UP gesture (line up at center)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ20(), delayLineUpGestureSec, "Metaphase:LINE_UP");
+                    Debug.Log("[React][assistant] Metaphase → DZ12 LINE UP gesture (line up at center)");
+                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ12(), delayLineUpGestureSec, "Metaphase:LINE_UP");
                     triggered = true;
                 }
                 break;
@@ -1405,6 +1440,80 @@ public class GPTConnector : MonoBehaviour
 
             default:
                 break; // 其它阶段不触发
+        }
+
+        return triggered;
+    }
+
+    /// <summary>
+    /// 🎯 REAL-TIME GESTURE DETECTION: Process streaming transcript deltas for immediate gesture timing.
+    /// Unlike TryFireFromAssistantTranscript which waits for complete text and uses fixed delays,
+    /// this triggers gestures AS WORDS ARRIVE for precise synchronization.
+    /// </summary>
+    private bool TryFireFromStreamingDelta(string accumulatedTranscript)
+    {
+        if (string.IsNullOrWhiteSpace(accumulatedTranscript)) return false;
+
+        if (suppressTranscriptGesturesWhenWhisperSyncActive)
+        {
+            var whisperSync = FindAnyObjectByType<WhisperGestureSync>();
+            if (whisperSync != null && whisperSync.isActiveAndEnabled)
+            {
+                return false;
+            }
+        }
+
+        OnAssistantTranscript?.Invoke(accumulatedTranscript);
+        if (ttsDriver == null) return false;
+        
+        string normalized = Normalize(accumulatedTranscript);
+        bool triggered = false;
+
+        // Check phase-specific gestures (same logic as TryFireFromAssistantTranscript but triggers IMMEDIATELY)
+        switch (GameManager.eGameStatus)
+        {
+            case GameManager.GameState.Interphase:
+                if (IsEatGestureStreamingStrict(GetRecentNormalizedTail(normalized, 96)))
+                {
+                    float d = Mathf.Max(0f, streamingInterphaseEatDelaySec);
+                    Debug.Log($"[Gesture/Streaming] Interphase -> DZ13 EAT gesture (streaming delay={d:0.00}s)");
+                    if (d > 0f) ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ13(), d, "Interphase:EAT(streaming)");
+                    else ttsDriver.TriggerDZ13();
+                    triggered = true;
+                }
+                break;
+
+            case GameManager.GameState.Prophase:
+                if (IsCondenseGesture(normalized))
+                {
+                    float d = Mathf.Max(0f, streamingProphaseCondenseDelaySec);
+                    Debug.Log($"[Gesture/Streaming] Prophase -> DZ18 CONDENSE gesture (streaming delay={d:0.00}s)");
+                    if (d > 0f) ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ18(), d, "Prophase:CONDENSE(streaming)");
+                    else ttsDriver.TriggerDZ18();
+                    triggered = true;
+                }
+                break;
+
+            case GameManager.GameState.Metaphase:
+                if (IsLineUpGesture(normalized))
+                {
+                    Debug.Log("[Gesture/Streaming] Metaphase → DZ12 LINE UP gesture (INSTANT - word detected in stream)");
+                    ttsDriver.TriggerDZ12();
+                    triggered = true;
+                }
+                break;
+
+            case GameManager.GameState.Anaphase:
+                if (IsSplitOutwardGesture(normalized))
+                {
+                    Debug.Log("[Gesture/Streaming] Anaphase → DZ22 SPLIT OUTWARD gesture (INSTANT - word detected in stream)");
+                    ttsDriver.TriggerDZ22();
+                    triggered = true;
+                }
+                break;
+
+            default:
+                break;
         }
 
         return triggered;
@@ -1580,6 +1689,33 @@ public class GPTConnector : MonoBehaviour
         }
         // 收缩多空白
         return Regex.Replace(sb.ToString(), "\\s+", " ").Trim();
+    }
+
+    private string GetRecentNormalizedTail(string normalized, int maxChars)
+    {
+        if (string.IsNullOrEmpty(normalized)) return "";
+        if (maxChars <= 0 || normalized.Length <= maxChars) return normalized;
+        return normalized.Substring(normalized.Length - maxChars);
+    }
+
+    private bool IsEatGestureStreamingStrict(string recentNormalized)
+    {
+        if (string.IsNullOrEmpty(recentNormalized)) return false;
+
+        // Find the LAST occurrence of an eat word (rightmost in string)
+        var eatMatch = Regex.Match(recentNormalized, @"\b(eat|eating|eats|ate|feed|feeding)\b", RegexOptions.RightToLeft);
+        if (!eatMatch.Success) return false;
+
+        // Check if a food word appears within 30 characters AFTER the eat word
+        // This ensures "eating nutrients" or "eat food" pattern, not "capsules... to eat"
+        int eatEndPos = eatMatch.Index + eatMatch.Length;
+        if (eatEndPos >= recentNormalized.Length) return false;
+
+        int searchLength = Math.Min(30, recentNormalized.Length - eatEndPos);
+        string afterEat = recentNormalized.Substring(eatEndPos, searchLength);
+        
+        bool hasFoodAfter = Regex.IsMatch(afterEat, @"\b(food|foods|nutrient|nutrients|capsule|capsules)\b");
+        return hasFoodAfter;
     }
 
     private bool ContainsAnyNormalized(string hay, string[] keys)

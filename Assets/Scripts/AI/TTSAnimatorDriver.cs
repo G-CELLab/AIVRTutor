@@ -2,7 +2,7 @@
 
 //
 // 10 秒内 TTS 开声：normal↔speaking；
-// 超时未开声：进 dz2 等待；并暴露若干 Trigger 方法用于语义反应（dz7/8/13/14/15/18/20/22）。
+// 超时未开声：进 dz2 等待；并暴露若干 Trigger 方法用于语义反应（dz7/8/12/13/14/15/18/22）。
 //
 public class TTSAnimatorDriver : MonoBehaviour
 {
@@ -21,12 +21,12 @@ public class TTSAnimatorDriver : MonoBehaviour
     public string trigDZ14 = "doDZ14";  // ATP transfer
     public string trigDZ15 = "doDZ15";  // S-phase / split
     public string trigDZ18 = "doDZ18";  // X shape
-    public string trigDZ20 = "doDZ20";  // row/line up
+    public string trigDZ12 = "doDZ12";  // row/line up
     public string trigDZ22 = "doDZ22";  // apart/separate
 
     [Header("Gesture Animation Speed Control")]
-    [Tooltip("Animation speed multiplier for DZ20 (LINE UP gesture). Lower = slower/longer. 0.5 = twice as long.")]
-    public float lineUpGestureSpeedMultiplier = 0.5f;  // Make line up gesture play twice as long
+    [Tooltip("Animation speed multiplier for DZ12 (LINE UP gesture). Lower = slower/longer. 0.5 = twice as long.")]
+    public float lineUpGestureSpeedMultiplier = 1.0f;  // Normal speed, no delay
     [Tooltip("Optional: Animator float parameter name for controlling animation speed. Leave empty if not using.")]
     public string animSpeedParam = "gestureSpeed";
     private int _animSpeedHash;
@@ -34,18 +34,18 @@ public class TTSAnimatorDriver : MonoBehaviour
 
     [Header("Timing")]
     public float waitBeforeDZ2 = 10f;   // 超时阈值（秒）
-    public float lingerAfterEnd = 0.05f; // 说完收尾延迟
+    public float lingerAfterEnd = 0f; // 说完收尾延迟
 
     [Header("Debug")]
     public bool verbose = true;
 
     // 缓存 hash
     int _sHash, _wHash;
-    int _dz7, _dz8, _dz13, _dz14, _dz15, _dz18, _dz20, _dz22;
+    int _dz7, _dz8, _dz13, _dz14, _dz15, _dz18, _dz12, _dz22;
 
     // 参数存在性标记（避免静默）
     bool _hasIsSpeaking, _hasWaitSpeak;
-    bool _hasDZ7, _hasDZ8, _hasDZ13, _hasDZ14, _hasDZ15, _hasDZ18, _hasDZ20, _hasDZ22;
+    bool _hasDZ7, _hasDZ8, _hasDZ13, _hasDZ14, _hasDZ15, _hasDZ18, _hasDZ12, _hasDZ22;
 
     bool _expectingSpeech;
     float _waitElapsed, _linger;
@@ -102,8 +102,8 @@ public class TTSAnimatorDriver : MonoBehaviour
     public void TriggerDZ15() { TriggerByHash(_dz15, _hasDZ15, trigDZ15); }
     public void TriggerDZ18() { TriggerByHash(_dz18, _hasDZ18, trigDZ18); }
     
-    // DZ20 (LINE UP) with custom speed control for longer gesture duration
-    public void TriggerDZ20() 
+    // DZ12 (LINE UP) with custom speed control for longer gesture duration
+    public void TriggerDZ12() 
     { 
         // Set slower speed for line up gesture to make it play longer (research requirement)
         if (_hasAnimSpeed)
@@ -111,7 +111,7 @@ public class TTSAnimatorDriver : MonoBehaviour
             animator.SetFloat(_animSpeedHash, lineUpGestureSpeedMultiplier);
             if (verbose) Debug.Log($"[TTSAnimatorDriver] 🐌 Setting LINE UP gesture speed to {lineUpGestureSpeedMultiplier}x");
         }
-        TriggerByHash(_dz20, _hasDZ20, trigDZ20); 
+        TriggerByHash(_dz12, _hasDZ12, trigDZ12); 
     }
     
     public void TriggerDZ22() { TriggerByHash(_dz22, _hasDZ22, trigDZ22); }
@@ -172,7 +172,7 @@ public class TTSAnimatorDriver : MonoBehaviour
         _dz14 = Animator.StringToHash(trigDZ14);
         _dz15 = Animator.StringToHash(trigDZ15);
         _dz18 = Animator.StringToHash(trigDZ18);
-        _dz20 = Animator.StringToHash(trigDZ20);
+        _dz12 = Animator.StringToHash(trigDZ12);
         _dz22 = Animator.StringToHash(trigDZ22);
         _animSpeedHash = Animator.StringToHash(animSpeedParam);
     }
@@ -188,7 +188,7 @@ public class TTSAnimatorDriver : MonoBehaviour
         _hasDZ14 = HasParam(trigDZ14, AnimatorControllerParameterType.Trigger);
         _hasDZ15 = HasParam(trigDZ15, AnimatorControllerParameterType.Trigger);
         _hasDZ18 = HasParam(trigDZ18, AnimatorControllerParameterType.Trigger);
-        _hasDZ20 = HasParam(trigDZ20, AnimatorControllerParameterType.Trigger);
+        _hasDZ12 = HasParam(trigDZ12, AnimatorControllerParameterType.Trigger);
         _hasDZ22 = HasParam(trigDZ22, AnimatorControllerParameterType.Trigger);
         
         _hasAnimSpeed = HasParam(animSpeedParam, AnimatorControllerParameterType.Float);
@@ -204,7 +204,7 @@ public class TTSAnimatorDriver : MonoBehaviour
             LogParamCheck(trigDZ14, _hasDZ14, "Trigger");
             LogParamCheck(trigDZ15, _hasDZ15, "Trigger");
             LogParamCheck(trigDZ18, _hasDZ18, "Trigger");
-            LogParamCheck(trigDZ20, _hasDZ20, "Trigger");
+            LogParamCheck(trigDZ12, _hasDZ12, "Trigger");
             LogParamCheck(trigDZ22, _hasDZ22, "Trigger");
             
             LogParamCheck(animSpeedParam, _hasAnimSpeed, "Float");
@@ -235,6 +235,6 @@ public class TTSAnimatorDriver : MonoBehaviour
     [ContextMenu("Debug/Trigger DZ14 (ATP)")] void _T_DZ14() => TriggerByHash(_dz14, _hasDZ14, trigDZ14);
     [ContextMenu("Debug/Trigger DZ15 (Split)")] void _T_DZ15() => TriggerByHash(_dz15, _hasDZ15, trigDZ15);
     [ContextMenu("Debug/Trigger DZ18 (X-Shape)")] void _T_DZ18() => TriggerByHash(_dz18, _hasDZ18, trigDZ18);
-    [ContextMenu("Debug/Trigger DZ20 (Row)")] void _T_DZ20() => TriggerByHash(_dz20, _hasDZ20, trigDZ20);
+    [ContextMenu("Debug/Trigger DZ12 (Row)")] void _T_DZ12() => TriggerByHash(_dz12, _hasDZ12, trigDZ12);
     [ContextMenu("Debug/Trigger DZ22 (Apart)")] void _T_DZ22() => TriggerByHash(_dz22, _hasDZ22, trigDZ22);
 }
