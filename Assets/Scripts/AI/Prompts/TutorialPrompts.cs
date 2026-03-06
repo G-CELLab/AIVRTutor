@@ -40,9 +40,9 @@ namespace AI.Prompts
 			"3. If they ask a correct visual reference question, point out the object and end with: 'That was a visual reference question.'\n" +
 			"4. If they struggle, encourage them to connect a biology term to something they see",
 			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct and jump straight into explaining visual reference questions. Use 'That was a visual reference question.' or similar phrasing to label correct visual reference questions flexibly.",
-			"- If they ask about the chromosome, say it is the blue object on the left.\n" +
-			"- If they ask about the yellow object, say it is the centriole on the right.\n" +
-			"- If they ask about the centriole, describe the barrel-shaped object on the right.");
+			"- If they ask about the chromosome, say it is the blue object on the right.\n" +
+			"- If they ask about the yellow object, say it is the centriole on the left.\n" +
+			"- If they ask about the centriole, describe the barrel-shaped object on the left.");
 
 		public static string TutorialManipulationQuestions = PromptLibrary.BuildPhase(
 			"Tutorial: Manipulation Questions",

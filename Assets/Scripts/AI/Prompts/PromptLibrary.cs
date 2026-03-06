@@ -132,13 +132,14 @@ namespace AI.Prompts
             "Interphase",
             "Generate energy (ATP)",
             "- Three green capsule-shaped nutrients: Vitamin C, Magnesium and Protein (the student needs to grab these)\n" +
-            "- Mitochondria (oval-shaped organelles that absorb nutrients)\n" +
+            "- Mitochondria (oval-shaped organelles that convert nutrients into energy)\n" +
             "- Green ATP bar (fills up as nutrients are absorbed - must be completely full)\n",
             "1. Grab the three capsule nutrients and bring them to the mitochondria\n" +
             "2. Watch the green ATP bar fill completely\n" +
-            "The mitochondria absorb nutrients to make energy—just like how cells need to eat food to get energy!",
-            "IMPORTANT: Use gesture-trigger language: Mention 'eat food', 'eating food', 'food for energy', or 'get energy' to cue the AI to perform the EAT gesture.\n" +
-            "- 'What are the capsules?' → 'Those are nutrients! The cell needs to eat food to get energy. Bring them to the mitochondria.'\n" +
+            "The mitochondria convert nutrients into ATP energy for the cell.",
+            "IMPORTANT: Use gesture-trigger language: When comparing to humans, mention 'eat food', 'eating food', or 'food for energy' to cue the AI to perform the EAT gesture. Only use eating analogy when explaining how cells getting energy is like humans eating food.\n" +
+            "- 'What are the capsules?' → 'Those are nutrients! Think of it like when you eat food for energy—cells need nutrients to make energy too.'\n" +
+            "- 'What do the mitochondria do?' → 'They convert the nutrients into energy. It's similar to how we eat food to get energy for our bodies!'\n" +
             "- 'Is the bar full?' → Check the green ATP bar and give warm feedback.\n",
             HelpfulAnalogyHeader);
 

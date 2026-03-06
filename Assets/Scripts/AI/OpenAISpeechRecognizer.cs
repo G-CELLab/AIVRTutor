@@ -465,7 +465,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         }
     }
 
-    // =========（未使用）Whisper 转写 =========
+    // =========（未使用）转写 =========
     private IEnumerator SendAudioToOpenAI(string filePath, Action<string> onComplete)
     {
         if (string.IsNullOrEmpty(openAIKey))

@@ -35,6 +35,11 @@ public class GPTConnector : MonoBehaviour
     [Header("Animator Driver")]
     public TTSAnimatorDriver ttsDriver;
     public float expectSpeechTimeout = 10f;
+    
+    [Header("Gesture Synchronization")]
+    [Tooltip("Enable improved audio-synchronized gesture timing system (RECOMMENDED)")]
+    public bool useGestureSynchronizer = true;
+    public GestureSynchronizer gestureSynchronizer;
 
     [Header("Conversation Memory")]
     [TextArea(2, 6)]
@@ -129,14 +134,12 @@ public class GPTConnector : MonoBehaviour
     // ===== 触发来源：仅用“助理字幕/文本” =====
     [Header("Reactions")]
     public bool reactToAssistantTranscript = true; // 用助理回复字幕触发动作
-    [Tooltip("If enabled, GPTConnector will not fire transcript gestures when WhisperGestureSync is active (prevents double triggers).")]
-    public bool suppressTranscriptGesturesWhenWhisperSyncActive = true;
     [Tooltip("🎯 NEW: Use real-time streaming deltas for precise gesture timing (triggers as words arrive, not after speech completes). Recommended for Realtime API.")]
     public bool useStreamingGestureTiming = true;
-    [Tooltip("Streaming-only delay for Interphase eat gesture (DZ13). Adds a small natural offset after keyword detection.")]
-    public float streamingInterphaseEatDelaySec = 1.0f;
-    [Tooltip("Streaming-only delay for Prophase condense gesture (DZ18). Adds a small natural offset after keyword detection.")]
-    public float streamingProphaseCondenseDelaySec = 1.0f;
+    [Tooltip("Streaming-only delay for Interphase eat gesture (DZ13). 0 means instant trigger on detection.")]
+    public float streamingInterphaseEatDelaySec = 0f;
+    [Tooltip("Streaming-only delay for Prophase condense gesture (DZ18). 0 means instant trigger on detection.")]
+    public float streamingProphaseCondenseDelaySec = 0f;
 
     private readonly Dictionary<GameManager.GameState, string> _phaseTextCache = new Dictionary<GameManager.GameState, string>(); // 文本缓存
     private readonly Dictionary<GameManager.GameState, string> _phaseAudioPathCache = new Dictionary<GameManager.GameState, string>(); // 音频缓存（本地路径）
@@ -176,6 +179,7 @@ public class GPTConnector : MonoBehaviour
     // === 助理字幕累积 ===
     private readonly StringBuilder _assistantTranscriptAccum = new StringBuilder(256);
     private bool _assistantGestureTriggeredForResponse = false;
+    private bool _assistantTranscriptForwardedForResponse = false;
 
     // -------- 生命周期：启动即预缓存 --------
     // private void Start()
@@ -189,6 +193,23 @@ public class GPTConnector : MonoBehaviour
     private void OnEnable()
     {
         BindSpeechRecognizer();
+        InitializeGestureSynchronizer();
+    }
+    
+    private void InitializeGestureSynchronizer()
+    {
+        if (useGestureSynchronizer && gestureSynchronizer == null)
+        {
+            gestureSynchronizer = FindAnyObjectByType<GestureSynchronizer>();
+            if (gestureSynchronizer == null)
+            {
+                var go = new GameObject("GestureSynchronizer");
+                gestureSynchronizer = go.AddComponent<GestureSynchronizer>();
+                gestureSynchronizer.ttsDriver = ttsDriver;
+                gestureSynchronizer.ttsPlayer = ttsPlayer;
+                D("[Gesture] Created GestureSynchronizer instance");
+            }
+        }
     }
 
     // ===== 语言策略（强制英文）=====
@@ -379,6 +400,7 @@ public class GPTConnector : MonoBehaviour
     {
         _responseInProgress = true;
         _assistantGestureTriggeredForResponse = false;
+        _assistantTranscriptForwardedForResponse = false;
         onReplyComplete = () => {
             _responseInProgress = false;
             onComplete?.Invoke();
@@ -574,6 +596,7 @@ public class GPTConnector : MonoBehaviour
     {
         _responseInProgress = true;
         _assistantGestureTriggeredForResponse = false;
+        _assistantTranscriptForwardedForResponse = false;
         onReplyComplete = () => {
             _responseInProgress = false;
             onComplete?.Invoke();
@@ -649,6 +672,7 @@ public class GPTConnector : MonoBehaviour
     {
         _responseInProgress = true;
         _assistantGestureTriggeredForResponse = false;
+        _assistantTranscriptForwardedForResponse = false;
         onReplyComplete = () => {
             _responseInProgress = false;
             onComplete?.Invoke();
@@ -681,6 +705,7 @@ public class GPTConnector : MonoBehaviour
 
         _responseInProgress = false;
         _assistantGestureTriggeredForResponse = false;
+        _assistantTranscriptForwardedForResponse = false;
         MarkSpeakingEnd();
         try { ttsDriver?.CancelWait(); } catch { }
         if (ttsPlayer != null) ttsPlayer.StopSpeaking();
@@ -823,6 +848,7 @@ public class GPTConnector : MonoBehaviour
         {
             _assistantTranscriptAccum.Length = 0;
             _assistantGestureTriggeredForResponse = false;
+            _assistantTranscriptForwardedForResponse = false;
             yield return EnsureRealtimeConnected();
             yield return WaitForSessionReady(3f); // 等待会话指令就绪
 
@@ -870,6 +896,7 @@ public class GPTConnector : MonoBehaviour
         {
             _assistantTranscriptAccum.Length = 0;
             _assistantGestureTriggeredForResponse = false;
+            _assistantTranscriptForwardedForResponse = false;
             _lastUserAudioTime = Time.realtimeSinceStartup; // Track user audio for silence timeout
             yield return EnsureRealtimeConnected();
             yield return WaitForSessionReady(3f); // 等待会话指令就绪
@@ -1060,6 +1087,14 @@ public class GPTConnector : MonoBehaviour
         {
             _assistantTranscriptAccum.Length = 0;
             _assistantGestureTriggeredForResponse = false;
+            _assistantTranscriptForwardedForResponse = false;
+            
+            // Notify gesture synchronizer of new response
+            if (useGestureSynchronizer && gestureSynchronizer != null)
+            {
+                gestureSynchronizer.OnResponseStart();
+            }
+            
             return;
         }
 
@@ -1110,11 +1145,23 @@ public class GPTConnector : MonoBehaviour
                 _assistantTranscriptAccum.Append(delta);
                 Debug.Log("[STT][assistant/delta] " + delta);
                 
-                // 🎯 REAL-TIME GESTURE DETECTION: Process delta immediately for word-level timing
+                // 🎯 REAL-TIME GESTURE DETECTION with improved synchronizer
                 if (useStreamingGestureTiming && reactToAssistantTranscript && !_assistantGestureTriggeredForResponse)
                 {
                     string currentTranscript = _assistantTranscriptAccum.ToString();
-                    bool gestureTriggered = TryFireFromStreamingDelta(currentTranscript);
+                    bool gestureTriggered = false;
+                    
+                    // Use new GestureSynchronizer if enabled (RECOMMENDED)
+                    if (useGestureSynchronizer && gestureSynchronizer != null)
+                    {
+                        gestureTriggered = gestureSynchronizer.ProcessStreamingDelta(currentTranscript, GameManager.eGameStatus);
+                    }
+                    else
+                    {
+                        // Fallback: Use legacy timing system
+                        gestureTriggered = TryFireFromStreamingDelta(currentTranscript);
+                    }
+                    
                     if (gestureTriggered)
                     {
                         _assistantGestureTriggeredForResponse = true; // Prevent duplicate triggers
@@ -1136,9 +1183,15 @@ public class GPTConnector : MonoBehaviour
             {
                 Debug.Log("[STT][assistant/done] " + full);
                 TextToSpeechPlayer.SetCurrentSpeech(full);
+
+                // In streaming + synchronizer mode, legacy gesture paths are bypassed,
+                // so forward transcript once for tutorial phase detection.
+                ForwardAssistantTranscriptForTutorial(full);
                 
-                // Only trigger if streaming delta didn't already catch it
-                if (reactToAssistantTranscript && !_assistantGestureTriggeredForResponse)
+                // In streaming mode, avoid transcript-done fallback so timing is driven by deltas only.
+                // This prevents late "done" triggers from fighting realtime gesture timing.
+                bool allowDoneFallback = reactToAssistantTranscript && !useStreamingGestureTiming;
+                if (allowDoneFallback && !_assistantGestureTriggeredForResponse)
                 {
                     Debug.Log("[Gesture/Fallback] Streaming didn't trigger, using fallback detection");
                     _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(full);
@@ -1172,9 +1225,13 @@ public class GPTConnector : MonoBehaviour
             {
                 history.Add(new Message { role = "assistant", content = replyText });
                 TrimHistory();
+
+                // Some responses may complete without transcript.done; ensure tutorial listeners still get text.
+                ForwardAssistantTranscriptForTutorial(replyText);
             }
 
-            if (!string.IsNullOrEmpty(replyText) && reactToAssistantTranscript && !_assistantGestureTriggeredForResponse)
+            bool allowCompletedFallback = reactToAssistantTranscript && !useStreamingGestureTiming;
+            if (!string.IsNullOrEmpty(replyText) && allowCompletedFallback && !_assistantGestureTriggeredForResponse)
             {
                 _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(replyText);
             }
@@ -1203,6 +1260,13 @@ public class GPTConnector : MonoBehaviour
 
                 D($"[Playback] Realtime音频完成 chunks={_audioChunkCount}, wavBytes={wav.Length}");
                 MarkSpeakingStart();
+                
+                // Notify gesture synchronizer that audio is starting
+                if (useGestureSynchronizer && gestureSynchronizer != null)
+                {
+                    gestureSynchronizer.OnAudioPlaybackStart();
+                }
+                
                 ttsPlayer.PlayModelAudioBase64(b64wav, "wav", () =>
                 {
                     try { ttsDriver?.CancelWait(); } catch { }
@@ -1217,6 +1281,13 @@ public class GPTConnector : MonoBehaviour
                 {
                     D("[Playback] 回退到本地TTS（文本）");
                     MarkSpeakingStart();
+                    
+                    // Notify gesture synchronizer that audio is starting
+                    if (useGestureSynchronizer && gestureSynchronizer != null)
+                    {
+                        gestureSynchronizer.OnAudioPlaybackStart();
+                    }
+                    
                     ttsPlayer.Speak(replyText, () =>
                     {
                         try { ttsDriver?.CancelWait(); } catch { }
@@ -1355,6 +1426,13 @@ public class GPTConnector : MonoBehaviour
         {
             D("[Playback] 使用模型返回的音频播放(HTTP)");
             MarkSpeakingStart();
+            
+            // Notify gesture synchronizer that audio is starting
+            if (useGestureSynchronizer && gestureSynchronizer != null)
+            {
+                gestureSynchronizer.OnAudioPlaybackStart();
+            }
+            
             ttsPlayer.PlayModelAudioBase64(audioB64, string.IsNullOrEmpty(audioFmt) ? "wav" : audioFmt, AfterPlayback);
         }
         else
@@ -1368,6 +1446,13 @@ public class GPTConnector : MonoBehaviour
             {
                 D("[Playback] 回退到本地 TTS 播放文本(HTTP)");
                 MarkSpeakingStart();
+                
+                // Notify gesture synchronizer that audio is starting
+                if (useGestureSynchronizer && gestureSynchronizer != null)
+                {
+                    gestureSynchronizer.OnAudioPlaybackStart();
+                }
+                
                 ttsPlayer.Speak(replyText, AfterPlayback);
             }
             else
@@ -1381,19 +1466,20 @@ public class GPTConnector : MonoBehaviour
     // ========= 仅基于“助理字幕/文本”的 4 个动作（延时触发实现） =========
     public event Action<string> OnAssistantTranscript;
 
+    private void ForwardAssistantTranscriptForTutorial(string transcript)
+    {
+        if (_assistantTranscriptForwardedForResponse) return;
+        if (!reactToAssistantTranscript) return;
+        if (!useStreamingGestureTiming || !useGestureSynchronizer) return;
+        if (string.IsNullOrWhiteSpace(transcript)) return;
+
+        _assistantTranscriptForwardedForResponse = true;
+        OnAssistantTranscript?.Invoke(transcript);
+    }
+
     private bool TryFireFromAssistantTranscript(string transcript)
     {
         if (string.IsNullOrWhiteSpace(transcript)) return false;
-
-        if (suppressTranscriptGesturesWhenWhisperSyncActive)
-        {
-            var whisperSync = FindAnyObjectByType<WhisperGestureSync>();
-            if (whisperSync != null && whisperSync.isActiveAndEnabled)
-            {
-                D("[React][assistant] Skipping GPTConnector gesture trigger because WhisperGestureSync is active");
-                return false;
-            }
-        }
 
         OnAssistantTranscript?.Invoke(transcript);
         if (ttsDriver == null) return false;
@@ -1453,15 +1539,6 @@ public class GPTConnector : MonoBehaviour
     private bool TryFireFromStreamingDelta(string accumulatedTranscript)
     {
         if (string.IsNullOrWhiteSpace(accumulatedTranscript)) return false;
-
-        if (suppressTranscriptGesturesWhenWhisperSyncActive)
-        {
-            var whisperSync = FindAnyObjectByType<WhisperGestureSync>();
-            if (whisperSync != null && whisperSync.isActiveAndEnabled)
-            {
-                return false;
-            }
-        }
 
         OnAssistantTranscript?.Invoke(accumulatedTranscript);
         if (ttsDriver == null) return false;

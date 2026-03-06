@@ -2124,6 +2124,8 @@ MonoBehaviour:
   ttsPlayer: {fileID: 436895152}
   ttsDriver: {fileID: 436895154}
   expectSpeechTimeout: 5
+  useGestureSynchronizer: 1
+  gestureSynchronizer: {fileID: 0}
   systemPrompt: 'Global / System
 
     You are a friendly, patient, and encouraging
@@ -2233,6 +2235,9 @@ MonoBehaviour:
   prependPhaseTextAsDeveloperItem: 1
   prependPhaseInstructionAudio: 1
   reactToAssistantTranscript: 1
+  useStreamingGestureTiming: 1
+  streamingInterphaseEatDelaySec: 0
+  streamingProphaseCondenseDelaySec: 0
   evaluateQueuedRequests: 1
   maxQueuedRequestAgeSec: 30
   queueEvaluationPrompt: You just finished speaking. The user said something while
@@ -2261,7 +2266,7 @@ MonoBehaviour:
   trigDZ14: doDZ14
   trigDZ15: doDZ15
   trigDZ18: doDZ18
-  trigDZ20: doDZ20
+  trigDZ12: doDZ12
   trigDZ22: doDZ22
   lineUpGestureSpeedMultiplier: 0.5
   animSpeedParam: gestureSpeed
@@ -15949,7 +15954,7 @@ PrefabInstance:
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.158
+      value: 0.29
       objectReference: {fileID: 0}
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
