@@ -29,3 +29,6 @@ desktop.ini
 
 # Unity cache
 *.unitypackage
+
+# Build Files
+.utmp
