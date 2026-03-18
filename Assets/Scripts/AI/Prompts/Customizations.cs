@@ -46,7 +46,7 @@ namespace AI.Prompts
         public static int PrefixPaddingMs = 250;
 
         // ===== Response Behavior =====
-        public static int DefaultMaxOutputTokens = 600;
+        public static int DefaultMaxOutputTokens = 1000;
         // Temperature (0.0 = precise, 1.0 = creative)
         public static float DefaultTemperature = 0.8f;
 

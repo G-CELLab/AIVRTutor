@@ -20,40 +20,46 @@ namespace AI.Prompts
 		public static string TutorialContentQuestions = PromptLibrary.BuildPhase(
 			"Tutorial: Content Questions",
 			"Teach the learner how to ask content knowledge questions about biology terms without diving into mitosis yet.",
-			"- Chromatid (visible in front of the learner)\n" +
-			"- Biology terms like chromatid and metaphase",
-			"1. Begin speaking immediately and explain that this phase is about how to ask content knowledge questions\n" +
-			"2. Prompt them to ask: 'What is a chromatid?' or 'What happens during metaphase?'\n" +
-			"3. If they ask a correct content question, answer briefly and end with: 'That was a content question.'\n" +
-			"4. If they struggle, offer sentence starters like 'What is ___?' or 'What happens during ___?'",
-			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct and jump straight into explaining what content questions are. Use 'That was a content question.' or similar phrasing to label correct content questions flexibly. Do not mention mitosis or teach phase details beyond a one-sentence definition.",
-			"- If they ask a content question, define the term in one short sentence and keep it brief.\n" +
-			"- If they ask a non-content question, guide them to rephrase it as a definition or process question.");
+			"- Centriole (small yellow barrel-shaped object) to the left\n" +
+			"- Chromatid (red object on the right)\n" +
+			"- Chromosome (Blue X-shaped object in the middle)",
+			"1. Immediately say 'Hello, I'm here to answer your questions'. Tell them that during this VR activity, you can ask me questions whenever you need help.\n" +
+			"2. Tell them you can answer three types of questions: content questions, visual reference questions, and manipulation questions. Let's practice! For this task they will need to move the blue chromosome.\n" +
+			"3. Say that first, they might want to understand what a chromosome is. Tell them that this is a content question. Give them example questions: 'What is a chromosome?' Or 'What does a chromosome do?'\n" +
+			"4. Then tell them to ask a content question about chromosomes.\n" +
+			"5. If they ask a correct content question, give an appropriate response such as 'A chromosome is a structure that contains genetic information. During cell division, chromosomes are separated so each new cell receives the correct DNA.'\n" +
+			"6. If they ask a non-content question, guide them to rephrase it as a definition or process question.",
+			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct.",
+			"- If they ask 'What is a chromosome?' or 'What does a chromosome do?', respond: 'A chromosome is a structure that contains genetic information. During cell division, chromosomes are separated so each new cell receives the correct DNA.'\n" +
+			"- If they ask a non-content question, guide them to rephrase it as a content question about what a chromosome is or what it does.");
 
 		public static string TutorialVisualQuestions = PromptLibrary.BuildPhase(
 			"Tutorial: Visual Reference Questions",
 			"Teach the learner how to connect biology terms to objects they can see in the scene.",
-			"- Centriole (small barrel-shaped object)\n" +
-			"- Chromosome (X-shaped object)",
-			"1. Begin speaking immediately and explain visual reference questions\n" +
-			"2. Prompt them to ask: 'Which object here is the chromosome?' or 'Which object here duplicates to pull chromosomes apart?'\n" +
-			"3. If they ask a correct visual reference question, point out the object and end with: 'That was a visual reference question.'\n" +
-			"4. If they struggle, encourage them to connect a biology term to something they see",
-			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct and jump straight into explaining visual reference questions. Use 'That was a visual reference question.' or similar phrasing to label correct visual reference questions flexibly.",
-			"- If they ask about the chromosome, say it is the blue object on the right.\n" +
+			"- Centriole (small yellow barrel-shaped object) to the left\n" +
+			"- Chromatid (red object on the right)\n" +
+			"- Chromosome (Blue X-shaped object in the middle)",
+			"1. Begin speaking immediately and say 'Next, you may want to know which object in this space is the blue chromosome. This is a visual reference question.'\n" +
+			"2. Prompt them to ask: 'Which object is the blue chromosome?' Then tell them to ask a visual reference question.\n" +
+			"3. If they ask a correct visual reference question, point out the object (the blue X-shaped object in the middle).\n" +
+			"4. If they struggle, encourage them to ask about which object is the blue chromosome.",
+			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct.",
+			"- If they ask which object is the blue chromosome, respond: 'The blue chromosome is the blue X-shaped structure floating in front of you.'\n" +
 			"- If they ask about the yellow object, say it is the centriole on the left.\n" +
-			"- If they ask about the centriole, describe the barrel-shaped object on the left.");
+			"- If they ask about the red object, say it is the chromatid on the right.");
 
 		public static string TutorialManipulationQuestions = PromptLibrary.BuildPhase(
 			"Tutorial: Manipulation Questions",
-			"Teach the learner how to ask for procedural guidance when unsure what to do.",
-			"- Centriole (still visible in the scene)",
-			"1. Begin speaking immediately and explain manipulation questions are for 'what should I do next?'\n" +
-			"2. Prompt them to ask: 'What should I do next?' or 'What do I do with the centriole?'\n" +
-			"3. If they ask an appropriate manipulation question, give clear guidance and end with: 'That was a manipulation question.'\n" +
-			"4. If they are unsure, gently prompt them to ask for guidance",
-			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct and jump straight into explaining manipulation questions. Use 'That was a manipulation question.' or similar phrasing to label correct manipulation questions flexibly. End with a short summary of the three question types.",
-			"- If they ask what to do next, give 1-2 clear steps and encourage them.\n" +
-			"- If they ask about the centriole, give a brief procedural cue without teaching new biology content.");
+			"Teach the learner how to ask for procedural guidance about manipulating objects in the scene.",
+			"- Centriole (small yellow barrel-shaped object) to the left\n" +
+			"- Chromatid (red object on the right)\n" +
+			"- Chromosome (Blue X-shaped object in the middle)",
+			"1. Begin speaking immediately and say 'Finally, you may want to know how to move the blue chromosome. This is a manipulation question.'\n" +
+			"2. Prompt them to ask: 'How do I move the blue chromosome?' Then say 'Please ask me a manipulation question.'\n" +
+			"3. If they ask an appropriate manipulation question, explain: 'To move it, make the grab gesture with your hand and place it in the highlighted area.'\n" +
+			"4. If they struggle, encourage them to ask about how to move the blue chromosome.",
+			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct.",
+			"- If they ask how to move it, respond: 'To move it, make the grab gesture with your hand and place it in the highlighted area.'\n" +
+			"- If they ask a non-manipulation question, redirect them to ask how to move the blue chromosome.");
 	}
 }

@@ -14,9 +14,21 @@ public class Grab_Tutorial : MonoBehaviour
     bool triggerDetected = false;
     bool completed = false;
     public bool isFirstTarget = true;
+    bool manipulationPlacementReported = false;
 
     private void OnTriggerEnter(Collider other)
     {
+        if (tutorialManager != null && tutorialManager.CurrentStage == Manager_Tutorial.TutorialStage.ManipulationQuestions)
+        {
+            if (!manipulationPlacementReported && IsBlueChromosomeCollider(other))
+            {
+                manipulationPlacementReported = true;
+                tutorialManager.RegisterManipulationPlacementComplete();
+                Debug.Log("[Tutorial] Blue chromosome entered placement target.");
+            }
+            return;
+        }
+
         if (other.gameObject.tag == "Wound")
         {
             triggerDetected = true;
@@ -41,6 +53,11 @@ public class Grab_Tutorial : MonoBehaviour
 
     private void Update()
     {
+        if (tutorialManager != null && tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.ManipulationQuestions)
+        {
+            manipulationPlacementReported = false;
+        }
+
         if (tutorialManager != null && tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.GrabTutorial)
         {
             timer = 0f;
@@ -98,5 +115,17 @@ public class Grab_Tutorial : MonoBehaviour
             }
             //SceneManager.LoadScene("ChromosoME");
         }
+    }
+
+    private bool IsBlueChromosomeCollider(Collider other)
+    {
+        if (other == null || tutorialManager == null || tutorialManager.chromosome_Object == null)
+        {
+            return false;
+        }
+
+        Transform chromosomeRoot = tutorialManager.chromosome_Object.transform;
+        Transform otherTransform = other.transform;
+        return otherTransform == chromosomeRoot || otherTransform.IsChildOf(chromosomeRoot);
     }
 }

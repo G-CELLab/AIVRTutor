@@ -8,6 +8,9 @@ public class TutorialPromptStageController : MonoBehaviour
     [TextArea(3, 10)] public string contentPrompt = AI.Prompts.TutorialPrompts.TutorialContentQuestions;
     [TextArea(3, 10)] public string visualPrompt = AI.Prompts.TutorialPrompts.TutorialVisualQuestions;
     [TextArea(3, 10)] public string manipulationPrompt = AI.Prompts.TutorialPrompts.TutorialManipulationQuestions;
+    [Header("Prompt Source")]
+    [Tooltip("Use prompts from TutorialPrompts.cs at runtime so scene-cached text cannot go stale")]
+    public bool useRuntimePromptConstants = true;
     public bool clearHistoryOnStageChange = true;
     
     [Header("AI Greeting")]
@@ -17,6 +20,20 @@ public class TutorialPromptStageController : MonoBehaviour
     public float greetingDelay = 0.5f;
 
     private Manager_Tutorial.TutorialStage lastStage = (Manager_Tutorial.TutorialStage)(-1);
+
+    private void Awake()
+    {
+        if (!useRuntimePromptConstants)
+        {
+            return;
+        }
+
+        // Keep runtime prompt source in sync with TutorialPrompts.cs, even if scene serialized values are outdated.
+        basePrompt = AI.Prompts.TutorialPrompts.Tutorial;
+        contentPrompt = AI.Prompts.TutorialPrompts.TutorialContentQuestions;
+        visualPrompt = AI.Prompts.TutorialPrompts.TutorialVisualQuestions;
+        manipulationPrompt = AI.Prompts.TutorialPrompts.TutorialManipulationQuestions;
+    }
 
     private void Update()
     {
@@ -71,11 +88,11 @@ public class TutorialPromptStageController : MonoBehaviour
         switch (stage)
         {
             case Manager_Tutorial.TutorialStage.ContentQuestions:
-                return "Start speaking now. Explain that this phase teaches how to ask content knowledge questions. Give a brief example like: 'What is a chromatid?' and ask the learner to try one.";
+                return "Start speaking now and follow this wording closely in order: 'Hello. I'm here to answer your questions. During this VR activity, you can ask me questions whenever you need help. I can answer three types of your questions: content questions, visual reference questions, and manipulation questions. Let's practice. For this task, you will need to move the blue chromosome. First, you might want to understand what a chromosome is. This is called a content question. For example, you could ask: What is a chromosome? Or What does a chromosome do? Please ask me a content question about chromosomes.'";
             case Manager_Tutorial.TutorialStage.VisualQuestions:
-                return "Start speaking now. Say: 'The next kind of question to learn is visual reference questions.' Briefly explain these connect biology terms to objects they can see. Give an example like: 'Which object here is the chromosome?' and ask them to try one.";
+                return "Start speaking now and follow this wording closely: 'Next, you may want to know which object in this space is the blue chromosome. This is a visual reference question. For example, you could ask: Which object is the blue chromosome? Please ask me a visual reference question.'";
             case Manager_Tutorial.TutorialStage.ManipulationQuestions:
-                return "Start speaking now. Say: 'The next kind of question to learn is manipulation and instruction questions.' Briefly explain these are for asking what to do next. Give an example like: 'What should I do next?' and ask them to try one.";
+                return "Start speaking now and follow this wording closely: 'Finally, you may want to know how to move the blue chromosome. This is a manipulation question. For example, you could ask: How do I move the blue chromosome? Please ask me a manipulation question.'";
             default:
                 return "Hello! How can I help you?";
         }

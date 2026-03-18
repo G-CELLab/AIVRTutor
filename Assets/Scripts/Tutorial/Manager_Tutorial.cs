@@ -66,6 +66,8 @@ public class Manager_Tutorial : MonoBehaviour
     private int touchTargetsCompleted = 0;
     [SerializeField] private int copyTargetsRequired = 2;
     private int copyTargetsCompleted = 0;
+    private bool manipulationQuestionAnswered = false;
+    private bool manipulationPlacementCompleted = false;
 
     public TutorialStage CurrentStage => tutorialStage;
 
@@ -227,8 +229,8 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(visual_Info, false);
                 SetActiveSafe(manipulation_Info, false);
                 SetActiveSafe(chromatid_Object, true);
-                SetActiveSafe(centriole_Object, false);
-                SetActiveSafe(chromosome_Object, false);
+                SetActiveSafe(centriole_Object, true);
+                SetActiveSafe(chromosome_Object, true);
                 SetActiveSafe(change_Scene, false);
                 SetActiveSafe(ffe, true);
                 break;
@@ -236,7 +238,7 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(content_Info, false);
                 SetActiveSafe(visual_Info, true);
                 SetActiveSafe(manipulation_Info, false);
-                SetActiveSafe(chromatid_Object, false);
+                SetActiveSafe(chromatid_Object, true);
                 SetActiveSafe(centriole_Object, true);
                 SetActiveSafe(chromosome_Object, true);
                 SetActiveSafe(change_Scene, false);
@@ -245,12 +247,16 @@ public class Manager_Tutorial : MonoBehaviour
                 SetActiveSafe(ffe, true);
                 break;
             case TutorialStage.ManipulationQuestions:
+                manipulationQuestionAnswered = false;
+                manipulationPlacementCompleted = false;
                 SetActiveSafe(content_Info, false);
                 SetActiveSafe(visual_Info, false);
                 SetActiveSafe(manipulation_Info, true);
-                SetActiveSafe(chromatid_Object, false);
+                SetActiveSafe(chromatid_Object, true);
                 SetActiveSafe(centriole_Object, true);
-                SetActiveSafe(chromosome_Object, false);
+                SetActiveSafe(chromosome_Object, true);
+                SetActiveSafe(grab_particle1, true);
+                SetActiveSafe(grab_particle2, false);
                 SetActiveSafe(change_Scene, false);
                 SetImageSpriteSafe(img_Visual, visual_comp);
                 SetActiveSafe(img_Manipulation, true);
@@ -305,7 +311,33 @@ public class Manager_Tutorial : MonoBehaviour
             return;
         }
 
-        AdvanceStage();
+        manipulationQuestionAnswered = true;
+        TryAdvanceAfterManipulationRequirements();
+    }
+
+    public void RegisterManipulationPlacementComplete()
+    {
+        if (tutorialStage != TutorialStage.ManipulationQuestions)
+        {
+            return;
+        }
+
+        if (manipulationPlacementCompleted)
+        {
+            return;
+        }
+
+        manipulationPlacementCompleted = true;
+        Debug.Log("[Tutorial] Manipulation placement complete: chromosome entered target zone.");
+        TryAdvanceAfterManipulationRequirements();
+    }
+
+    private void TryAdvanceAfterManipulationRequirements()
+    {
+        if (manipulationQuestionAnswered && manipulationPlacementCompleted)
+        {
+            AdvanceStage();
+        }
     }
 
     private void SetActiveSafe(GameObject target, bool active)
