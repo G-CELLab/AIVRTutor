@@ -368,11 +368,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Question Type 3: Manipulation and Instruction\nNow for the final type:
-    manipulation and instruction questions. These are questions you ask when you\u2019re
-    unsure what action to take. The centriole is still in front of you. If you\u2019re
-    not sure what to do next, try asking something like, \u201CWhat should I do next?\u201D
-    or \u201CWhat do I do with the centriole?\u201D\n"
+  m_text: "Question Type 3: Manipulation Questions\r\nLast, you\u2019ll practice
+    manipulation questions, which are for when you need action help; once you\u2019ve
+    identified the blue chromosome, try asking \u201CHow do I move the blue chromosome?\u201D
+    to get guidance on the next step."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -579,6 +578,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 69019603}
+    - targetCorrespondingSourceObject: {fileID: 2863107992823253873, guid: 4419612d9dd3ad54f8ee3718d36725d6,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 69019609}
   m_SourcePrefab: {fileID: 100100000, guid: 4419612d9dd3ad54f8ee3718d36725d6, type: 3}
 --- !u!1 &69019602 stripped
 GameObject:
@@ -780,6 +783,135 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 69019601}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &69019609
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 69019602}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ad34abafad169848a38072baa96cdb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable
+  m_InteractionManager: {fileID: 1750023455}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
+  m_AttachTransform: {fileID: 0}
+  m_SecondaryAttachTransform: {fileID: 0}
+  m_UseDynamicAttach: 0
+  m_MatchAttachPosition: 1
+  m_MatchAttachRotation: 1
+  m_SnapToColliderVolume: 1
+  m_ReinitializeDynamicAttachEverySingleGrab: 1
+  m_AttachEaseInTime: 0.15
+  m_MovementType: 2
+  m_PredictedVisualsTransform: {fileID: 0}
+  m_VelocityDamping: 1
+  m_VelocityScale: 1
+  m_AngularVelocityDamping: 1
+  m_AngularVelocityScale: 1
+  m_TrackPosition: 1
+  m_SmoothPosition: 0
+  m_SmoothPositionAmount: 8
+  m_TightenPosition: 0.1
+  m_TrackRotation: 1
+  m_SmoothRotation: 0
+  m_SmoothRotationAmount: 8
+  m_TightenRotation: 0.1
+  m_TrackScale: 1
+  m_SmoothScale: 0
+  m_SmoothScaleAmount: 8
+  m_TightenScale: 0.1
+  m_ThrowOnDetach: 1
+  m_ThrowSmoothingDuration: 0.25
+  m_ThrowSmoothingCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_ThrowVelocityScale: 1.5
+  m_ThrowAngularVelocityScale: 1
+  m_ForceGravityOnDetach: 0
+  m_RetainTransformParent: 1
+  m_StartingSingleGrabTransformers: []
+  m_StartingMultipleGrabTransformers: []
+  m_AddDefaultGrabTransformers: 1
+  m_FarAttachMode: 0
+  m_LimitLinearVelocity: 0
+  m_LimitAngularVelocity: 0
+  m_MaxLinearVelocityDelta: 10
+  m_MaxAngularVelocityDelta: 20
 --- !u!1 &203887699
 GameObject:
   m_ObjectHideFlags: 0
@@ -1047,44 +1179,57 @@ MonoBehaviour:
 
     KEY OBJECTS IN SCENE:
 
-    - Chromatid (visible in front
-    of the learner)
+    - Centriole (small yellow
+    barrel-shaped object) to the left
 
-    - Biology terms like chromatid and metaphase
-
-
-    STUDENT
-    TASKS:
-
-    1. Begin speaking immediately and explain that this phase is about
-    how to ask content knowledge questions
-
-    2. Prompt them to ask: ''What is
-    a chromatid?'' or ''What happens during metaphase?''
-
-    3. If they ask a correct
-    content question, answer briefly and end with: ''That was a content question.''
-
-    4.
-    If they struggle, offer sentence starters like ''What is ___?'' or ''What happens
-    during ___?''
-
-
-    HELPFUL EXPLANATION: ''When initiating this phase, do NOT
-    start with filler words like ''sure'', ''okay'', or ''alright''. Jump directly
-    into the explanation. Use ''That was a content question.'' or similar phrasing
-    to label correct content questions flexibly. Do not mention mitosis or teach
-    phase details beyond a one-sentence definition.''
-
-
-    COMMON QUESTIONS:
+    - Chromatid (red object on the right)
 
     -
-    If they ask a content question, define the term in one short sentence and keep
-    it brief.
+    Chromosome (Blue X-shaped object in the middle)
 
-    - If they ask a non-content question, guide them to rephrase it
-    as a definition or process question.'
+
+    STUDENT TASKS:
+
+    1.
+    Immediately say ''Hello, I''m here to answer your questions''. Tell them that
+    during this VR activity, you can ask me questions whenever you need help.
+
+    2.
+    Tell them you can answer three types of questions: content questions, visual
+    reference questions, and manipulation questions. Let''s practice! For this task
+    they will need to move the blue chromosome.
+
+    3. Say that first, they might
+    want to understand what a chromosome is. Tell them that this is a content question.
+    Give them example questions: ''What is a chromosome?'' Or ''What does a chromosome
+    do?''
+
+    4. Then tell them to ask a content question about chromosomes.
+
+    5.
+    If they ask a correct content question, give an appropriate response such as
+    ''A chromosome is a structure that contains genetic information. During cell
+    division, chromosomes are separated so each new cell receives the correct DNA.''
+
+    6.
+    If they ask a non-content question, guide them to rephrase it as a definition
+    or process question.
+
+
+    HELPFUL EXPLANATION: ''CRITICAL: Do NOT open this
+    phase with ''Sure'', ''Okay'', ''Alright'' or any filler word. Be direct.''
+
+
+    COMMON
+    QUESTIONS:
+
+    - If they ask ''What is a chromosome?'' or ''What does a chromosome
+    do?'', respond: ''A chromosome is a structure that contains genetic information.
+    During cell division, chromosomes are separated so each new cell receives the
+    correct DNA.''
+
+    - If they ask a non-content question, guide them to rephrase
+    it as a content question about what a chromosome is or what it does.'
   visualPrompt: 'CURRENT PHASE: Tutorial: Visual Reference Questions
 
     GOAL: Teach
@@ -1094,91 +1239,100 @@ MonoBehaviour:
     KEY
     OBJECTS IN SCENE:
 
-    - Centriole (small barrel-shaped object)
+    - Centriole (small yellow barrel-shaped object) to the
+    left
 
-    - Chromosome
-    (X-shaped object)
+    - Chromatid (red object on the right)
+
+    - Chromosome (Blue X-shaped
+    object in the middle)
 
 
     STUDENT TASKS:
 
-    1. Begin speaking immediately and
-    explain visual reference questions
+    1. Begin speaking immediately
+    and say ''Next, you may want to know which object in this space is the blue chromosome.
+    This is a visual reference question.''
 
     2. Prompt them to ask: ''Which object
-    here is the chromosome?'' or ''Which object here duplicates to pull chromosomes
-    apart?''
+    is the blue chromosome?'' Then tell them to ask a visual reference question.
 
-    3. If they ask a correct visual reference question, point out the
-    object and end with: ''That was a visual reference question.''
+    3.
+    If they ask a correct visual reference question, point out the object (the blue
+    X-shaped object in the middle).
 
-    4. If they
-    struggle, encourage them to connect a biology term to something they see
+    4. If they struggle, encourage them to ask
+    about which object is the blue chromosome.
 
 
-    HELPFUL
-    EXPLANATION: ''When initiating this phase, do NOT start with filler words like
-    ''sure'', ''okay'', or ''alright''. Jump directly into the explanation. Use ''That
-    was a visual reference question.'' or similar phrasing to label correct visual
-    reference questions flexibly.''
+    HELPFUL EXPLANATION: ''CRITICAL:
+    Do NOT open this phase with ''Sure'', ''Okay'', ''Alright'' or any filler word.
+    Be direct.''
 
 
     COMMON QUESTIONS:
 
-    - If they ask about
-    the chromosome, say it is the blue object on the left.
+    - If they ask which object is the blue
+    chromosome, respond: ''The blue chromosome is the blue X-shaped structure floating
+    in front of you.''
 
-    - If they ask about
-    the yellow object, say it is the centriole on the right.
+    - If they ask about the yellow object, say it is the
+    centriole on the left.
 
-    - If they ask about
-    the centriole, describe the barrel-shaped object on the right.'
+    - If they ask about the red object, say it is the
+    chromatid on the right.'
   manipulationPrompt: 'CURRENT PHASE: Tutorial: Manipulation Questions
 
     GOAL:
-    Teach the learner how to ask for procedural guidance when unsure what to do.
+    Teach the learner how to ask for procedural guidance about manipulating objects
+    in the scene.
 
 
-    KEY
-    OBJECTS IN SCENE:
+    KEY OBJECTS IN SCENE:
 
-    - Centriole (still visible in the scene)
+    - Centriole (small yellow barrel-shaped
+    object) to the left
+
+    - Chromatid (red object on the right)
+
+    - Chromosome
+    (Blue X-shaped object in the middle)
 
 
-    STUDENT
-    TASKS:
+    STUDENT TASKS:
 
-    1. Begin speaking immediately and explain manipulation questions
-    are for ''what should I do next?''
+    1. Begin speaking
+    immediately and say ''Finally, you may want to know how to move the blue chromosome.
+    This is a manipulation question.''
 
-    2. Prompt them to ask: ''What should
-    I do next?'' or ''What do I do with the centriole?''
+    2. Prompt them to ask: ''How do I move
+    the blue chromosome?'' Then say ''Please ask me a manipulation question.''
 
-    3. If they ask an appropriate
-    manipulation question, give clear guidance and end with: ''That was a manipulation
-    question.''
+    3.
+    If they ask an appropriate manipulation question, explain: ''To move it, make
+    the grab gesture with your hand and place it in the highlighted area.''
 
-    4. If they are unsure, gently prompt them to ask for guidance
+    4.
+    If they struggle, encourage them to ask about how to move the blue chromosome.
 
 
     HELPFUL
-    EXPLANATION: ''When initiating this phase, do NOT start with filler words like
-    ''sure'', ''okay'', or ''alright''. Jump directly into the explanation. Use ''That
-    was a manipulation question.'' or similar phrasing to label correct manipulation
-    questions flexibly. End with a short summary of the three question types.''
+    EXPLANATION: ''CRITICAL: Do NOT open this phase with ''Sure'', ''Okay'', ''Alright''
+    or any filler word. Be direct.''
 
 
-    COMMON
-    QUESTIONS:
+    COMMON QUESTIONS:
 
-    - If they ask what to do next, give 1-2 clear steps and encourage
-    them.
+    - If they ask how
+    to move it, respond: ''To move it, make the grab gesture with your hand and place
+    it in the highlighted area.''
 
-    - If they ask about the centriole, give a brief procedural cue without
-    teaching new biology content.'
+    - If they ask a non-manipulation question,
+    redirect them to ask how to move the blue chromosome.'
+  useRuntimePromptConstants: 1
   clearHistoryOnStageChange: 1
   autoGreetOnStageEnter: 1
-  greetingDelay: 0.5
+  greetingDelay: 0.01
 --- !u!1 &253412223
 GameObject:
   m_ObjectHideFlags: 0
@@ -1579,143 +1733,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0.022}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &353850872
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 353850873}
-  - component: {fileID: 353850875}
-  - component: {fileID: 353850874}
-  m_Layer: 5
-  m_Name: TextDNA
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &353850873
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 353850872}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.0000030510128}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2027539237}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.0000029876828, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &353850874
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 353850872}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: Chromatid
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 0.03
-  m_fontSizeBase: 0.03
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 0
-  m_HorizontalAlignment: 2
-  m_VerticalAlignment: 512
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_characterHorizontalScale: 1
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_TextWrappingMode: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 1
-  m_ActiveFontFeatures: 6e72656b
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_EmojiFallbackSupport: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 1
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!222 &353850875
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 353850872}
-  m_CullTransparentMesh: 0
 --- !u!1 &383967600
 GameObject:
   m_ObjectHideFlags: 0
@@ -9060,6 +9077,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1387529729}
+    - targetCorrespondingSourceObject: {fileID: 2101401912635818136, guid: 1d6caa87d578e83468fa4ef5a5ffdc1e,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1387529734}
   m_SourcePrefab: {fileID: 100100000, guid: 1d6caa87d578e83468fa4ef5a5ffdc1e, type: 3}
 --- !u!1 &1387529728 stripped
 GameObject:
@@ -9224,7 +9245,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 2, y: 2, z: 2}
   m_Center: {x: 0, y: 0, z: 0}
@@ -9234,6 +9255,135 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1387529727}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1387529734
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1387529728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ad34abafad169848a38072baa96cdb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Interactables.XRGrabInteractable
+  m_InteractionManager: {fileID: 1750023455}
+  m_Colliders: []
+  m_InteractionLayers:
+    m_Bits: 1
+  m_DistanceCalculationMode: 1
+  m_SelectMode: 0
+  m_FocusMode: 1
+  m_CustomReticle: {fileID: 0}
+  m_AllowGazeInteraction: 0
+  m_AllowGazeSelect: 0
+  m_OverrideGazeTimeToSelect: 0
+  m_GazeTimeToSelect: 0.5
+  m_OverrideTimeToAutoDeselectGaze: 0
+  m_TimeToAutoDeselectGaze: 3
+  m_AllowGazeAssistance: 0
+  m_FirstHoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastHoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_HoverExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstSelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastSelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_SelectExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FirstFocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_LastFocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusEntered:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FocusExited:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Activated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Deactivated:
+    m_PersistentCalls:
+      m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
+  m_StartingInteractionStrengthFilters: []
+  m_AutoFindParentInteractableInHierarchy: 0
+  m_ParentInteractableObject: {fileID: 0}
+  m_AttachTransform: {fileID: 0}
+  m_SecondaryAttachTransform: {fileID: 0}
+  m_UseDynamicAttach: 0
+  m_MatchAttachPosition: 1
+  m_MatchAttachRotation: 1
+  m_SnapToColliderVolume: 1
+  m_ReinitializeDynamicAttachEverySingleGrab: 1
+  m_AttachEaseInTime: 0.15
+  m_MovementType: 2
+  m_PredictedVisualsTransform: {fileID: 0}
+  m_VelocityDamping: 1
+  m_VelocityScale: 1
+  m_AngularVelocityDamping: 1
+  m_AngularVelocityScale: 1
+  m_TrackPosition: 1
+  m_SmoothPosition: 0
+  m_SmoothPositionAmount: 8
+  m_TightenPosition: 0.1
+  m_TrackRotation: 1
+  m_SmoothRotation: 0
+  m_SmoothRotationAmount: 8
+  m_TightenRotation: 0.1
+  m_TrackScale: 1
+  m_SmoothScale: 0
+  m_SmoothScaleAmount: 8
+  m_TightenScale: 0.1
+  m_ThrowOnDetach: 1
+  m_ThrowSmoothingDuration: 0.25
+  m_ThrowSmoothingCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_ThrowVelocityScale: 1.5
+  m_ThrowAngularVelocityScale: 1
+  m_ForceGravityOnDetach: 0
+  m_RetainTransformParent: 1
+  m_StartingSingleGrabTransformers: []
+  m_StartingMultipleGrabTransformers: []
+  m_AddDefaultGrabTransformers: 1
+  m_FarAttachMode: 0
+  m_LimitLinearVelocity: 0
+  m_LimitAngularVelocity: 0
+  m_MaxLinearVelocityDelta: 10
+  m_MaxAngularVelocityDelta: 20
 --- !u!1 &1449284776
 GameObject:
   m_ObjectHideFlags: 0
@@ -9386,7 +9536,7 @@ Transform:
   m_GameObject: {fileID: 1470423510}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.184, y: 1.619, z: 1.069}
+  m_LocalPosition: {x: 0.192, y: 1.453, z: 0.669}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -14675,6 +14825,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 2068871307}
+    - targetCorrespondingSourceObject: {fileID: 6796089959391949927, guid: 71a72501070715d42ba4e5516e87f780,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2068871309}
   m_SourcePrefab: {fileID: 100100000, guid: 71a72501070715d42ba4e5516e87f780, type: 3}
 --- !u!1 &1530734545
 GameObject:
@@ -14851,12 +15005,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1530734545}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0ad34abafad169848a38072baa96cdb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_InteractionManager: {fileID: 0}
+  m_InteractionManager: {fileID: 1750023455}
   m_Colliders:
   - {fileID: 2068871307}
   m_InteractionLayers:
@@ -15076,11 +15230,11 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Question Type 1: Content Knowledge\nWelcome to the next phase! In this
-    part, you\u2019ll practice asking content knowledge questions. These are questions
-    about biology terms or what happens during mitosis. See the chromatid floating
-    in front of you? Try asking a question like, \u201CWhat is a chromatid?\u201D
-    or \u201CWhat happens during metaphase?\u201D\n"
+  m_text: "Question Type 1: Content Questions\r\nIn this part, you\u2019ll practice
+    content questions, which are questions about what a biology term means or what
+    it does; for this activity, focus on the blue chromosome and try asking things
+    like \u201CWhat is a chromosome?\u201D or \u201CWhat does a chromosome do?\u201D
+    before you move on."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -15457,81 +15611,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1744711429
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1744711430}
-  - component: {fileID: 1744711432}
-  - component: {fileID: 1744711431}
-  m_Layer: 5
-  m_Name: Image
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1744711430
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1744711429}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.0000030510128}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2027539237}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.0000029876828, y: 0.000000018626451}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1744711431
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1744711429}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: be066a1c8e988ca47b449f438ca1ee56, type: 3}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &1744711432
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1744711429}
-  m_CullTransparentMesh: 0
 --- !u!1 &1750023454
 GameObject:
   m_ObjectHideFlags: 0
@@ -15882,7 +15961,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1766875680
 RectTransform:
   m_ObjectHideFlags: 0
@@ -21194,11 +21273,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Question Type 2: Visual Reference\nGreat job! Now let\u2019s practice
-    visual reference questions. These questions connect biology words to things you
-    can actually see around you. In front of you, there\u2019s a centriole and a
-    chromosome. Try asking something like, \u201CWhich object here is the chromosome?\u201D
-    or \u201CWhich object duplicates to pull chromosomes apart?\u201D"
+  m_text: "Question Type 2: Visual Reference Questions\r\nNow you\u2019ll practice
+    visual reference questions, which help connect biology words to objects in front
+    of you; look around the scene and try asking \u201CWhich object is the blue chromosome?\u201D
+    so you can identify the correct structure before interacting with it."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -21456,12 +21534,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1913028676}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0ad34abafad169848a38072baa96cdb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_InteractionManager: {fileID: 0}
+  m_InteractionManager: {fileID: 1750023455}
   m_Colliders:
   - {fileID: 1913028680}
   m_InteractionLayers:
@@ -21760,12 +21838,11 @@ Transform:
   m_GameObject: {fileID: 1913028676}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.275, y: 0, z: 0}
   m_LocalScale: {x: 0.049999997, y: 0.049999997, z: 0.049999997}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1050370268}
-  - {fileID: 2027539237}
   m_Father: {fileID: 1470423511}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1996727379
@@ -21777,6 +21854,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1996727380}
+  - component: {fileID: 1996727381}
   m_Layer: 0
   m_Name: Chromosome
   m_TagString: Untagged
@@ -21793,7 +21871,7 @@ Transform:
   m_GameObject: {fileID: 1996727379}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.317, y: 0.052, z: 0}
+  m_LocalPosition: {x: -0.049, y: 0.052, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -21801,6 +21879,22 @@ Transform:
   - {fileID: 1387529733}
   m_Father: {fileID: 1470423511}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1996727381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1996727379}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57e123ae1f5fb2741918f4fab1f67bad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChromosomeManager
+  chromosome1: {fileID: 69019608}
+  chromosome2: {fileID: 1387529733}
+  positionEpsilon: 0.000001
+  rotationEpsilonDegrees: 0.01
 --- !u!1 &2004449360
 GameObject:
   m_ObjectHideFlags: 0
@@ -21931,109 +22025,6 @@ MonoBehaviour:
   lodingImg: {fileID: 8174380128685116447}
   tutorialManager: {fileID: 229985710}
   touchingTime: 3
---- !u!1 &2027539236
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2027539237}
-  - component: {fileID: 2027539240}
-  - component: {fileID: 2027539239}
-  - component: {fileID: 2027539238}
-  m_Layer: 5
-  m_Name: Canvas (2)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &2027539237
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2027539236}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 20, y: 20, z: 20}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 353850873}
-  - {fileID: 1744711430}
-  m_Father: {fileID: 1913028682}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 4}
-  m_SizeDelta: {x: 0.2, y: 0.05}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2027539238
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2027539236}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_IgnoreReversedGraphics: 1
-  m_BlockingObjects: 0
-  m_BlockingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
---- !u!114 &2027539239
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2027539236}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_UiScaleMode: 0
-  m_ReferencePixelsPerUnit: 100
-  m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
-  m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0
-  m_PhysicalUnit: 3
-  m_FallbackScreenDPI: 96
-  m_DefaultSpriteDPI: 96
-  m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
---- !u!223 &2027539240
-Canvas:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2027539236}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_RenderMode: 2
-  m_Camera: {fileID: 0}
-  m_PlaneDistance: 100
-  m_PixelPerfect: 0
-  m_ReceivesEvents: 1
-  m_OverrideSorting: 0
-  m_OverridePixelPerfect: 0
-  m_SortingBucketNormalizedSize: 0
-  m_VertexColorAlwaysGammaSpace: 0
-  m_AdditionalShaderChannelsFlag: 25
-  m_UpdateRectTransformForStandalone: 0
-  m_SortingLayerID: 0
-  m_SortingOrder: 0
-  m_TargetDisplay: 0
 --- !u!1 &2068871305 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6796089959391949927, guid: 71a72501070715d42ba4e5516e87f780,
@@ -22069,6 +22060,33 @@ CapsuleCollider:
   m_Height: 55
   m_Direction: 2
   m_Center: {x: -13.5, y: 6.37, z: 20.5}
+--- !u!54 &2068871309
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2068871305}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &2081911336
 GameObject:
   m_ObjectHideFlags: 0
@@ -27032,7 +27050,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &2919413176784381584
 GameObject:
   m_ObjectHideFlags: 0
