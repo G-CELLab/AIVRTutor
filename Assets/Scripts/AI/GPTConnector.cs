@@ -86,6 +86,8 @@ public class GPTConnector : MonoBehaviour
     public bool clearQueueOnInterrupt = true;
     [Tooltip("Disconnect realtime WebSocket on interrupt to stop streaming responses")]
     public bool disconnectRealtimeOnInterrupt = true;
+    [Tooltip("Minimum interval between barge-in interrupts to prevent duplicate cancel spam")]
+    public float interruptDebounceSec = 0.35f;
 
     [Header("Debug")]
     public bool verboseDebug = AI.Prompts.Customizations.DefaultVerboseDebug;
@@ -169,6 +171,8 @@ public class GPTConnector : MonoBehaviour
     private volatile bool _sessionReady = false;
     private int _sessionUpdatedTick = 0;
     private volatile bool _responseInProgress = false; // Prevent simultaneous response.create calls
+    private bool _interruptInProgress = false;
+    private float _lastInterruptAt = -999f;
 
     /// <summary>
     /// Returns true if the agent is currently responding (speaking or generating response).
@@ -377,8 +381,7 @@ public class GPTConnector : MonoBehaviour
         {
             if (allowUserInterrupts)
             {
-                InterruptForBargeIn();
-                ExecuteTextRequest(userInput, onComplete);
+                StartCoroutine(InterruptThenRun(() => ExecuteTextRequest(userInput, onComplete)));
                 return;
             }
             // Agent is busy - queue this request for later evaluation
@@ -574,8 +577,7 @@ public class GPTConnector : MonoBehaviour
         {
             if (allowUserInterrupts)
             {
-                InterruptForBargeIn();
-                ExecuteAudioFileRequest(audioFilePath, onComplete);
+                StartCoroutine(InterruptThenRun(() => ExecuteAudioFileRequest(audioFilePath, onComplete)));
                 return;
             }
             D($"[Queue] Queuing audio file request (agent busy): {audioFilePath}");
@@ -649,8 +651,7 @@ public class GPTConnector : MonoBehaviour
         {
             if (allowUserInterrupts)
             {
-                InterruptForBargeIn();
-                ExecuteAudioBytesRequest(audioBytes, format, onComplete);
+                StartCoroutine(InterruptThenRun(() => ExecuteAudioBytesRequest(audioBytes, format, onComplete)));
                 return;
             }
             D($"[Queue] Queuing audio bytes request (agent busy), transcript: {transcriptContext ?? "(none)"}");
@@ -666,6 +667,23 @@ public class GPTConnector : MonoBehaviour
             return;
         }
         ExecuteAudioBytesRequest(audioBytes, format, onComplete);
+    }
+
+    private IEnumerator InterruptThenRun(Action run)
+    {
+        InterruptForBargeIn();
+
+        float wait = 0f;
+        const float timeoutSec = 1.0f;
+        while (_interruptInProgress && wait < timeoutSec)
+        {
+            wait += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        // Give one extra frame for websocket state transitions to settle.
+        yield return null;
+        run?.Invoke();
     }
 
     private void ExecuteAudioBytesRequest(byte[] audioBytes, string format, Action onComplete)
@@ -699,6 +717,22 @@ public class GPTConnector : MonoBehaviour
     public void InterruptForBargeIn()
     {
         if (!allowUserInterrupts) return;
+
+        float now = Time.realtimeSinceStartup;
+        if (now - _lastInterruptAt < Mathf.Max(0.05f, interruptDebounceSec))
+        {
+            D("[Interrupt] Debounced duplicate barge-in.");
+            return;
+        }
+        _lastInterruptAt = now;
+
+        bool wasBusy = _responseInProgress || (_isSpeaking && ttsPlayer != null && ttsPlayer.IsSpeaking) || (ttsPlayer != null && ttsPlayer.IsSpeaking);
+        if (!wasBusy && (_ws == null || _ws.State != WebSocketState.Open))
+        {
+            D("[Interrupt] Ignored: nothing active to interrupt.");
+            return;
+        }
+
         D("[Interrupt] User barge-in detected. Canceling current response.");
 
         if (clearQueueOnInterrupt) _requestQueue.Clear();
@@ -720,6 +754,7 @@ public class GPTConnector : MonoBehaviour
 
         if (useRealtime)
         {
+            _interruptInProgress = true;
             if (disconnectRealtimeOnInterrupt)
             {
                 StartCoroutine(InterruptRealtimeSession());
@@ -727,7 +762,12 @@ public class GPTConnector : MonoBehaviour
             else
             {
                 StartCoroutine(SendWsText("{\"type\":\"response.cancel\"}"));
+                _interruptInProgress = false;
             }
+        }
+        else
+        {
+            _interruptInProgress = false;
         }
     }
 
@@ -846,18 +886,19 @@ public class GPTConnector : MonoBehaviour
         // Do not check or set it again here
         try
         {
+            while (_interruptInProgress) yield return null;
             _assistantTranscriptAccum.Length = 0;
             _assistantGestureTriggeredForResponse = false;
             _assistantTranscriptForwardedForResponse = false;
             yield return EnsureRealtimeConnected();
             yield return WaitForSessionReady(3f); // 等待会话指令就绪
 
-        // 将“当前相位指令”作为 developer 文本钉入对话
+        // 将“当前相位指令”作为 system 文本钉入对话
         if (prependPhaseTextAsDeveloperItem)
         {
             string dev = BuildPhaseOnlyInstructions(GameManager.eGameStatus);
             EchoPrompt("RT/DevItem(phase).Instructions(final)", dev, true);
-            string devMsg = "{\"type\":\"conversation.item.create\",\"item\":{\"type\":\"message\",\"role\":\"developer\",\"content\":[{\"type\":\"input_text\",\"text\":\"" + Escape(dev) + "\"}]}}";
+            string devMsg = "{\"type\":\"conversation.item.create\",\"item\":{\"type\":\"message\",\"role\":\"system\",\"content\":[{\"type\":\"input_text\",\"text\":\"" + Escape(dev) + "\"}]}}";
             yield return SendWsText(devMsg);
         }
 
@@ -894,6 +935,7 @@ public class GPTConnector : MonoBehaviour
         // Do not check or set it again here
         try
         {
+            while (_interruptInProgress) yield return null;
             _assistantTranscriptAccum.Length = 0;
             _assistantGestureTriggeredForResponse = false;
             _assistantTranscriptForwardedForResponse = false;
@@ -914,15 +956,32 @@ public class GPTConnector : MonoBehaviour
         if (pcm16User == null || pcm16User.Length < 4800) // 24kHz * 0.1s * 2 bytes = 4800
         {
             Warn("[Realtime] Audio buffer too small (< 100ms). Skipping request.");
-            _responseInProgress = false;
-            // Process next queued request if any
-            StartCoroutine(ProcessQueuedRequestWithEvaluation());
+            onReplyComplete?.Invoke();
             yield break;
         }
         string b64 = Convert.ToBase64String(pcm16User);
+        if (string.IsNullOrEmpty(b64))
+        {
+            Warn("[Realtime] Audio buffer encoded empty. Skipping request.");
+            onReplyComplete?.Invoke();
+            yield break;
+        }
+
         string append = "{\"type\":\"input_audio_buffer.append\",\"audio\":\"" + b64 + "\"}";
         yield return SendWsText(append);
+        if (_ws == null || _ws.State != WebSocketState.Open)
+        {
+            D("[Realtime] WS closed before audio commit; aborting request.");
+            onReplyComplete?.Invoke();
+            yield break;
+        }
         yield return SendWsText("{\"type\":\"input_audio_buffer.commit\"}");
+        if (_ws == null || _ws.State != WebSocketState.Open)
+        {
+            D("[Realtime] WS closed before response.create; aborting request.");
+            onReplyComplete?.Invoke();
+            yield break;
+        }
 
         // 3) 触发响应（仍带 instructions）
         var sb = new StringBuilder();
@@ -1041,7 +1100,15 @@ public class GPTConnector : MonoBehaviour
         }
         catch (Exception e)
         {
-            Debug.LogWarning("[Realtime] ReceiveLoop异常: " + e.Message);
+            bool expected = (e is OperationCanceledException) || (e is ObjectDisposedException) || (_wsCts != null && _wsCts.IsCancellationRequested);
+            if (expected)
+            {
+                D("[Realtime] ReceiveLoop ended by cancel/dispose.");
+            }
+            else
+            {
+                Debug.LogWarning("[Realtime] ReceiveLoop异常: " + e.Message);
+            }
         }
     }
 
@@ -1973,7 +2040,14 @@ public class GPTConnector : MonoBehaviour
     {
         if (_ws == null || _ws.State != WebSocketState.Open)
         {
-            Warn("[Realtime] WebSocket 未连接。");
+            if (_interruptInProgress || (_wsCts != null && _wsCts.IsCancellationRequested))
+            {
+                D("[Realtime] Skip send: websocket is closing.");
+            }
+            else
+            {
+                Warn("[Realtime] WebSocket 未连接。");
+            }
             yield break;
         }
         byte[] data = Encoding.UTF8.GetBytes(json);
@@ -2051,7 +2125,11 @@ public class GPTConnector : MonoBehaviour
 
     private IEnumerator InterruptRealtimeSession()
     {
-        if (_ws == null || _ws.State != WebSocketState.Open) yield break;
+        if (_ws == null || _ws.State != WebSocketState.Open)
+        {
+            _interruptInProgress = false;
+            yield break;
+        }
         yield return SendWsText("{\"type\":\"response.cancel\"}");
         try { _wsCts?.Cancel(); } catch { }
         try { _ws?.Dispose(); } catch { }
@@ -2059,6 +2137,7 @@ public class GPTConnector : MonoBehaviour
         _wsCts = null;
         _sessionReady = false;
         while (_eventQueue.TryDequeue(out _)) { }
+        _interruptInProgress = false;
     }
 
     // ================== 相位 → 说明文本 ==================

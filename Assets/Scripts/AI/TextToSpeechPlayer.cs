@@ -7,6 +7,11 @@ using UnityEngine.Networking;
 
 public class TextToSpeechPlayer : MonoBehaviour
 {
+    [Header("Debug")]
+    [Tooltip("Enable verbose interruption warnings in console")]
+    public bool logInterruptWarnings = false;
+    private float _nextMonitorWarnAt = 0f;
+
     private void OnEnable()
     {
         StartCoroutine(GlobalAudioSourceMonitor());
@@ -22,7 +27,11 @@ public class TextToSpeechPlayer : MonoBehaviour
                 if (s == null) continue;
                 if (!s.isPlaying && s.clip == null && IsSpeaking)
                 {
-                    Debug.LogWarning($"[TTS][GlobalMonitor] AudioSource {s.name} on {s.gameObject.name} stopped and clip is null while IsSpeaking=true. This may indicate an external interruption. StackTrace: {System.Environment.StackTrace}");
+                    if (logInterruptWarnings && Time.realtimeSinceStartup >= _nextMonitorWarnAt)
+                    {
+                        _nextMonitorWarnAt = Time.realtimeSinceStartup + 1f;
+                        Debug.LogWarning($"[TTS][GlobalMonitor] AudioSource {s.name} on {s.gameObject.name} stopped while IsSpeaking=true.");
+                    }
                 }
             }
             yield return new WaitForSeconds(0.1f);
@@ -76,7 +85,14 @@ public class TextToSpeechPlayer : MonoBehaviour
 
     public void StopSpeaking()
     {
-        Debug.LogWarning($"[TTS] StopSpeaking() called! Stopping speech. StackTrace: {System.Environment.StackTrace}");
+        bool isActuallyActive = IsSpeaking || (audioSource != null && audioSource.isPlaying);
+        if (!isActuallyActive) return;
+
+        if (logInterruptWarnings)
+            Debug.LogWarning("[TTS] StopSpeaking() called. Stopping speech.");
+        else
+            Debug.Log("[TTS] StopSpeaking() called.");
+
         IsSpeaking = false;
         // Don't clear currentSpeechText here - keep it for logging purposes
         // It will be replaced when new speech starts
@@ -86,13 +102,15 @@ public class TextToSpeechPlayer : MonoBehaviour
             {
                 if (audioSource.isPlaying)
                 {
-                    Debug.LogWarning($"[TTS] audioSource.Stop() called on {audioSource.name} (GameObject: {audioSource.gameObject.name})");
+                    if (logInterruptWarnings)
+                        Debug.LogWarning($"[TTS] audioSource.Stop() called on {audioSource.name} (GameObject: {audioSource.gameObject.name})");
                     audioSource.Stop();
                 }
                 if (audioSource.clip != null)
                 {
                     audioSource.time = 0f;
-                    Debug.LogWarning($"[TTS] audioSource.clip set to null on {audioSource.name} (GameObject: {audioSource.gameObject.name})");
+                    if (logInterruptWarnings)
+                        Debug.LogWarning($"[TTS] audioSource.clip set to null on {audioSource.name} (GameObject: {audioSource.gameObject.name})");
                     audioSource.clip = null;
                 }
                 audioSource.mute = false;

@@ -52,7 +52,7 @@ public class TutorialQuestionPhaseController : MonoBehaviour
 
         if (stage == Manager_Tutorial.TutorialStage.ContentQuestions)
         {
-            if (ContainsPhrase(normalized, "that was a content question") && !awaitingContentAdvance)
+            if (IsContentSuccessResponse(normalized) && !awaitingContentAdvance)
             {
                 awaitingContentAdvance = true;
                 StartCoroutine(AdvanceWhenReady(0f, () =>
@@ -66,7 +66,7 @@ public class TutorialQuestionPhaseController : MonoBehaviour
 
         if (stage == Manager_Tutorial.TutorialStage.VisualQuestions)
         {
-            if (ContainsPhrase(normalized, "that was a visual reference question") && !awaitingVisualAdvance)
+            if (IsVisualSuccessResponse(normalized) && !awaitingVisualAdvance)
             {
                 Transform target = ResolveVisualTarget(normalized);
                 float delay = Mathf.Max(0.1f, visualAdvanceDelay);
@@ -86,7 +86,7 @@ public class TutorialQuestionPhaseController : MonoBehaviour
 
         if (stage == Manager_Tutorial.TutorialStage.ManipulationQuestions)
         {
-            if (ContainsPhrase(normalized, "that was a manipulation question") && !awaitingManipulationAdvance)
+            if (IsManipulationSuccessResponse(normalized) && !awaitingManipulationAdvance)
             {
                 awaitingManipulationAdvance = true;
                 StartCoroutine(AdvanceWhenReady(0f, () =>
@@ -164,6 +164,41 @@ public class TutorialQuestionPhaseController : MonoBehaviour
     private static bool ContainsPhrase(string normalized, string phrase)
     {
         return normalized.Contains(Normalize(phrase));
+    }
+
+    private static bool HasGoodValidationCue(string normalized)
+    {
+        // Accept 'good' as a standalone word anywhere in the response.
+        return ContainsPhrase(normalized, "good");
+    }
+
+    private static bool IsContentSuccessResponse(string normalized)
+    {
+        if (string.IsNullOrWhiteSpace(normalized)) return false;
+        // Allow progression when the model validates with "Good" and answers a chromosome content question.
+        return HasGoodValidationCue(normalized) &&
+               ContainsPhrase(normalized, "chromosome") &&
+               (ContainsPhrase(normalized, "genetic") || ContainsPhrase(normalized, "dna") || ContainsPhrase(normalized, "structure"));
+    }
+
+    private static bool IsVisualSuccessResponse(string normalized)
+    {
+        if (string.IsNullOrWhiteSpace(normalized)) return false;
+        // Accept common visual-reference confirmations for the blue chromosome target.
+        return HasGoodValidationCue(normalized) &&
+               (ContainsPhrase(normalized, "blue chromosome") ||
+                ContainsPhrase(normalized, "blue x shaped") ||
+                (ContainsPhrase(normalized, "chromosome") && ContainsPhrase(normalized, "middle")));
+    }
+
+    private static bool IsManipulationSuccessResponse(string normalized)
+    {
+        if (string.IsNullOrWhiteSpace(normalized)) return false;
+        // Accept common manipulation guidance phrasing for grab-and-move instructions.
+        return HasGoodValidationCue(normalized) &&
+               (ContainsPhrase(normalized, "grab") ||
+                ContainsPhrase(normalized, "move") ||
+                ContainsPhrase(normalized, "highlighted area"));
     }
 
     private static string Normalize(string input)

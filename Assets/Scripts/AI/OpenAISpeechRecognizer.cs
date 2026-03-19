@@ -43,6 +43,8 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     public bool killAllTTSOnInterrupt = true;
     [Tooltip("TTS 开始播放后，在此时间内不会被用户声音打断（秒，防止自中断）")]
     public float ttsProtectionDurationSec = 0.5f;
+    [Tooltip("Minimum interval between interrupt triggers to avoid duplicate barge-in calls")]
+    public float interruptCooldownSec = 0.5f;
 
     // 识别器对外事件：一旦“疑似用户开口”，立即触发（供 TTS 订阅）
     public event Action OnUserSpeechLikely;
@@ -62,6 +64,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     private float lastBatchMax = 0f;          // 调试显示：最近一批最大值
     private GUIStyle _g;
     private float _ttsStartTime = -999f;      // Track when TTS started to prevent self-interrupt
+    private float _lastInterruptTriggerAt = -999f;
 
     // 统计/节流
     private float _nextLogTime = 0f;
@@ -458,6 +461,13 @@ public class OpenAISpeechRecognizer : MonoBehaviour
 
     private void HandleUserInterrupt()
     {
+        float now = Time.realtimeSinceStartup;
+        if (now - _lastInterruptTriggerAt < Mathf.Max(0.05f, interruptCooldownSec))
+        {
+            return;
+        }
+        _lastInterruptTriggerAt = now;
+
         OnUserSpeechLikely?.Invoke();
         if (gptConnector != null && gptConnector.IsAgentBusy)
         {

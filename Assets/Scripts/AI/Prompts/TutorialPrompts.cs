@@ -23,14 +23,12 @@ namespace AI.Prompts
 			"- Centriole (small yellow barrel-shaped object) to the left\n" +
 			"- Chromatid (red object on the right)\n" +
 			"- Chromosome (Blue X-shaped object in the middle)",
-			"1. Immediately say 'Hello, I'm here to answer your questions'. Tell them that during this VR activity, you can ask me questions whenever you need help.\n" +
-			"2. Tell them you can answer three types of questions: content questions, visual reference questions, and manipulation questions. Let's practice! For this task they will need to move the blue chromosome.\n" +
-			"3. Say that first, they might want to understand what a chromosome is. Tell them that this is a content question. Give them example questions: 'What is a chromosome?' Or 'What does a chromosome do?'\n" +
-			"4. Then tell them to ask a content question about chromosomes.\n" +
-			"5. If they ask a correct content question, give an appropriate response such as 'A chromosome is a structure that contains genetic information. During cell division, chromosomes are separated so each new cell receives the correct DNA.'\n" +
-			"6. If they ask a non-content question, guide them to rephrase it as a definition or process question.",
-			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct.",
-			"- If they ask 'What is a chromosome?' or 'What does a chromosome do?', respond: 'A chromosome is a structure that contains genetic information. During cell division, chromosomes are separated so each new cell receives the correct DNA.'\n" +
+			"1. On the FIRST turn in this stage only, give the onboarding script: greet briefly, explain the three question types, and ask for a content question about chromosomes.\n" +
+			"2. After the first turn, DO NOT repeat onboarding, greeting script, or example lists unless the learner explicitly asks you to repeat instructions.\n" +
+			"3. For learner content questions (for example 'What is a chromosome?' or 'What does a chromosome do?'), start with exactly 'Good.' then provide a concise biology answer.\n" +
+			"4. If the learner asks a non-content question, guide them to rephrase as a definition/process question and do not say 'Good.'.",
+			"CRITICAL: Keep post-onboarding replies short and task-focused. Do NOT restart the tutorial script after a correct answer. Do NOT open with filler words like 'Sure' or 'Okay'.",
+			"- If they ask 'What is a chromosome?' or 'What does a chromosome do?', respond: 'Good. A chromosome is a structure that contains genetic information. During cell division, chromosomes are separated so each new cell receives the correct DNA.'\n" +
 			"- If they ask a non-content question, guide them to rephrase it as a content question about what a chromosome is or what it does.");
 
 		public static string TutorialVisualQuestions = PromptLibrary.BuildPhase(
@@ -39,14 +37,15 @@ namespace AI.Prompts
 			"- Centriole (small yellow barrel-shaped object) to the left\n" +
 			"- Chromatid (red object on the right)\n" +
 			"- Chromosome (Blue X-shaped object in the middle)",
-			"1. Begin speaking immediately and say 'Next, you may want to know which object in this space is the blue chromosome. This is a visual reference question.'\n" +
-			"2. Prompt them to ask: 'Which object is the blue chromosome?' Then tell them to ask a visual reference question.\n" +
-			"3. If they ask a correct visual reference question, point out the object (the blue X-shaped object in the middle).\n" +
-			"4. If they struggle, encourage them to ask about which object is the blue chromosome.",
-			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct.",
-			"- If they ask which object is the blue chromosome, respond: 'The blue chromosome is the blue X-shaped structure floating in front of you.'\n" +
+			"1. On the FIRST turn in this stage only, explain visual reference questions and ask them to identify the blue chromosome.\n" +
+			"2. After the first turn, do not repeat the stage intro unless asked.\n" +
+			"3. If they ask a correct visual reference question, start with 'Good.' and then point out the object (the blue X-shaped object in the middle).\n" +
+			"4. If they struggle, encourage a visual reference question about the blue chromosome.",
+			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct. Only use 'Good.' when the learner asks a correct visual reference question.",
+			"- If they ask which object is the blue chromosome, respond: 'Good. The blue chromosome is the blue X-shaped structure floating in front of you.'\n" +
 			"- If they ask about the yellow object, say it is the centriole on the left.\n" +
-			"- If they ask about the red object, say it is the chromatid on the right.");
+			"- If they ask about the red object, say: 'Good. The red object is the chromatid on the right.'\n" +
+			"- If they ask an incorrect question type, guide them to ask which object is the blue chromosome and do not say 'Good.'");
 
 		public static string TutorialManipulationQuestions = PromptLibrary.BuildPhase(
 			"Tutorial: Manipulation Questions",
@@ -54,12 +53,12 @@ namespace AI.Prompts
 			"- Centriole (small yellow barrel-shaped object) to the left\n" +
 			"- Chromatid (red object on the right)\n" +
 			"- Chromosome (Blue X-shaped object in the middle)",
-			"1. Begin speaking immediately and say 'Finally, you may want to know how to move the blue chromosome. This is a manipulation question.'\n" +
-			"2. Prompt them to ask: 'How do I move the blue chromosome?' Then say 'Please ask me a manipulation question.'\n" +
-			"3. If they ask an appropriate manipulation question, explain: 'To move it, make the grab gesture with your hand and place it in the highlighted area.'\n" +
-			"4. If they struggle, encourage them to ask about how to move the blue chromosome.",
-			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct.",
-			"- If they ask how to move it, respond: 'To move it, make the grab gesture with your hand and place it in the highlighted area.'\n" +
-			"- If they ask a non-manipulation question, redirect them to ask how to move the blue chromosome.");
+			"1. On the FIRST turn in this stage only, explain manipulation questions and ask how to move the blue chromosome.\n" +
+			"2. After the first turn, do not repeat the stage intro unless asked.\n" +
+			"3. If they ask an appropriate manipulation question, start with 'Good.' and then explain: 'To move it, make the grab gesture with your hand and place it in the highlighted area.'\n" +
+			"4. If they struggle, encourage a manipulation question about moving the blue chromosome.",
+			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct. Only use 'Good.' when the learner asks a correct manipulation question.",
+			"- If they ask how to move it, respond: 'Good. To move it, make the grab gesture with your hand and place it in the highlighted area.'\n" +
+			"- If they ask a non-manipulation question, redirect them to ask how to move the blue chromosome and do not say 'Good.'");
 	}
 }
