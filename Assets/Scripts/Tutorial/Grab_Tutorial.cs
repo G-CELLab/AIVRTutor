@@ -15,16 +15,17 @@ public class Grab_Tutorial : MonoBehaviour
     bool completed = false;
     public bool isFirstTarget = true;
     bool manipulationPlacementReported = false;
+    bool manipulationTriggerDetected = false;
+    bool lastManipulationStageActive = false;
 
     private void OnTriggerEnter(Collider other)
     {
         if (tutorialManager != null && tutorialManager.CurrentStage == Manager_Tutorial.TutorialStage.ManipulationQuestions)
         {
-            if (!manipulationPlacementReported && IsBlueChromosomeCollider(other))
+            if (IsBlueChromosomeCollider(other))
             {
-                manipulationPlacementReported = true;
-                tutorialManager.RegisterManipulationPlacementComplete();
-                Debug.Log("[Tutorial] Blue chromosome entered placement target.");
+                manipulationTriggerDetected = true;
+                Debug.Log("[Tutorial] Blue chromosome entered manipulation target.");
             }
             return;
         }
@@ -38,6 +39,21 @@ public class Grab_Tutorial : MonoBehaviour
     }
     private void OnTriggerExit(Collider other)
     {
+        if (tutorialManager != null && tutorialManager.CurrentStage == Manager_Tutorial.TutorialStage.ManipulationQuestions)
+        {
+            if (IsBlueChromosomeCollider(other))
+            {
+                manipulationTriggerDetected = false;
+                if (!manipulationPlacementReported)
+                {
+                    timer = 0f;
+                    if (lodingImg != null) lodingImg.fillAmount = 0f;
+                }
+                Debug.Log("[Tutorial] Blue chromosome exited manipulation target.");
+            }
+            return;
+        }
+
         if (other.gameObject.tag == "Wound")
         {
             triggerDetected = false;
@@ -53,14 +69,36 @@ public class Grab_Tutorial : MonoBehaviour
 
     private void Update()
     {
-        if (tutorialManager != null && tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.ManipulationQuestions)
+        bool inManipulationStage = tutorialManager != null && tutorialManager.CurrentStage == Manager_Tutorial.TutorialStage.ManipulationQuestions;
+
+        if (inManipulationStage && !lastManipulationStageActive)
+        {
+            // Entering manipulation stage: ensure target UI starts empty.
+            manipulationPlacementReported = false;
+            manipulationTriggerDetected = false;
+            timer = 0f;
+            if (lodingImg != null) lodingImg.fillAmount = 0f;
+        }
+
+        if (!inManipulationStage)
         {
             manipulationPlacementReported = false;
+            manipulationTriggerDetected = false;
+            if (lodingImg != null) lodingImg.fillAmount = 0f;
         }
+
+        if (inManipulationStage)
+        {
+            UpdateManipulationPlacementTimer();
+            lastManipulationStageActive = true;
+            return;
+        }
+        lastManipulationStageActive = false;
 
         if (tutorialManager != null && tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.GrabTutorial)
         {
             timer = 0f;
+            if (lodingImg != null) lodingImg.fillAmount = 0f;
             return;
         }
 
@@ -76,6 +114,47 @@ public class Grab_Tutorial : MonoBehaviour
         else
         {
             timer = 0f;
+        }
+    }
+
+    private void UpdateManipulationPlacementTimer()
+    {
+        if (manipulationPlacementReported)
+        {
+            if (lodingImg != null) lodingImg.fillAmount = 1f;
+            return;
+        }
+
+        if (manipulationTriggerDetected)
+        {
+            timer += Time.deltaTime;
+            if (lodingImg != null) lodingImg.fillAmount = Mathf.Clamp01(timer / touchingTime);
+
+            if (timer >= touchingTime)
+            {
+                manipulationPlacementReported = true;
+                if (lodingImg != null) lodingImg.fillAmount = 1f;
+                tutorialManager?.RegisterManipulationPlacementComplete();
+                Debug.Log("[Tutorial] Blue chromosome held in manipulation target long enough.");
+            }
+        }
+        else
+        {
+            timer = 0f;
+            if (lodingImg != null) lodingImg.fillAmount = 0f;
+        }
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (tutorialManager == null || tutorialManager.CurrentStage != Manager_Tutorial.TutorialStage.ManipulationQuestions)
+        {
+            return;
+        }
+
+        if (IsBlueChromosomeCollider(other))
+        {
+            manipulationTriggerDetected = true;
         }
     }
 

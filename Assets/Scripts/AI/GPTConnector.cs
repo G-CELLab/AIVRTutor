@@ -1740,7 +1740,11 @@ public class GPTConnector : MonoBehaviour
             "eat to get",         // Process phrase
             "need to eat",        // Necessity
             "must eat",           // Requirement
-            "energy from food"    // Energy + food connection
+            "energy from food",    // Energy + food connection
+            "eat",
+            "food"
+
+
         };
         return ContainsAnyNormalized(s, keys);
     }

@@ -1191,47 +1191,40 @@ MonoBehaviour:
     STUDENT TASKS:
 
     1.
-    Immediately say ''Hello, I''m here to answer your questions''. Tell them that
-    during this VR activity, you can ask me questions whenever you need help.
+    On the FIRST turn in this stage only, give the onboarding script: greet briefly,
+    explain the three question types, and ask for a content question about chromosomes.
+    You MUST include these exact example questions in that first-turn script: ''What
+    is a chromosome?'' and ''What does a chromosome do?''.
 
-    2.
-    Tell them you can answer three types of questions: content questions, visual
-    reference questions, and manipulation questions. Let''s practice! For this task
-    they will need to move the blue chromosome.
+    2. After the first
+    turn, DO NOT repeat onboarding, greeting script, or example lists unless the
+    learner explicitly asks you to repeat instructions.
 
-    3. Say that first, they might
-    want to understand what a chromosome is. Tell them that this is a content question.
-    Give them example questions: ''What is a chromosome?'' Or ''What does a chromosome
-    do?''
+    3. For learner content
+    questions (for example ''What is a chromosome?'' or ''What does a chromosome
+    do?''), start with exactly ''Good.'' then provide a concise biology answer.
 
-    4. Then tell them to give it a try.
-
-    5. If they ask a correct
-    content question, start your response with exactly ''Good.'' and then give an
-    appropriate response such as ''A chromosome is a structure that contains genetic
-    information. During cell division, chromosomes are separated so each new cell
-    receives the correct DNA.''
-
-    6. If they ask a non-content question, guide
-    them to rephrase it as a definition or process question. Do not say ''Good.''
-    for incorrect questions.
+    4.
+    If the learner asks a non-content question, guide them to rephrase as a definition/process
+    question and do not say ''Good.''.
 
 
-    HELPFUL EXPLANATION: ''CRITICAL: Do NOT open this
-    phase with ''Sure'', ''Okay'', ''Alright'' or any filler word. Be direct. Only
-    use ''Good.'' when the learner asks a correct content question.''
+    HELPFUL EXPLANATION: ''CRITICAL: Keep
+    post-onboarding replies short and task-focused. Do NOT restart the tutorial script
+    after a correct answer. Do NOT open with filler words like ''Sure'' or ''Okay''.
+    Never omit the two example questions on the first turn.''
 
 
-    COMMON
-    QUESTIONS:
+    COMMON QUESTIONS:
 
-    - If they ask ''What is a chromosome?'' or ''What does a chromosome
-    do?'', respond: ''Good. A chromosome is a structure that contains genetic information.
-    During cell division, chromosomes are separated so each new cell receives the
-    correct DNA.''
+    -
+    If they ask ''What is a chromosome?'' or ''What does a chromosome do?'', respond:
+    ''Good. A chromosome is a structure that contains genetic information. During
+    cell division, chromosomes are separated so each new cell receives the correct
+    DNA.''
 
-    - If they ask a non-content question, guide them to rephrase
-    it as a content question about what a chromosome is or what it does.'
+    - If they ask a non-content question, guide them to rephrase it as
+    a content question about what a chromosome is or what it does.'
   visualPrompt: 'CURRENT PHASE: Tutorial: Visual Reference Questions
 
     GOAL: Teach
@@ -1252,42 +1245,41 @@ MonoBehaviour:
 
     STUDENT TASKS:
 
-    1. Begin speaking immediately
-    and say ''Next, you may want to know which object in this space is the blue chromosome.
-    This is a visual reference question.''
+    1. On the FIRST turn in this
+    stage only, explain visual reference questions and ask them to identify the chromosome.
 
-    2. Prompt them to ask: ''Which object
-    is the blue chromosome?'' Then tell them to give it a try.
+    2.
+    After the first turn, do not repeat the stage intro unless asked.
 
-    3. If they ask
-    a correct visual reference question, start with ''Good.'' and then point out
-    the object (the blue X-shaped object in the middle).
+    3. If
+    they ask a correct visual reference question, start with ''Good.'' and then point
+    out the object (the blue X-shaped object in the middle).
 
     4. If they struggle,
-    encourage them to ask about which object is the blue chromosome.
+    encourage a visual reference question about the chromosome.
 
 
-    HELPFUL
-    EXPLANATION: ''CRITICAL: Do NOT open this phase with ''Sure'', ''Okay'', ''Alright''
-    or any filler word. Be direct. Only use ''Good.'' when the learner asks a correct
-    visual reference question.''
+    HELPFUL EXPLANATION:
+    ''CRITICAL: Do NOT open this phase with ''Sure'', ''Okay'', ''Alright'' or any
+    filler word. Be direct. Only use ''Good.'' when the learner asks a correct visual
+    reference question.''
 
 
     COMMON QUESTIONS:
 
-    - If they ask which
-    object is the blue chromosome, respond: ''Good. The blue chromosome is the blue
-    X-shaped structure floating in front of you.''
+    - If they ask which object
+    is the chromosome, respond: ''Good. The chromosome is the blue X-shaped structure
+    floating in front of you.''
 
-    - If they ask about the yellow
-    object, say it is the centriole on the left.
+    - If they ask about the yellow object, say it
+    is the centriole on the left.
 
-    - If they ask about the red
-    object, say: ''Good. The red object is the chromatid on the right.''
+    - If they ask about the red object, say: ''Good.
+    The red object is the chromatid on the right.''
 
-    - If
-    they ask an incorrect question type, guide them to ask which object is the blue
-    chromosome and do not say ''Good.'''
+    - If they ask an incorrect
+    question type, guide them to ask which object is the chromosome and do not say
+    ''Good.'''
   manipulationPrompt: 'CURRENT PHASE: Tutorial: Manipulation Questions
 
     GOAL:
@@ -1308,36 +1300,35 @@ MonoBehaviour:
 
     STUDENT TASKS:
 
-    1. Begin speaking
-    immediately and say ''Finally, you may want to know how to move the blue chromosome.
-    This is a manipulation question.''
-
-    2. Prompt them to ask: ''How do I move
-    the blue chromosome?'' Then tell them to give it a try.''
-
-    3. If they ask
-    an appropriate manipulation question, start with ''Good.'' and then explain:
-    ''To move it, make the grab gesture with your hand and place it in the highlighted
-    area.''
-
-    4. If they struggle, encourage them to ask about how to move the
+    1. On the FIRST
+    turn in this stage only, explain manipulation questions and ask how to move the
     blue chromosome.
 
+    2. After the first turn, do not repeat the stage intro
+    unless asked.
 
-    HELPFUL EXPLANATION: ''CRITICAL: Do NOT open this phase
-    with ''Sure'', ''Okay'', ''Alright'' or any filler word. Be direct. Only use
-    ''Good.'' when the learner asks a correct manipulation question.''
+    3. If they ask an appropriate manipulation question, start
+    with ''Good.'' and then explain: ''To move it, make the grab gesture with your
+    hand and place it in the highlighted area.''
+
+    4. If they struggle, encourage
+    a manipulation question about moving the blue chromosome.
 
 
-    COMMON
-    QUESTIONS:
+    HELPFUL EXPLANATION:
+    ''CRITICAL: Do NOT open this phase with ''Sure'', ''Okay'', ''Alright'' or any
+    filler word. Be direct. Only use ''Good.'' when the learner asks a correct manipulation
+    question.''
 
-    - If they ask how to move it, respond: ''Good. To move it, make
-    the grab gesture with your hand and place it in the highlighted area.''
 
-    -
-    If they ask a non-manipulation question, redirect them to ask how to move the
-    blue chromosome and do not say ''Good.'''
+    COMMON QUESTIONS:
+
+    - If they ask how to move it, respond:
+    ''Good. To move it, make the grab gesture with your hand and place it in the
+    highlighted area.''
+
+    - If they ask a non-manipulation question, redirect
+    them to ask how to move the blue chromosome and do not say ''Good.'''
   useRuntimePromptConstants: 1
   clearHistoryOnStageChange: 1
   autoGreetOnStageEnter: 1
@@ -2108,6 +2099,7 @@ MonoBehaviour:
   interruptGraceMs: 700
   killAllTTSOnInterrupt: 1
   ttsProtectionDurationSec: 1
+  interruptCooldownSec: 0.5
   showDebugOverlay: 0
   verboseDebug: 1
   debugLogInterval: 0.25
@@ -2123,6 +2115,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 929cded6fb6289f4884b8ee9f07317c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  logInterruptWarnings: 0
   openAIKey: '*****'
   voice: nova
   audioSource: {fileID: 436895155}
@@ -2237,6 +2230,7 @@ MonoBehaviour:
   allowUserInterrupts: 1
   clearQueueOnInterrupt: 1
   disconnectRealtimeOnInterrupt: 1
+  interruptDebounceSec: 0.35
   verboseDebug: 1
   dumpResponsesToFile: 1
   debugLogInterval: 0.25
@@ -3198,7 +3192,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!223 &1028986702
 Canvas:
   m_ObjectHideFlags: 0
@@ -21284,7 +21278,7 @@ MonoBehaviour:
       m_Calls: []
   m_text: "Question Type 2: Visual Reference Questions\r\nNow you\u2019ll practice
     visual reference questions, which help connect biology words to objects in front
-    of you; look around the scene and try asking \u201CWhich object is the blue chromosome?\u201D
+    of you; look around the scene and try asking \u201CWhich object is the chromosome?\u201D
     so you can identify the correct structure before interacting with it."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
