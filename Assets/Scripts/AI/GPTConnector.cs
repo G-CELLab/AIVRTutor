@@ -1734,7 +1734,6 @@ public class GPTConnector : MonoBehaviour
             "eating food",        // Continuous form
             "eat the food",       // With article
             "eats food",          // Third person
-            "get energy",         // Energy context
             "needs food",         // Need context
             "food for energy",    // Complete phrase
             "eat to get",         // Process phrase
@@ -1742,7 +1741,8 @@ public class GPTConnector : MonoBehaviour
             "must eat",           // Requirement
             "energy from food",    // Energy + food connection
             "eat",
-            "food"
+            "food",
+            "eating"
 
 
         };
@@ -1790,6 +1790,7 @@ public class GPTConnector : MonoBehaviour
             "line them up",              // Direct instruction
             "line up",                   // Simple phrase (standalone trigger)
             "lined up",                  // Past tense
+            "lining up",                 // Present participle
             "line up in a row",          // Complete phrase
             "all line up",               // Collective action
             "should line up",            // Instructional
@@ -1809,18 +1810,20 @@ public class GPTConnector : MonoBehaviour
             "move them to opposite ends",    // Primary phrase
             "move to opposite ends",         // Shortened
             "pull to opposite ends",         // Alternative action
-            "to opposite ends",              // Key phrase
-            "to opposite sides",             // Variation
-            "to opposite poles",             // Scientific term
+            "opposite ends",              // Key phrase
+            "opposite sides",             // Variation
+            "opposite poles",             // Scientific term
             "move them to opposite",         // Partial
             "pull to opposite",              // Pull variant
             "pull apart",                    // Simple action
+            "pull them apart",               // Direct instruction
             "split apart",                   // Alternative
             "separate them",                 // Basic instruction
             "move apart",                    // Move variation
             "go to opposite",                // Movement phrase
             "ends of the cell",              // Location reference
-            "each end"                       // Directional phrase
+            "each end",                       // Directional phrase
+            "split"
         };
         return ContainsAnyNormalized(s, keys);
     }

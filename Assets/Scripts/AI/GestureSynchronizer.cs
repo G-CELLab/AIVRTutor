@@ -233,11 +233,17 @@ public class GestureSynchronizer : MonoBehaviour
             "eating food",
             "eat the food",
             "eats food",
+            "food for the cell",
             "food for energy",
-            "get energy",
+            "energy from food",
+            "eat to get",
             "needs food",
             "need to eat",
-            "must eat"
+            "must eat",
+            "like food",
+            "eating",
+            "eat",
+            "food"
         };
 
         foreach (string keyword in keywords)
@@ -269,11 +275,14 @@ public class GestureSynchronizer : MonoBehaviour
     {
         string[] keywords = {
             "x shape condense",
+            "x shaped condense",
             "condense into x",
+            "condense into an x",
             "x shaped chromosome",
             "condenses into x",
             "x shaped",
             "x shape",
+            "condensed",
             "condense",
             "condenses"
         };
@@ -309,10 +318,19 @@ public class GestureSynchronizer : MonoBehaviour
             "line up at the center",
             "line up at center",
             "line up in the middle",
+            "line up in middle",
+            "line up at the center",
+            "line up at center",
+            "align at center",
+            "line up in a row",
             "line up",
             "lined up",
+            "lining up",
             "line them up",
+            "lining them up",
             "all line up",
+            "should line up",
+            "need to line up",
             "in a row",
             "align at the center"
         };
@@ -352,16 +370,26 @@ public class GestureSynchronizer : MonoBehaviour
             "split in two",
             "pull each half",
             "separate chromatids",
-            "move to opposite ends",
             "move them to opposite ends",
+            "move to opposite ends",
             "pull to opposite ends",
+            "opposite ends",
+            "opposite sides",
+            "opposite poles",
+            "move them to opposite",
+            "pull to opposite",
+            "go to opposite",
+            "ends of the cell",
+            "each end",
             "to opposite ends",
             "to opposite sides",
             "to opposite poles",
+            "pull them apart",
             "pull apart",
             "split apart",
             "move apart",
-            "separate them"
+            "separate them",
+            "split"
         };
 
         foreach (string keyword in keywords)
@@ -407,6 +435,7 @@ public class GestureSynchronizer : MonoBehaviour
         }
 
         gestureInfo.TriggerAction?.Invoke();
+        _activeGestureCoroutine = null;
 
         if (verboseDebug)
             Debug.Log($"[GestureSynchronizer] ✅ Triggered {gestureInfo.GestureName} after {actualWait:F2}s actual wait");

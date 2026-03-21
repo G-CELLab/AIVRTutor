@@ -120,7 +120,7 @@ namespace AI.Prompts
             "- The arm wound (the problem they will solve by learning about mitosis)",
             "1. Greet the student and introduce yourself as their tutor\n" +
             "2. Explain that they'll be learning about mitosis to help heal the arm wound\n" +
-            "3. Mention that wound healing requires multiple rounds of cell division",
+            "3. Mention that wound healing requires three rounds of cell division",
             "Hi there! I'm your AI Tutor, here to guide you through mitosis—the process of cell division that heals wounds. " +
             "To repair tissue damage, cells must divide multiple times to create enough new cells. " +
             "You'll go through the mitosis process three times to fully heal this wound. Touch the arm wound to begin!",
@@ -131,13 +131,13 @@ namespace AI.Prompts
         public static string Interphase = BuildPhase(
             "Interphase",
             "Generate energy (ATP)",
-            "- Three green capsule-shaped nutrients: Vitamin C, Magnesium and Protein (the student needs to grab these)\n" +
-            "- Mitochondria (oval-shaped organelles that convert nutrients into energy)\n" +
+            "- Three green capsule-shaped nutrients infront of the student: Vitamin C, Magnesium and Protein (the student needs to grab these)\n" +
+            "- Mitochondria (yellow oval-shaped organelles that convert nutrients into energy)\n" +
             "- Green ATP bar (fills up as nutrients are absorbed - must be completely full)\n",
             "1. Grab the three capsule nutrients and bring them to the mitochondria\n" +
             "2. Watch the green ATP bar fill completely\n" +
             "The mitochondria convert nutrients into ATP energy for the cell.",
-            "- 'What are the capsules?' → 'Those are nutrients! Cells use them like food for energy so they can make ATP.'\n" +
+            "- 'What are the capsules?' → 'Those are nutrients! Cells use nutrients to make energy, just like when we eat food to get energy to move.'\n" +
             "- 'What do the mitochondria do?' → 'They turn nutrients into ATP energy, kind of like how our bodies get energy after eating food.'\n" +
             "- 'Is the bar full?' → Check the green ATP bar and give warm feedback.\n",
             HelpfulAnalogyHeader);

@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 //
 // 10 秒内 TTS 开声：normal↔speaking；
@@ -35,6 +36,8 @@ public class TTSAnimatorDriver : MonoBehaviour
     [Header("Timing")]
     public float waitBeforeDZ2 = 10f;   // 超时阈值（秒）
     public float lingerAfterEnd = 0f; // 说完收尾延迟
+    [Tooltip("Minimum interval between identical gesture triggers. Prevents accidental double-fire from duplicate event paths.")]
+    public float minRepeatTriggerIntervalSec = 0.75f;
 
     [Header("Debug")]
     public bool verbose = true;
@@ -49,6 +52,7 @@ public class TTSAnimatorDriver : MonoBehaviour
 
     bool _expectingSpeech;
     float _waitElapsed, _linger;
+    readonly Dictionary<int, float> _lastTriggerTimeByHash = new Dictionary<int, float>();
 
     void Awake()
     {
@@ -124,8 +128,22 @@ public class TTSAnimatorDriver : MonoBehaviour
             if (verbose) Debug.LogWarning($"[TTSAnimatorDriver] ❗ Animator 缺少 Trigger 参数: {nameForLog}");
             return;
         }
+
+        // Defensive dedupe: ignore the same trigger if it was fired very recently.
+        float now = Time.realtimeSinceStartup;
+        if (minRepeatTriggerIntervalSec > 0f && _lastTriggerTimeByHash.TryGetValue(hash, out float lastTime))
+        {
+            float elapsed = now - lastTime;
+            if (elapsed >= 0f && elapsed < minRepeatTriggerIntervalSec)
+            {
+                if (verbose) Debug.Log($"[TTSAnimatorDriver] ⏭️ Ignored duplicate trigger: {nameForLog} ({elapsed:0.00}s < {minRepeatTriggerIntervalSec:0.00}s)");
+                return;
+            }
+        }
+
         animator.ResetTrigger(hash); // 防抖
         animator.SetTrigger(hash);
+        _lastTriggerTimeByHash[hash] = now;
         if (verbose) Debug.Log($"[TTSAnimatorDriver] 🔔 Trigger: {nameForLog}");
     }
 
