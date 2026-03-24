@@ -100,19 +100,6 @@ public class GPTConnector : MonoBehaviour
     [Tooltip("If true, realtime instructions omit phase text when it is already pinned as a developer item.")]
     public bool omitPhaseFromInstructionsWhenPinned = true;
 
-    // ===== 延时触发：基于 isSpeaking 的延时调度 =====
-    [Header("Speaking & Delayed Triggers")]
-    [Tooltip("INTERPHASE - DZ13 (EAT gesture): Delay after speech starts. Gesture should sync with 'eat food' phrase.")]
-    public float delayEatGestureSec = 1.5f;
-    [Tooltip("PROPHASE - DZ18 (CONDENSE gesture): Delay after speech starts. Gesture should sync with 'X-shape condense' phrase.")]
-    public float delayCondenseGestureSec = 2.0f;
-    [Tooltip("METAPHASE - DZ12 (LINE UP gesture): Delay after speech starts. Gesture should sync with 'line up at the center' phrase.")]
-    public float delayLineUpGestureSec = 2.0f;
-    [Tooltip("ANAPHASE - DZ22 (SPLIT OUTWARD gesture): Delay after speech starts. Gesture should sync with 'move to opposite ends' phrase.")]
-    public float delaySplitOutwardGestureSec = 2.5f;
-    [Tooltip("若当前还未开始说话，最多等待多少秒以等到 isSpeaking=true；超时也会照常延时触发")]
-    public float speakingWaitGraceSec = 5f;
-
     private volatile bool _isSpeaking = false;
 
     // ★ instruction debug
@@ -138,10 +125,6 @@ public class GPTConnector : MonoBehaviour
     public bool reactToAssistantTranscript = true; // 用助理回复字幕触发动作
     [Tooltip("🎯 NEW: Use real-time streaming deltas for precise gesture timing (triggers as words arrive, not after speech completes). Recommended for Realtime API.")]
     public bool useStreamingGestureTiming = true;
-    [Tooltip("Streaming-only delay for Interphase eat gesture (DZ13). 0 means instant trigger on detection.")]
-    public float streamingInterphaseEatDelaySec = 0f;
-    [Tooltip("Streaming-only delay for Prophase condense gesture (DZ18). 0 means instant trigger on detection.")]
-    public float streamingProphaseCondenseDelaySec = 0f;
 
     private readonly Dictionary<GameManager.GameState, string> _phaseTextCache = new Dictionary<GameManager.GameState, string>(); // 文本缓存
     private readonly Dictionary<GameManager.GameState, string> _phaseAudioPathCache = new Dictionary<GameManager.GameState, string>(); // 音频缓存（本地路径）
@@ -1218,15 +1201,10 @@ public class GPTConnector : MonoBehaviour
                     string currentTranscript = _assistantTranscriptAccum.ToString();
                     bool gestureTriggered = false;
                     
-                    // Use new GestureSynchronizer if enabled (RECOMMENDED)
+                    // Streaming gestures are handled only by GestureSynchronizer.
                     if (useGestureSynchronizer && gestureSynchronizer != null)
                     {
                         gestureTriggered = gestureSynchronizer.ProcessStreamingDelta(currentTranscript, GameManager.eGameStatus);
-                    }
-                    else
-                    {
-                        // Fallback: Use legacy timing system
-                        gestureTriggered = TryFireFromStreamingDelta(currentTranscript);
                     }
                     
                     if (gestureTriggered)
@@ -1260,8 +1238,7 @@ public class GPTConnector : MonoBehaviour
                 bool allowDoneFallback = reactToAssistantTranscript && !useStreamingGestureTiming;
                 if (allowDoneFallback && !_assistantGestureTriggeredForResponse)
                 {
-                    Debug.Log("[Gesture/Fallback] Streaming didn't trigger, using fallback detection");
-                    _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(full);
+                    _assistantGestureTriggeredForResponse = TryFireFromCompleteTranscript(full);
                 }
             }
             return;
@@ -1300,7 +1277,7 @@ public class GPTConnector : MonoBehaviour
             bool allowCompletedFallback = reactToAssistantTranscript && !useStreamingGestureTiming;
             if (!string.IsNullOrEmpty(replyText) && allowCompletedFallback && !_assistantGestureTriggeredForResponse)
             {
-                _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(replyText);
+                _assistantGestureTriggeredForResponse = TryFireFromCompleteTranscript(replyText);
             }
 
             Action afterPlayback = () =>
@@ -1415,6 +1392,11 @@ public class GPTConnector : MonoBehaviour
             return;
         }
 
+        if (useGestureSynchronizer && gestureSynchronizer != null)
+        {
+            gestureSynchronizer.OnResponseStart();
+        }
+
         string replyText = null;
         string audioB64 = null;
         string audioFmt = null;
@@ -1461,8 +1443,7 @@ public class GPTConnector : MonoBehaviour
 
         if (!string.IsNullOrEmpty(replyText))
         {
-            // HTTP 模式：直接用助理文本匹配（此处只做匹配与调度，真正触发会在语音开始后延时）
-            _assistantGestureTriggeredForResponse = TryFireFromAssistantTranscript(replyText);
+            _assistantGestureTriggeredForResponse = TryFireFromCompleteTranscript(replyText);
             history.Add(new Message { role = "assistant", content = replyText });
             TrimHistory();
             D($"[Cost] Response length: {replyText.Length} chars (TTS threshold: {minCharsForTts} chars)");
@@ -1544,123 +1525,16 @@ public class GPTConnector : MonoBehaviour
         OnAssistantTranscript?.Invoke(transcript);
     }
 
-    private bool TryFireFromAssistantTranscript(string transcript)
+    private bool TryFireFromCompleteTranscript(string transcript)
     {
         if (string.IsNullOrWhiteSpace(transcript)) return false;
 
         OnAssistantTranscript?.Invoke(transcript);
-        if (ttsDriver == null) return false;
-        string t = Normalize(transcript); // 去标点/小写/压空白
-        bool triggered = false;
 
-        switch (GameManager.eGameStatus)
-        {
-            case GameManager.GameState.Interphase:
-                if (IsEatGesture(t))
-                {
-                    Debug.Log("[React][assistant] Interphase → DZ13 EAT gesture (eating food for energy)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ13(), delayEatGestureSec, "Interphase:EAT");
-                    triggered = true;
-                }
-                break;
+        if (!reactToAssistantTranscript) return false;
+        if (!useGestureSynchronizer || gestureSynchronizer == null) return false;
 
-            case GameManager.GameState.Prophase:
-                if (IsCondenseGesture(t))
-                {
-                    Debug.Log("[React][assistant] Prophase → DZ18 CONDENSE gesture (X-shape condense)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ18(), delayCondenseGestureSec, "Prophase:CONDENSE");
-                    triggered = true;
-                }
-                break;
-
-            case GameManager.GameState.Metaphase:
-                if (IsLineUpGesture(t))
-                {
-                    Debug.Log("[React][assistant] Metaphase → DZ12 LINE UP gesture (line up at center)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ12(), delayLineUpGestureSec, "Metaphase:LINE_UP");
-                    triggered = true;
-                }
-                break;
-
-            case GameManager.GameState.Anaphase:
-                if (IsSplitOutwardGesture(t))
-                {
-                    Debug.Log("[React][assistant] Anaphase → DZ22 SPLIT OUTWARD gesture (move to opposite ends)");
-                    ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ22(), delaySplitOutwardGestureSec, "Anaphase:SPLIT_OUTWARD");
-                    triggered = true;
-                }
-                break;
-
-            default:
-                break; // 其它阶段不触发
-        }
-
-        return triggered;
-    }
-
-    /// <summary>
-    /// 🎯 REAL-TIME GESTURE DETECTION: Process streaming transcript deltas for immediate gesture timing.
-    /// Unlike TryFireFromAssistantTranscript which waits for complete text and uses fixed delays,
-    /// this triggers gestures AS WORDS ARRIVE for precise synchronization.
-    /// </summary>
-    private bool TryFireFromStreamingDelta(string accumulatedTranscript)
-    {
-        if (string.IsNullOrWhiteSpace(accumulatedTranscript)) return false;
-
-        OnAssistantTranscript?.Invoke(accumulatedTranscript);
-        if (ttsDriver == null) return false;
-        
-        string normalized = Normalize(accumulatedTranscript);
-        bool triggered = false;
-
-        // Check phase-specific gestures (same logic as TryFireFromAssistantTranscript but triggers IMMEDIATELY)
-        switch (GameManager.eGameStatus)
-        {
-            case GameManager.GameState.Interphase:
-                if (IsEatGestureStreamingStrict(GetRecentNormalizedTail(normalized, 96)))
-                {
-                    float d = Mathf.Max(0f, streamingInterphaseEatDelaySec);
-                    Debug.Log($"[Gesture/Streaming] Interphase -> DZ13 EAT gesture (streaming delay={d:0.00}s)");
-                    if (d > 0f) ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ13(), d, "Interphase:EAT(streaming)");
-                    else ttsDriver.TriggerDZ13();
-                    triggered = true;
-                }
-                break;
-
-            case GameManager.GameState.Prophase:
-                if (IsCondenseGesture(normalized))
-                {
-                    float d = Mathf.Max(0f, streamingProphaseCondenseDelaySec);
-                    Debug.Log($"[Gesture/Streaming] Prophase -> DZ18 CONDENSE gesture (streaming delay={d:0.00}s)");
-                    if (d > 0f) ScheduleTriggerAfterSpeaking(() => ttsDriver.TriggerDZ18(), d, "Prophase:CONDENSE(streaming)");
-                    else ttsDriver.TriggerDZ18();
-                    triggered = true;
-                }
-                break;
-
-            case GameManager.GameState.Metaphase:
-                if (IsLineUpGesture(normalized))
-                {
-                    Debug.Log("[Gesture/Streaming] Metaphase → DZ12 LINE UP gesture (INSTANT - word detected in stream)");
-                    ttsDriver.TriggerDZ12();
-                    triggered = true;
-                }
-                break;
-
-            case GameManager.GameState.Anaphase:
-                if (IsSplitOutwardGesture(normalized))
-                {
-                    Debug.Log("[Gesture/Streaming] Anaphase → DZ22 SPLIT OUTWARD gesture (INSTANT - word detected in stream)");
-                    ttsDriver.TriggerDZ22();
-                    triggered = true;
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        return triggered;
+        return gestureSynchronizer.ProcessCompleteTranscript(transcript, GameManager.eGameStatus);
     }
 
     // ====== Speaking 标记与延时调度 ======
@@ -1693,192 +1567,6 @@ public class GPTConnector : MonoBehaviour
     {
         _isSpeaking = false;
         D("[Speak] end");
-    }
-
-    private void ScheduleTriggerAfterSpeaking(Action action, float delaySec, string tag)
-    {
-        StartCoroutine(CoScheduleAfterSpeaking(action, delaySec, tag));
-    }
-
-    private IEnumerator CoScheduleAfterSpeaking(Action action, float delaySec, string tag)
-    {
-        float waited = 0f;
-        while (!_isSpeaking && waited < speakingWaitGraceSec)
-        {
-            yield return null;
-            waited += Time.deltaTime;
-        }
-
-        if (_isSpeaking)
-            D($"[Trigger] 侦测到 isSpeaking，{delaySec:0.0}s 后触发：{tag}");
-        else
-            D($"[Trigger] 未侦测到 isSpeaking（{speakingWaitGraceSec:0.0}s 超时），仍延时 {delaySec:0.0}s 触发：{tag}");
-
-        yield return new WaitForSeconds(delaySec);
-
-        try { action?.Invoke(); }
-        catch (Exception e) { Debug.LogWarning($"[Trigger:{tag}] 调用失败: {e.Message}"); }
-    }
-
-    // ========= 4 个匹配函数 - Aligned with spoken phrases for gesture synchronization =========
-    
-    /// <summary>
-    /// INTERPHASE: Detects eating-related phrases to trigger eating gesture.
-    /// Optimized for phrases like "eat food to get energy" or "eating food"
-    /// </summary>
-    private bool IsEatGesture(string s)
-    {
-        // Priority given to more specific multi-word phrases
-        string[] keys = { 
-            "eat food",           // Primary trigger phrase
-            "eating food",        // Continuous form
-            "eat the food",       // With article
-            "eats food",          // Third person
-            "needs food",         // Need context
-            "food for energy",    // Complete phrase
-            "eat to get",         // Process phrase
-            "need to eat",        // Necessity
-            "must eat",           // Requirement
-            "energy from food",    // Energy + food connection
-            "eat",
-            "food",
-            "eating"
-
-
-        };
-        return ContainsAnyNormalized(s, keys);
-    }
-
-    /// <summary>
-    /// PROPHASE: Detects condensing/X-shape phrases to trigger condense gesture.
-    /// Optimized for phrases like "condenses into X-shape" or "X-shaped chromosome"
-    /// </summary>
-    private bool IsCondenseGesture(string s)
-    {
-        string[] keys = { 
-            "x shape condense",           // Ideal trigger phrase
-            "x shaped condense",          // Variation
-            "condense into x",            // Common phrasing
-            "condenses into x",           // Third person
-            "condense into an x",         // With article
-            "x shaped chromosome",        // Full phrase
-            "x shaped",                   // Shorter form
-            "x shape",                    // Alternate spacing
-            "condense",                   // Fallback - single word
-            "condenses",                  // Third person single word
-            "condensed"                   // Past tense
-        };
-        return ContainsAnyNormalized(s, keys);
-    }
-
-    /// <summary>
-    /// METAPHASE: Detects alignment phrases to trigger line-up gesture.
-    /// Optimized for phrases like "line up at the center" or "align in the middle"
-    /// </summary>
-    private bool IsLineUpGesture(string s)
-    {
-        // Much more permissive - any mention of "line" with "center/middle/row" or standalone "line up" triggers it
-        string[] keys = { 
-            "line up at the center",     // Primary phrase
-            "line up at center",         // Without "the"
-            "line up in the middle",     // Alternative
-            "line up in middle",         // Without "the"
-            "line up at the centre",     // British spelling
-            "line up at centre",         // British without "the"
-            "align at the center",       // Alignment variant
-            "align at center",           // Without "the"
-            "line them up",              // Direct instruction
-            "line up",                   // Simple phrase (standalone trigger)
-            "lined up",                  // Past tense
-            "lining up",                 // Present participle
-            "line up in a row",          // Complete phrase
-            "all line up",               // Collective action
-            "should line up",            // Instructional
-            "need to line up",           // Necessity
-            "in a row"                   // Key phrase
-        };
-        return ContainsAnyNormalized(s, keys);
-    }
-
-    /// <summary>
-    /// ANAPHASE: Detects separation/splitting phrases to trigger outward spreading gesture.
-    /// Optimized for phrases like "move to opposite ends" or "pull apart"
-    /// </summary>
-    private bool IsSplitOutwardGesture(string s)
-    {
-        string[] keys = { 
-            "move them to opposite ends",    // Primary phrase
-            "move to opposite ends",         // Shortened
-            "pull to opposite ends",         // Alternative action
-            "opposite ends",              // Key phrase
-            "opposite sides",             // Variation
-            "opposite poles",             // Scientific term
-            "move them to opposite",         // Partial
-            "pull to opposite",              // Pull variant
-            "pull apart",                    // Simple action
-            "pull them apart",               // Direct instruction
-            "split apart",                   // Alternative
-            "separate them",                 // Basic instruction
-            "move apart",                    // Move variation
-            "go to opposite",                // Movement phrase
-            "ends of the cell",              // Location reference
-            "each end",                       // Directional phrase
-            "split"
-        };
-        return ContainsAnyNormalized(s, keys);
-    }
-
-    // ========= 文本规范化与匹配 =========
-    private string Normalize(string x)
-    {
-        if (string.IsNullOrEmpty(x)) return "";
-        var sb = new StringBuilder(x.Length);
-        foreach (var c in x)
-        {
-            if (char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)) sb.Append(char.ToLowerInvariant(c));
-            else sb.Append(' ');
-        }
-        // 收缩多空白
-        return Regex.Replace(sb.ToString(), "\\s+", " ").Trim();
-    }
-
-    private string GetRecentNormalizedTail(string normalized, int maxChars)
-    {
-        if (string.IsNullOrEmpty(normalized)) return "";
-        if (maxChars <= 0 || normalized.Length <= maxChars) return normalized;
-        return normalized.Substring(normalized.Length - maxChars);
-    }
-
-    private bool IsEatGestureStreamingStrict(string recentNormalized)
-    {
-        if (string.IsNullOrEmpty(recentNormalized)) return false;
-
-        // Find the LAST occurrence of an eat word (rightmost in string)
-        var eatMatch = Regex.Match(recentNormalized, @"\b(eat|eating|eats|ate|feed|feeding)\b", RegexOptions.RightToLeft);
-        if (!eatMatch.Success) return false;
-
-        // Check if a food word appears within 30 characters AFTER the eat word
-        // This ensures "eating nutrients" or "eat food" pattern, not "capsules... to eat"
-        int eatEndPos = eatMatch.Index + eatMatch.Length;
-        if (eatEndPos >= recentNormalized.Length) return false;
-
-        int searchLength = Math.Min(30, recentNormalized.Length - eatEndPos);
-        string afterEat = recentNormalized.Substring(eatEndPos, searchLength);
-        
-        bool hasFoodAfter = Regex.IsMatch(afterEat, @"\b(food|foods|nutrient|nutrients|capsule|capsules)\b");
-        return hasFoodAfter;
-    }
-
-    private bool ContainsAnyNormalized(string hay, string[] keys)
-    {
-        if (string.IsNullOrEmpty(hay) || keys == null || keys.Length == 0) return false;
-        for (int i = 0; i < keys.Length; i++)
-        {
-            var k = Normalize(keys[i] ?? "");
-            if (string.IsNullOrEmpty(k)) continue;
-            if (hay.Contains(k)) return true;
-        }
-        return false;
     }
 
     // ========= WAV/PCM 工具 =========

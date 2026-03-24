@@ -20,35 +20,35 @@ public class GestureSynchronizer : MonoBehaviour
 
     [Header("Timing Configuration")]
     [Tooltip("Characters per second - average speaking rate for English (adjust based on voice speed)")]
-    public float charactersPerSecond = 15f; // ~180 words per minute standard rate
-    
-    [Tooltip("Safety margin - add this delay after calculated time to ensure audio has progressed")]
-    public float timingSafetyMarginSec = 0.1f;
+    public float charactersPerSecond = 15.3f; // ~200 words per minute
     
     [Tooltip("Maximum gesture delay - if calculated delay exceeds this, use fallback timing")]
     public float maxGestureDelaySec = 10f;
 
+    [Tooltip("Maximum time to wait for audio playback start before falling back to immediate relative timing")]
+    public float maxWaitForAudioStartSec = 6f;
+
     [Header("Per-Phase Timing Compensation")]
     [Tooltip("Interphase timing multiplier. Keep at 1.0 if eat timing is already correct.")]
-    public float interphaseTimeScale = 1.0f;
+    public float interphaseTimeScale = 0.9f;
     [Tooltip("Prophase timing multiplier. Lower values trigger earlier.")]
-    public float prophaseTimeScale = 0.85f;
+    public float prophaseTimeScale = 0.9f;
     [Tooltip("Metaphase timing multiplier. Lower values trigger earlier.")]
-    public float metaphaseTimeScale = 0.60f;
+    public float metaphaseTimeScale = 1.0f;
     [Tooltip("Anaphase timing multiplier. Lower values trigger earlier.")]
-    public float anaphaseTimeScale = 0.65f;
+    public float anaphaseTimeScale = 1.0f;
 
     [Tooltip("Interphase fixed advance (seconds). Positive value triggers earlier.")]
     public float interphaseAdvanceSec = 0f;
     [Tooltip("Prophase fixed advance (seconds). Positive value triggers earlier.")]
-    public float prophaseAdvanceSec = 0.25f;
+    public float prophaseAdvanceSec = 0.0f;
     [Tooltip("Metaphase fixed advance (seconds). Positive value triggers earlier.")]
-    public float metaphaseAdvanceSec = 0.90f;
+    public float metaphaseAdvanceSec = 0.0f;
 
     [Tooltip("Extra advance specifically for DZ12 line-up in Metaphase to compensate animation startup latency.")]
-    public float metaphaseLineUpExtraAdvanceSec = 0.50f;
+    public float metaphaseLineUpExtraAdvanceSec = 0.0f;
     [Tooltip("Anaphase fixed advance (seconds). Positive value triggers earlier.")]
-    public float anaphaseAdvanceSec = 0.75f;
+    public float anaphaseAdvanceSec = 0.0f;
 
     [Header("Fallback Delays (Used if calculation fails)")]
     public float fallbackInterphaseDelay = 2.0f;
@@ -171,17 +171,9 @@ public class GestureSynchronizer : MonoBehaviour
         float estimatedTime = charsBeforeKeyword / Mathf.Max(1f, charactersPerSecond);
         float scaledEstimatedTime = estimatedTime * Mathf.Clamp(timeScale, 0.2f, 2.0f);
         
-        // Add safety margin
-        float totalDelay = scaledEstimatedTime + timingSafetyMarginSec - Mathf.Max(0f, advanceSec);
+        float totalDelay = scaledEstimatedTime - Mathf.Max(0f, advanceSec);
 
-        // If audio already started, adjust delay based on elapsed time
-        if (_audioStartTime > 0)
-        {
-            float elapsedAudioTime = Time.realtimeSinceStartup - _audioStartTime;
-            totalDelay = Mathf.Max(0, totalDelay - elapsedAudioTime);
-        }
-
-        // Clamp to reasonable range
+        // Clamp to reasonable range. This delay is the target offset from audio start.
         totalDelay = Mathf.Clamp(totalDelay, 0f, maxGestureDelaySec);
 
         if (showTimingCalculations)
@@ -192,12 +184,20 @@ public class GestureSynchronizer : MonoBehaviour
                      $"\n  • Phase time scale: {timeScale:F2}" +
                      $"\n  • Scaled speak time: {scaledEstimatedTime:F2}s" +
                      $"\n  • Phase advance: {Mathf.Max(0f, advanceSec):F2}s" +
-                     $"\n  • Safety margin: {timingSafetyMarginSec:F2}s" +
-                     $"\n  • Audio elapsed: {(_audioStartTime > 0 ? (Time.realtimeSinceStartup - _audioStartTime) : 0):F2}s" +
-                     $"\n  • Final delay: {totalDelay:F2}s");
+                     $"\n  • Target offset from audio start: {totalDelay:F2}s");
         }
 
         return totalDelay;
+    }
+
+    /// <summary>
+    /// Find the position of a whole word match in the text (using word boundaries)
+    /// </summary>
+    private int GetWholeWordPosition(string normalizedText, string keyword)
+    {
+        string pattern = @"\b" + Regex.Escape(keyword) + @"\b";
+        var match = Regex.Match(normalizedText, pattern);
+        return match.Success ? match.Index : -1;
     }
 
     /// <summary>
@@ -248,7 +248,7 @@ public class GestureSynchronizer : MonoBehaviour
 
         foreach (string keyword in keywords)
         {
-            int index = normalizedText.IndexOf(keyword);
+            int index = GetWholeWordPosition(normalizedText, keyword);
             if (index >= 0)
             {
                 if (verboseDebug)
@@ -289,7 +289,7 @@ public class GestureSynchronizer : MonoBehaviour
 
         foreach (string keyword in keywords)
         {
-            int index = normalizedText.IndexOf(keyword);
+            int index = GetWholeWordPosition(normalizedText, keyword);
             if (index >= 0)
             {
                 if (verboseDebug)
@@ -332,12 +332,14 @@ public class GestureSynchronizer : MonoBehaviour
             "should line up",
             "need to line up",
             "in a row",
-            "align at the center"
+            "align at the center",
+            "line it up", 
+            "lines up"
         };
 
         foreach (string keyword in keywords)
         {
-            int index = normalizedText.IndexOf(keyword);
+            int index = GetWholeWordPosition(normalizedText, keyword);
             if (index >= 0)
             {
                 if (verboseDebug)
@@ -389,12 +391,13 @@ public class GestureSynchronizer : MonoBehaviour
             "split apart",
             "move apart",
             "separate them",
-            "split"
+            "split",
+            "pull the two halves"
         };
 
         foreach (string keyword in keywords)
         {
-            int index = normalizedText.IndexOf(keyword);
+            int index = GetWholeWordPosition(normalizedText, keyword);
             if (index >= 0)
             {
                 if (verboseDebug)
@@ -420,11 +423,38 @@ public class GestureSynchronizer : MonoBehaviour
     private IEnumerator TriggerGestureAfterDelay(GestureInfo gestureInfo, float delaySec)
     {
         if (verboseDebug)
-            Debug.Log($"[GestureSynchronizer] ⏱️ Scheduling {gestureInfo.GestureName} in {delaySec:F2}s (keyword: '{gestureInfo.Keyword}')");
+            Debug.Log($"[GestureSynchronizer] ⏱️ Scheduling {gestureInfo.GestureName} at +{delaySec:F2}s from audio start (keyword: '{gestureInfo.Keyword}')");
 
-        // Wait for the calculated delay
         float waitStart = Time.realtimeSinceStartup;
-        yield return new WaitForSeconds(delaySec);
+
+        // Anchor to actual audio playback start. If audio has not started yet, wait for it.
+        if (_audioStartTime <= 0f)
+        {
+            float waitedForAudioStart = 0f;
+            while (_audioStartTime <= 0f && waitedForAudioStart < Mathf.Max(0f, maxWaitForAudioStartSec))
+            {
+                yield return null;
+                waitedForAudioStart += Time.unscaledDeltaTime;
+            }
+
+            if (_audioStartTime <= 0f)
+            {
+                if (verboseDebug)
+                    Debug.LogWarning($"[GestureSynchronizer] ⚠️ Audio start not detected within {maxWaitForAudioStartSec:F2}s; using relative wait of {delaySec:F2}s from now");
+                yield return new WaitForSecondsRealtime(delaySec);
+            }
+            else
+            {
+                yield return new WaitForSecondsRealtime(delaySec);
+            }
+        }
+        else
+        {
+            float elapsedAudio = Time.realtimeSinceStartup - _audioStartTime;
+            float remaining = Mathf.Max(0f, delaySec - elapsedAudio);
+            yield return new WaitForSecondsRealtime(remaining);
+        }
+
         float actualWait = Time.realtimeSinceStartup - waitStart;
 
         // Trigger the gesture

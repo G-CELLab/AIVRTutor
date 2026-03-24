@@ -16,8 +16,8 @@ public class TTSAnimatorDriver : MonoBehaviour
     public string waitSpeakParam = "waitSpeak";
 
     [Header("Animator Trigger Params (reactions)")]
-    public string trigDZ7 = "doDZ7";   // 柔和认可
-    public string trigDZ8 = "doDZ8";   // 更强的认可
+    public string trigDZ7 = "doDZ7";   // Soft affirmation / Gentle acknowledgment
+    public string trigDZ8 = "doDZ8";   // Stronger affirmation / Strong acknowledgment
     public string trigDZ13 = "doDZ13";  // nutrient/energy/feed
     public string trigDZ14 = "doDZ14";  // ATP transfer
     public string trigDZ15 = "doDZ15";  // S-phase / split

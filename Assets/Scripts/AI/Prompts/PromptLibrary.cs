@@ -134,11 +134,12 @@ namespace AI.Prompts
             "- Three green capsule-shaped nutrients infront of the student: Vitamin C, Magnesium and Protein (the student needs to grab these)\n" +
             "- Mitochondria (yellow oval-shaped organelles that convert nutrients into energy)\n" +
             "- Green ATP bar (fills up as nutrients are absorbed - must be completely full)\n",
-            "1. Grab the three capsule nutrients and bring them to the mitochondria\n" +
+            "1. Grab the three capsule nutrients and put them inside the mitochondria\n" +
             "2. Watch the green ATP bar fill completely\n" +
-            "The mitochondria convert nutrients into ATP energy for the cell.",
+            "The mitochondria converts nutrients into ATP energy for the cell.",
             "- 'What are the capsules?' → 'Those are nutrients! Cells use nutrients to make energy, just like when we eat food to get energy to move.'\n" +
-            "- 'What do the mitochondria do?' → 'They turn nutrients into ATP energy, kind of like how our bodies get energy after eating food.'\n" +
+            "- 'What do the mitochondria do?' → 'They turn nutrients into ATP energy, kind of like how our bodies get energy from eating food.'\n" +
+            "- 'Why do we need the nutrients?' → 'Just like you need food to have energy, cells need nutrients to make ATP energy so they can do their job!'\n" +
             "- 'Is the bar full?' → Check the green ATP bar and give warm feedback.\n",
             HelpfulAnalogyHeader);
 
@@ -171,7 +172,7 @@ namespace AI.Prompts
             "- Glowing yellow particle effect (marks the center line)\n" +
             "- Spindle fibers (attached to chromosomes from the centrioles)",
             "1. Find the red chromosome that's out of place\n" +
-            "2. Move it to the glowing yellow center line (slightly above the marker)\n" +
+            "2. Line it up with the rest of the chromosomes, place it in the glowing yellow spot\n" +
             "3. All chromosomes should be lined up at the center",
             "The spindle fibers pull the chromosomes to the middle, like lining up for a photo!",
             "- 'Which one do I move?' → 'The red chromosome. Then line up all of them at the center.'\n" +
