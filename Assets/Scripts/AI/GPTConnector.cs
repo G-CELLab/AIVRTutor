@@ -360,6 +360,9 @@ public class GPTConnector : MonoBehaviour
     // ========== 外部 API ==========
     public void SendToGPT(string userInput, Action onComplete)
     {
+        if (!string.IsNullOrWhiteSpace(userInput))
+            MainLogger.LogUserSpeech(userInput);
+
         if (_responseInProgress || (_isSpeaking && ttsPlayer != null && ttsPlayer.IsSpeaking))
         {
             if (allowUserInterrupts)
@@ -551,6 +554,9 @@ public class GPTConnector : MonoBehaviour
 
     public void SendAudioFileToGPT(string audioFilePath, string transcriptContext, Action onComplete)
     {
+        if (!string.IsNullOrWhiteSpace(transcriptContext))
+            MainLogger.LogUserSpeech(transcriptContext);
+
         if (string.IsNullOrEmpty(audioFilePath) || !File.Exists(audioFilePath))
         {
             Debug.LogWarning("[GPTConnector] Audio path invalid.");
@@ -621,6 +627,9 @@ public class GPTConnector : MonoBehaviour
 
     public void SendAudioBytesToGPT(byte[] audioBytes, string format, string transcriptContext, Action onComplete)
     {
+        if (!string.IsNullOrWhiteSpace(transcriptContext))
+            MainLogger.LogUserSpeech(transcriptContext);
+
         // Check audio buffer length: must be at least 100ms
         int minSamples = (int)(realtimeSampleRate * 0.1f); // 100ms
         if (audioBytes == null || audioBytes.Length < minSamples * 2) // 2 bytes per sample (pcm16)

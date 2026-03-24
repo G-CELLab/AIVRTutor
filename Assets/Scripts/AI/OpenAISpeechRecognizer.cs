@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Android;
 using UnityEngine.Networking;
@@ -11,6 +12,12 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     [Header("OpenAI")]
     public string openAIKey = "";                 // ⚠️ 不要硬编码 API Key，改在 Inspector 里填
     public GPTConnector gptConnector;             // 识别后把音频直接交给 GPTConnector
+
+    [Header("Transcription")]
+    [Tooltip("Transcribe user audio before sending so User_Speech logs contain the actual utterance")]
+    public bool transcribeBeforeSend = true;
+    [Tooltip("OpenAI transcription model used for user speech logging")]
+    public string transcriptionModel = "gpt-4o-mini-transcribe";
 
     [Header("Record Settings")]
     public int sampleRate = 16000;                // Quest 3 建议 48000
@@ -200,6 +207,17 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             }
         }
         D($"[Send] 发送音频到 GPTConnector: {wavPath}");
+
+        string transcriptContext = null;
+        if (transcribeBeforeSend)
+        {
+            yield return StartCoroutine(SendAudioToOpenAI(wavPath, text => transcriptContext = text));
+            if (!string.IsNullOrWhiteSpace(transcriptContext))
+            {
+                D($"[STT][user] {transcriptContext}");
+            }
+        }
+
         // Check audio length before sending (must be at least 100ms for 16kHz = 1600 samples, for 24kHz = 2400 samples)
         try {
             var wavBytes = File.ReadAllBytes(wavPath);
@@ -211,7 +229,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         } catch (Exception e) {
             Debug.LogWarning($"[OpenAISpeechRecognizer] Failed to check audio file size: {e.Message}");
         }
-        gptConnector.SendAudioFileToGPT(wavPath, null);
+        gptConnector.SendAudioFileToGPT(wavPath, transcriptContext);
         yield return null;
     }
 
@@ -478,21 +496,87 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     // =========（未使用）转写 =========
     private IEnumerator SendAudioToOpenAI(string filePath, Action<string> onComplete)
     {
-        if (string.IsNullOrEmpty(openAIKey))
+        if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
         {
             onComplete?.Invoke(null);
             yield break;
         }
 
-        byte[] audioData = File.ReadAllBytes(filePath);
+        string key = ResolveApiKey();
+        if (string.IsNullOrEmpty(key))
+        {
+            onComplete?.Invoke(null);
+            yield break;
+        }
+
+        byte[] audioData;
+        try
+        {
+            audioData = File.ReadAllBytes(filePath);
+        }
+        catch
+        {
+            onComplete?.Invoke(null);
+            yield break;
+        }
+
         WWWForm form = new WWWForm();
         form.AddBinaryData("file", audioData, "speech.wav", "audio/wav");
-        form.AddField("model", "openai/gpt-oss-120b");
+        form.AddField("model", string.IsNullOrWhiteSpace(transcriptionModel) ? "gpt-4o-mini-transcribe" : transcriptionModel);
 
         var req = UnityWebRequest.Post("https://api.openai.com/v1/audio/transcriptions", form);
-        req.SetRequestHeader("Authorization", "Bearer " + openAIKey);
+        req.SetRequestHeader("Authorization", "Bearer " + key);
+        req.timeout = 20;
         yield return req.SendWebRequest();
-        onComplete?.Invoke(null);
+
+        bool ok;
+#if UNITY_2020_2_OR_NEWER
+        ok = (req.result == UnityWebRequest.Result.Success);
+#else
+        ok = (!req.isNetworkError && !req.isHttpError);
+#endif
+
+        if (!ok || req.downloadHandler == null)
+        {
+            onComplete?.Invoke(null);
+            yield break;
+        }
+
+        string response = req.downloadHandler.text;
+        string transcript = null;
+
+        try
+        {
+            var parsed = JsonUtility.FromJson<TranscriptResponse>(response);
+            if (parsed != null)
+                transcript = parsed.text;
+        }
+        catch
+        {
+            // Fall back to regex extraction below.
+        }
+
+        if (string.IsNullOrWhiteSpace(transcript))
+        {
+            Match m = Regex.Match(response ?? "", "\"text\"\\s*:\\s*\"(?<t>(?:\\\\.|[^\"])*)\"");
+            if (m.Success)
+            {
+                transcript = Regex.Unescape(m.Groups["t"].Value);
+            }
+        }
+
+        onComplete?.Invoke(string.IsNullOrWhiteSpace(transcript) ? null : transcript.Trim());
+    }
+
+    private string ResolveApiKey()
+    {
+        if (!string.IsNullOrWhiteSpace(openAIKey))
+            return openAIKey;
+
+        if (gptConnector != null && !string.IsNullOrWhiteSpace(gptConnector.apiKey))
+            return gptConnector.apiKey;
+
+        return null;
     }
 
     // ========= 全局硬停 & 临时静音（兼容 Unity 2019） =========
