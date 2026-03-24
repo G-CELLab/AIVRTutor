@@ -2237,11 +2237,6 @@ MonoBehaviour:
   maxLogChars: 600
   logTokenBreakdown: 1
   omitPhaseFromInstructionsWhenPinned: 1
-  delayEatGestureSec: 1.5
-  delayCondenseGestureSec: 2
-  delayLineUpGestureSec: 2
-  delaySplitOutwardGestureSec: 2.5
-  speakingWaitGraceSec: 5
   logPrompts: 1
   promptEchoText: {fileID: 0}
   promptLogMaxChars: 2000
@@ -2256,8 +2251,6 @@ MonoBehaviour:
   prependPhaseInstructionAudio: 1
   reactToAssistantTranscript: 1
   useStreamingGestureTiming: 1
-  streamingInterphaseEatDelaySec: 0
-  streamingProphaseCondenseDelaySec: 0
   evaluateQueuedRequests: 1
   maxQueuedRequestAgeSec: 30
   queueEvaluationPrompt: You just finished speaking. The user said something while
@@ -2292,6 +2285,7 @@ MonoBehaviour:
   animSpeedParam: gestureSpeed
   waitBeforeDZ2: 5
   lingerAfterEnd: 0.05
+  minRepeatTriggerIntervalSec: 0.75
   verbose: 1
 --- !u!82 &436895155
 AudioSource:
@@ -16036,7 +16030,7 @@ PrefabInstance:
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.29
+      value: 0.018
       objectReference: {fileID: 0}
     - target: {fileID: 2218496723442559053, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}

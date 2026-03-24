@@ -334,7 +334,9 @@ public class GestureSynchronizer : MonoBehaviour
             "in a row",
             "align at the center",
             "line it up", 
-            "lines up"
+            "lines up",
+            "line the red",
+            "line the chromosome",
         };
 
         foreach (string keyword in keywords)
