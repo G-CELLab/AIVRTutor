@@ -60,11 +60,6 @@ public class GPTConnector : MonoBehaviour
     [Tooltip("模型语音格式（pcm16/g711_ulaw/g711_alaw）")]
     public string gptAudioFormat = AI.Prompts.Customizations.DefaultGptAudioFormat;
 
-    [Header("Language")]
-    public bool alwaysEnglish = AI.Prompts.Customizations.DefaultAlwaysEnglish; // ✅ 强制英文
-    [TextArea(1, 3)]
-    public string englishDirective = AI.Prompts.PromptLibrary.EnglishDirective;
-
     [Header("Audio Coordinator")]
     public OpenAISpeechRecognizer speechRecognizer;
 
@@ -169,6 +164,9 @@ public class GPTConnector : MonoBehaviour
     private bool _assistantGestureTriggeredForResponse = false;
     private bool _assistantTranscriptForwardedForResponse = false;
 
+    private const string DefaultQueueEvaluationPrompt =
+        "You just finished speaking. The user said something while you were talking. Decide if you should respond. Reply ONLY with 'YES' or 'NO'. Say YES if it's a new question, comment, or request. Say NO if it's just acknowledgment, 'ok', 'thanks', or doesn't need a response.";
+
     // -------- 生命周期：启动即预缓存 --------
     // private void Start()
     // {
@@ -180,8 +178,14 @@ public class GPTConnector : MonoBehaviour
 
     private void OnEnable()
     {
+        SanitizeLegacyLanguagePrompts();
         BindSpeechRecognizer();
         InitializeGestureSynchronizer();
+    }
+
+    private void OnValidate()
+    {
+        SanitizeLegacyLanguagePrompts();
     }
     
     private void InitializeGestureSynchronizer()
@@ -200,12 +204,36 @@ public class GPTConnector : MonoBehaviour
         }
     }
 
-    // ===== 语言策略（强制英文）=====
+    // ===== 语言策略（跟随用户语言）=====
     private string ApplyLang(string instr)
     {
         if (string.IsNullOrWhiteSpace(instr)) instr = "";
-        if (alwaysEnglish) return (instr.Length > 0 ? instr + "\n\n" : "") + englishDirective;
-        return instr; // 如需跟随用户语言，可在此扩展
+        // Do not force English; let the model follow the user's language.
+        return instr;
+    }
+
+    private void SanitizeLegacyLanguagePrompts()
+    {
+        if (string.IsNullOrWhiteSpace(queueEvaluationPrompt))
+        {
+            queueEvaluationPrompt = DefaultQueueEvaluationPrompt;
+            return;
+        }
+
+        if (LooksLikeLegacyEnglishDirective(queueEvaluationPrompt))
+        {
+            queueEvaluationPrompt = DefaultQueueEvaluationPrompt;
+            D("[Lang] Reset legacy English-only queue evaluation prompt.");
+        }
+    }
+
+    private static bool LooksLikeLegacyEnglishDirective(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        return
+            text.IndexOf("respond only in english", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            text.IndexOf("do not use any other language", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            text.IndexOf("all spoken audio and text must be english", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     // ===== 合并“系统+相位+可选附加”为最终 instructions =====
@@ -356,7 +384,7 @@ public class GPTConnector : MonoBehaviour
     public float maxQueuedRequestAgeSec = 30f;
     [Tooltip("System prompt for evaluating if a queued request is still relevant")]
     [TextArea(2, 4)]
-    public string queueEvaluationPrompt = "You just finished speaking. The user said something while you were talking. Decide if you should respond. Reply ONLY with 'YES' or 'NO'. Say YES if it's a new question, comment, or request. Say NO if it's just acknowledgment, 'ok', 'thanks', or doesn't need a response.";
+    public string queueEvaluationPrompt = DefaultQueueEvaluationPrompt;
 
     // ========== 外部 API ==========
     public void SendToGPT(string userInput, Action onComplete)

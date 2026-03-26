@@ -59,11 +59,6 @@ namespace AI.Prompts
                 "- Your response should start directly with the content (instructions, guidance, etc), NOT with phase information.";
         }
 
-        public static string EnglishDirective =
-            "Respond ONLY in English. Do not use any other language under any circumstances. " +
-            "If the user speaks another language, briefly translate their intent and then reply in English. " +
-            "Do not echo non-English text. All spoken audio and text must be English.";
-
         private const string PhaseHeader = "CURRENT PHASE: ";
         private const string GoalHeader = "GOAL: ";
         private const string KeyObjectsHeader = "KEY OBJECTS IN SCENE:";

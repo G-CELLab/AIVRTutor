@@ -21,9 +21,6 @@ namespace AI.Prompts
         public static string DefaultTtsVoice = "alloy";
         public static string DefaultPhaseAudioFormat = "wav";
 
-        // Language
-        public static bool DefaultAlwaysEnglish = true;
-
         // Conversation/Memory
         public static int DefaultMaxHistoryTurnsToSend = 4; // Reduced to limit repeated context
         public static int DefaultMaxCharsBudget = 6000; // Reduced to limit repeated context

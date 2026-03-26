@@ -2251,7 +2251,7 @@ MonoBehaviour:
   preferModelAudio: 1
   gptVoice: alloy
   gptAudioFormat: wav
-  alwaysEnglish: 1
+  alwaysEnglish: 0
   englishDirective: 'Always speak and write in clear, natural English. '
   speechRecognizer: {fileID: 436895151}
   pendingUserPrompt: 
