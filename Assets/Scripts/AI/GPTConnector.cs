@@ -156,6 +156,7 @@ public class GPTConnector : MonoBehaviour
     private volatile bool _responseInProgress = false; // Prevent simultaneous response.create calls
     private bool _interruptInProgress = false;
     private float _lastInterruptAt = -999f;
+    private bool _realtimeCompletionHandledForCurrentResponse = false;
 
     /// <summary>
     /// Returns true if the agent is currently responding (speaking or generating response).
@@ -1135,9 +1136,15 @@ public class GPTConnector : MonoBehaviour
 
         if (type == "response.created" || type.Contains("response.created"))
         {
+            // Start each realtime response with clean buffers to avoid cross-response audio/text bleed.
+            _textAccum?.Clear();
+            _audioAccum?.SetLength(0);
+            _audioChunkCount = 0;
+
             _assistantTranscriptAccum.Length = 0;
             _assistantGestureTriggeredForResponse = false;
             _assistantTranscriptForwardedForResponse = false;
+            _realtimeCompletionHandledForCurrentResponse = false;
             
             // Notify gesture synchronizer of new response
             if (useGestureSynchronizer && gestureSynchronizer != null)
@@ -1247,6 +1254,13 @@ public class GPTConnector : MonoBehaviour
         // === 完成
         if (type.Contains("response.completed") || type.Contains("response.done"))
         {
+            if (_realtimeCompletionHandledForCurrentResponse)
+            {
+                D("[RT] Duplicate completion event ignored for current response.");
+                return;
+            }
+            _realtimeCompletionHandledForCurrentResponse = true;
+
             DT("[RT]", "response completed/done");
 
             string replyText = _textAccum != null && _textAccum.Length > 0 ? _textAccum.ToString() : null;

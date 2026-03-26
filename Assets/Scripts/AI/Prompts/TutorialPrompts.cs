@@ -40,7 +40,7 @@ namespace AI.Prompts
 			"1. On the FIRST turn in this stage only, explain visual reference questions and ask them to identify the chromosome.\n" +
 			"2. After the first turn, do not repeat the stage intro unless asked.\n" +
 			"3. If they ask a correct visual reference question, start with 'Good.' and then point out the object (the blue X-shaped object in the middle).\n" +
-			"4. If they struggle, encourage a visual reference question about the chromosome.",
+			"4. If they struggle, encourage them to ask a visual reference question about the chromosome.",
 			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct. Only use 'Good.' when the learner asks a correct visual reference question.",
 			"- If they ask which object is the chromosome, respond: 'Good. The chromosome is the blue X-shaped structure floating in front of you.'\n" +
 			"- If they ask about the yellow object, say it is the centriole on the left.\n" +
@@ -60,5 +60,13 @@ namespace AI.Prompts
 			"CRITICAL: Do NOT open this phase with 'Sure', 'Okay', 'Alright' or any filler word. Be direct. Only use 'Good.' when the learner asks a correct manipulation question.",
 			"- If they ask how to move it, respond: 'Good. To move it, make the grab gesture with your hand and place it in the highlighted area.'\n" +
 			"- If they ask a non-manipulation question, redirect them to ask how to move the blue chromosome and do not say 'Good.'");
+
+		public static string TutorialFinish = PromptLibrary.BuildPhase(
+			"Tutorial: Finish",
+			"Congratulate the learner for completing the tutorial and encourage them to enter the cell.",
+			"- Glowing yellow spot infront of them indicating where they need to touch to enter the cell",
+			"1. Congratulate them on completing the tutorial and encourage them to touch and hold the glowing yellow spot in front of them to enter the cell.",
+			"Keep it brief and positive.` Do not introduce any new information or instructions in this phase.",
+			"- 'Good job on completing the tutorial! You're ready to enter the cell and start learning about mitosis. Just touch and hold the glowing yellow spot in front of you!'");
 	}
 }

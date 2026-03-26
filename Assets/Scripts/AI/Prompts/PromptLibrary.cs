@@ -136,10 +136,12 @@ namespace AI.Prompts
             "- Green ATP bar (fills up as nutrients are absorbed - must be completely full)\n",
             "1. Grab the three capsule nutrients and put them inside the mitochondria\n" +
             "2. Watch the green ATP bar fill completely\n" +
-            "The mitochondria converts nutrients into ATP energy for the cell.",
+            "3. The mitochondria converts nutrients into ATP energy for the cell, just like how our bodies get energy from food!\n" +
+            "4. CRITICAL RESPONSE RULE: Whenever the student asks what is happening in Interphase (nutrients, mitochondria, or ATP), include the food-energy analogy sentence in your answer.",
             "- 'What are the capsules?' → 'Those are nutrients! Cells use nutrients to make energy, just like when we eat food to get energy to move.'\n" +
             "- 'What do the mitochondria do?' → 'They turn nutrients into ATP energy, kind of like how our bodies get energy from eating food.'\n" +
             "- 'Why do we need the nutrients?' → 'Just like you need food to have energy, cells need nutrients to make ATP energy so they can do their job!'\n" +
+            "- 'What is happening in Interphase?' → First include: 'Mitochondria convert nutrients into ATP energy, just like our bodies convert food into energy.' Then give the next action.\n" +
             "- 'Is the bar full?' → Check the green ATP bar and give warm feedback.\n",
             HelpfulAnalogyHeader);
 

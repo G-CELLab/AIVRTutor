@@ -8,6 +8,7 @@ public class TutorialPromptStageController : MonoBehaviour
     [TextArea(3, 10)] public string contentPrompt = AI.Prompts.TutorialPrompts.TutorialContentQuestions;
     [TextArea(3, 10)] public string visualPrompt = AI.Prompts.TutorialPrompts.TutorialVisualQuestions;
     [TextArea(3, 10)] public string manipulationPrompt = AI.Prompts.TutorialPrompts.TutorialManipulationQuestions;
+    [TextArea(3, 10)] public string finishPrompt = AI.Prompts.TutorialPrompts.TutorialFinish;
     [Header("Prompt Source")]
     [Tooltip("Use prompts from TutorialPrompts.cs at runtime so scene-cached text cannot go stale")]
     public bool useRuntimePromptConstants = true;
@@ -33,6 +34,7 @@ public class TutorialPromptStageController : MonoBehaviour
         contentPrompt = AI.Prompts.TutorialPrompts.TutorialContentQuestions;
         visualPrompt = AI.Prompts.TutorialPrompts.TutorialVisualQuestions;
         manipulationPrompt = AI.Prompts.TutorialPrompts.TutorialManipulationQuestions;
+        finishPrompt = AI.Prompts.TutorialPrompts.TutorialFinish;
     }
 
     private void Update()
@@ -70,7 +72,8 @@ public class TutorialPromptStageController : MonoBehaviour
     {
         return stage == Manager_Tutorial.TutorialStage.ContentQuestions ||
                stage == Manager_Tutorial.TutorialStage.VisualQuestions ||
-               stage == Manager_Tutorial.TutorialStage.ManipulationQuestions;
+               stage == Manager_Tutorial.TutorialStage.ManipulationQuestions ||
+               stage == Manager_Tutorial.TutorialStage.Finish;
     }
     
     private System.Collections.IEnumerator TriggerAIGreeting(Manager_Tutorial.TutorialStage stage)
@@ -90,9 +93,11 @@ public class TutorialPromptStageController : MonoBehaviour
             case Manager_Tutorial.TutorialStage.ContentQuestions:
                 return "Start speaking now and follow this wording closely in order. Do not skip the example questions. Say exactly: 'Hello. I'm here to answer your questions. During this VR activity, you can ask me questions whenever you need help. I can answer three types of your questions: content questions, visual reference questions, and manipulation questions. Let's practice. For this task, you will need to move the blue chromosome. First, you might want to understand what a chromosome is. This is called a content question. For example, you could ask: What is a chromosome? Or What does a chromosome do? Please ask me a content question about chromosomes.'";
             case Manager_Tutorial.TutorialStage.VisualQuestions:
-                return "Start speaking now and follow this wording closely: 'Next, you may want to know which object in this space is the blue chromosome. This is a visual reference question. For example, you could ask: Which object is the blue chromosome? Please ask me a visual reference question.'";
+                return "Start speaking now and follow this wording closely: 'Next, you may want to know which object in this space is the chromosome. This is a visual reference question. For example, you could ask: Which object is the chromosome? Please ask me a visual reference question.'";
             case Manager_Tutorial.TutorialStage.ManipulationQuestions:
                 return "Start speaking now and follow this wording closely: 'Finally, you may want to know how to move the blue chromosome. This is a manipulation question. For example, you could ask: How do I move the blue chromosome? Please ask me a manipulation question.'";
+            case Manager_Tutorial.TutorialStage.Finish:
+                return "Start speaking now and say: 'Good job on completing the tutorial! You're ready to enter the cell and start learning about mitosis. Just touch and hold the glowing yellow spot in front of you!'";
             default:
                 return "Hello! How can I help you?";
         }
@@ -108,6 +113,8 @@ public class TutorialPromptStageController : MonoBehaviour
                 return visualPrompt;
             case Manager_Tutorial.TutorialStage.ManipulationQuestions:
                 return manipulationPrompt;
+            case Manager_Tutorial.TutorialStage.Finish:
+                return finishPrompt;
             default:
                 return basePrompt;
         }

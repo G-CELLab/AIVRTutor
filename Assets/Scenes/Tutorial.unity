@@ -1256,30 +1256,30 @@ MonoBehaviour:
     out the object (the blue X-shaped object in the middle).
 
     4. If they struggle,
-    encourage a visual reference question about the chromosome.
+    encourage them to ask a visual reference question about the chromosome.
 
 
-    HELPFUL EXPLANATION:
-    ''CRITICAL: Do NOT open this phase with ''Sure'', ''Okay'', ''Alright'' or any
-    filler word. Be direct. Only use ''Good.'' when the learner asks a correct visual
-    reference question.''
+    HELPFUL
+    EXPLANATION: ''CRITICAL: Do NOT open this phase with ''Sure'', ''Okay'', ''Alright''
+    or any filler word. Be direct. Only use ''Good.'' when the learner asks a correct
+    visual reference question.''
 
 
     COMMON QUESTIONS:
 
-    - If they ask which object
-    is the chromosome, respond: ''Good. The chromosome is the blue X-shaped structure
-    floating in front of you.''
+    - If they ask which
+    object is the chromosome, respond: ''Good. The chromosome is the blue X-shaped
+    structure floating in front of you.''
 
-    - If they ask about the yellow object, say it
-    is the centriole on the left.
+    - If they ask about the yellow object,
+    say it is the centriole on the left.
 
-    - If they ask about the red object, say: ''Good.
-    The red object is the chromatid on the right.''
+    - If they ask about the red object,
+    say: ''Good. The red object is the chromatid on the right.''
 
-    - If they ask an incorrect
-    question type, guide them to ask which object is the chromosome and do not say
-    ''Good.'''
+    - If they ask
+    an incorrect question type, guide them to ask which object is the chromosome
+    and do not say ''Good.'''
   manipulationPrompt: 'CURRENT PHASE: Tutorial: Manipulation Questions
 
     GOAL:
@@ -1329,6 +1329,36 @@ MonoBehaviour:
 
     - If they ask a non-manipulation question, redirect
     them to ask how to move the blue chromosome and do not say ''Good.'''
+  finishPrompt: 'CURRENT PHASE: Tutorial: Finish
+
+    GOAL: Congratulate the learner
+    for completing the tutorial and encourage them to enter the cell.
+
+
+    KEY OBJECTS
+    IN SCENE:
+
+    - Glowing yellow spot infront of them indicating where they need
+    to touch to enter the cell
+
+
+    STUDENT TASKS:
+
+    1. Congratulate them on
+    completing the tutorial and encourage them to touch and hold the glowing yellow
+    spot in front of them to enter the cell.
+
+
+    HELPFUL EXPLANATION: ''Keep it
+    brief and positive.` Do not introduce any new information or instructions in
+    this phase.''
+
+
+    COMMON QUESTIONS:
+
+    - ''Good job on completing the tutorial!
+    You''re ready to enter the cell and start learning about mitosis. Just touch
+    and hold the glowing yellow spot in front of you!'''
   useRuntimePromptConstants: 1
   clearHistoryOnStageChange: 1
   autoGreetOnStageEnter: 1
