@@ -19,6 +19,7 @@ public class XRStartupSpawnAligner : MonoBehaviour
     [SerializeField] private int startupDelayFrames = 2;
     [SerializeField] private float focusRealignWindowSeconds = 8f;
     [SerializeField] private int maxFocusRealignAttempts = 2;
+    [SerializeField] private float additionalYawOffsetDegrees = -90f;
 
     private float tutorialSceneLoadedAt = -999f;
     private int focusRealignAttempts;
@@ -139,6 +140,7 @@ public class XRStartupSpawnAligner : MonoBehaviour
         if (cameraForwardFlat.sqrMagnitude > 0.0001f && anchorForwardFlat.sqrMagnitude > 0.0001f)
         {
             float yawDelta = Vector3.SignedAngle(cameraForwardFlat, anchorForwardFlat, Vector3.up);
+            yawDelta += additionalYawOffsetDegrees;
             rigTransform.RotateAround(cameraTransform.position, Vector3.up, yawDelta);
         }
 
