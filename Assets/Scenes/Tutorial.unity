@@ -1118,7 +1118,7 @@ Transform:
   m_GameObject: {fileID: 229985709}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.8747396, y: 0.20435596, z: 1.7265996}
+  m_LocalPosition: {x: 0.706, y: 1.336, z: -0.24}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2084,6 +2084,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   openAIKey: 
   gptConnector: {fileID: 436895153}
+  transcribeBeforeSend: 1
+  transcriptionModel: gpt-4o-mini-transcribe
   sampleRate: 16000
   maxRecordTime: 30
   minRecordTime: 0.6
@@ -27731,7 +27733,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2919413178500387262}
   m_LocalRotation: {x: -0, y: -0.23726074, z: -0, w: 0.97144604}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -1.105}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -27739,7 +27741,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0.108, y: -0.018}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2919413178500387262

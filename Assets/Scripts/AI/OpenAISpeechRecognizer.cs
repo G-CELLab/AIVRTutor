@@ -229,7 +229,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         } catch (Exception e) {
             Debug.LogWarning($"[OpenAISpeechRecognizer] Failed to check audio file size: {e.Message}");
         }
-        gptConnector.SendAudioFileToGPT(wavPath, transcriptContext);
+        gptConnector.SendAudioFileToGPT(wavPath, transcriptContext, null);
         yield return null;
     }
 
