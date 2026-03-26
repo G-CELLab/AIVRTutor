@@ -1473,6 +1473,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 899ca7d39127649479b9c1f50136fece, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LeftHandTouching
+  clearTouchGraceSeconds: 0.1
 --- !u!135 &102013905
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -13199,6 +13200,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b2165f14f3ee4d4a82e89022306dbe2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RightHandTouching
+  clearTouchGraceSeconds: 0.1
 --- !u!135 &940009028
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -19802,6 +19804,7 @@ MonoBehaviour:
   animSpeedParam: gestureSpeed
   waitBeforeDZ2: 5
   lingerAfterEnd: 0.05
+  minRepeatTriggerIntervalSec: 0.75
   verbose: 1
 --- !u!114 &1434790981
 MonoBehaviour:
@@ -19826,6 +19829,8 @@ MonoBehaviour:
   ttsPlayer: {fileID: 1434790982}
   ttsDriver: {fileID: 1434790980}
   expectSpeechTimeout: 5
+  useGestureSynchronizer: 1
+  gestureSynchronizer: {fileID: 0}
   systemPrompt: 'Global / System
 
     You are AI Tutor, helping a 9th-grade student
@@ -19951,17 +19956,13 @@ MonoBehaviour:
   allowUserInterrupts: 1
   clearQueueOnInterrupt: 1
   disconnectRealtimeOnInterrupt: 1
+  interruptDebounceSec: 0.35
   verboseDebug: 1
   dumpResponsesToFile: 1
   debugLogInterval: 0.25
   maxLogChars: 600
   logTokenBreakdown: 1
   omitPhaseFromInstructionsWhenPinned: 1
-  delayEatGestureSec: 5
-  delayCondenseGestureSec: 2
-  delayLineUpGestureSec: 2
-  delaySplitOutwardGestureSec: 2.5
-  speakingWaitGraceSec: 5
   logPrompts: 1
   promptEchoText: {fileID: 0}
   promptLogMaxChars: 2000
@@ -19975,7 +19976,7 @@ MonoBehaviour:
   prependPhaseTextAsDeveloperItem: 1
   prependPhaseInstructionAudio: 1
   reactToAssistantTranscript: 1
-  suppressTranscriptGesturesWhenWhisperSyncActive: 1
+  useStreamingGestureTiming: 1
   evaluateQueuedRequests: 1
   maxQueuedRequestAgeSec: 30
   queueEvaluationPrompt: Respond ONLY in English. Do not use any other language under
@@ -19994,6 +19995,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 929cded6fb6289f4884b8ee9f07317c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  logInterruptWarnings: 0
   openAIKey: '*****'
   voice: nova
   audioSource: {fileID: 1434790984}
@@ -20027,6 +20029,7 @@ MonoBehaviour:
   interruptGraceMs: 700
   killAllTTSOnInterrupt: 1
   ttsProtectionDurationSec: 1
+  interruptCooldownSec: 0.5
   showDebugOverlay: 0
   verboseDebug: 1
   debugLogInterval: 0.25
@@ -50753,7 +50756,7 @@ Transform:
   m_GameObject: {fileID: 1987300864889553185}
   serializedVersion: 2
   m_LocalRotation: {x: -0.5, y: -0.5, z: -0.5, w: 0.5}
-  m_LocalPosition: {x: 70.003, y: 1.265, z: 79.784}
+  m_LocalPosition: {x: 70.003, y: 1.376, z: 78.806}
   m_LocalScale: {x: 0.060000002, y: 0.060000002, z: 0.060000002}
   m_ConstrainProportionsScale: 0
   m_Children:

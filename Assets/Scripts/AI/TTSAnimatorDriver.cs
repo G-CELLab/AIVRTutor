@@ -101,10 +101,18 @@ public class TTSAnimatorDriver : MonoBehaviour
         if (Random.value < 0.5f) TriggerByHash(_dz7, _hasDZ7, trigDZ7);
         else TriggerByHash(_dz8, _hasDZ8, trigDZ8);
     }
-    public void TriggerDZ13() { TriggerByHash(_dz13, _hasDZ13, trigDZ13); }
+    public void TriggerDZ13()
+    {
+        if (TriggerByHash(_dz13, _hasDZ13, trigDZ13))
+            MainLogger.LogAIGestureEvent("EAT");
+    }
     public void TriggerDZ14() { TriggerByHash(_dz14, _hasDZ14, trigDZ14); }
     public void TriggerDZ15() { TriggerByHash(_dz15, _hasDZ15, trigDZ15); }
-    public void TriggerDZ18() { TriggerByHash(_dz18, _hasDZ18, trigDZ18); }
+    public void TriggerDZ18()
+    {
+        if (TriggerByHash(_dz18, _hasDZ18, trigDZ18))
+            MainLogger.LogAIGestureEvent("CONDENSE");
+    }
     
     // DZ12 (LINE UP) with custom speed control for longer gesture duration
     public void TriggerDZ12() 
@@ -115,18 +123,23 @@ public class TTSAnimatorDriver : MonoBehaviour
             animator.SetFloat(_animSpeedHash, lineUpGestureSpeedMultiplier);
             if (verbose) Debug.Log($"[TTSAnimatorDriver] 🐌 Setting LINE UP gesture speed to {lineUpGestureSpeedMultiplier}x");
         }
-        TriggerByHash(_dz12, _hasDZ12, trigDZ12); 
+        if (TriggerByHash(_dz12, _hasDZ12, trigDZ12))
+            MainLogger.LogAIGestureEvent("LINE_UP");
     }
     
-    public void TriggerDZ22() { TriggerByHash(_dz22, _hasDZ22, trigDZ22); }
-
-    void TriggerByHash(int hash, bool hasParam, string nameForLog)
+    public void TriggerDZ22()
     {
-        if (!animator) return;
+        if (TriggerByHash(_dz22, _hasDZ22, trigDZ22))
+            MainLogger.LogAIGestureEvent("SPLIT");
+    }
+
+    bool TriggerByHash(int hash, bool hasParam, string nameForLog)
+    {
+        if (!animator) return false;
         if (!hasParam)
         {
             if (verbose) Debug.LogWarning($"[TTSAnimatorDriver] ❗ Animator 缺少 Trigger 参数: {nameForLog}");
-            return;
+            return false;
         }
 
         // Defensive dedupe: ignore the same trigger if it was fired very recently.
@@ -137,7 +150,7 @@ public class TTSAnimatorDriver : MonoBehaviour
             if (elapsed >= 0f && elapsed < minRepeatTriggerIntervalSec)
             {
                 if (verbose) Debug.Log($"[TTSAnimatorDriver] ⏭️ Ignored duplicate trigger: {nameForLog} ({elapsed:0.00}s < {minRepeatTriggerIntervalSec:0.00}s)");
-                return;
+                return false;
             }
         }
 
@@ -145,6 +158,7 @@ public class TTSAnimatorDriver : MonoBehaviour
         animator.SetTrigger(hash);
         _lastTriggerTimeByHash[hash] = now;
         if (verbose) Debug.Log($"[TTSAnimatorDriver] 🔔 Trigger: {nameForLog}");
+        return true;
     }
 
     void Update()
