@@ -5871,7 +5871,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: -27.45, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0.268}
   m_SizeDelta: {x: 1.1717116, y: 0.7039237}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!21 &472654153
@@ -19947,8 +19947,6 @@ MonoBehaviour:
   preferModelAudio: 1
   gptVoice: alloy
   gptAudioFormat: wav
-  alwaysEnglish: 1
-  englishDirective: 'Always speak and write in clear, natural English. '
   speechRecognizer: {fileID: 1434790983}
   pendingUserPrompt: 
   realtimeSilenceTimeoutSec: 30
@@ -19979,10 +19977,10 @@ MonoBehaviour:
   useStreamingGestureTiming: 1
   evaluateQueuedRequests: 1
   maxQueuedRequestAgeSec: 30
-  queueEvaluationPrompt: Respond ONLY in English. Do not use any other language under
-    any circumstances. If the user speaks another language, briefly translate their
-    intent and then reply in English. Do not echo non-English text. All spoken audio
-    and text must be English.
+  queueEvaluationPrompt: You just finished speaking. The user said something while
+    you were talking. Decide if you should respond. Reply ONLY with 'YES' or 'NO'.
+    Say YES if it's a new question, comment, or request. Say NO if it's just acknowledgment,
+    'ok', 'thanks', or doesn't need a response.
 --- !u!114 &1434790982
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20014,6 +20012,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   openAIKey: 
   gptConnector: {fileID: 1434790981}
+  transcribeBeforeSend: 1
+  transcriptionModel: gpt-4o-mini-transcribe
   sampleRate: 16000
   maxRecordTime: 30
   minRecordTime: 0.6
