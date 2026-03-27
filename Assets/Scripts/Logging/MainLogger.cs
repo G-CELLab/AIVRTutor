@@ -159,7 +159,7 @@ public class MainLogger : MonoBehaviour
         // CSV logging - every frame
         if (logToCSV)
         {
-            WriteToCSV(elapsed, leftGesture, rightGesture, userSpeech, leftTouch, rightTouch, phase, aiSpeech, aiGesture, otherEvent);
+            WriteToCSV(elapsed, leftGesture, rightGesture, leftTouch, rightTouch, phase, userSpeech, aiSpeech, aiGesture, otherEvent);
         }
 
         // Clear AI speech after logging so it only appears once
@@ -417,7 +417,7 @@ public class MainLogger : MonoBehaviour
 
             using (StreamWriter writer = new StreamWriter(csvFilePath, false, new UTF8Encoding(true)))
             {
-                writer.WriteLine("Time(s),Left_Gesture,Right_Gesture,User_Speech,Left_Touch,Right_Touch,Phase,AI_Speech,AI_Gesture,Other");
+                writer.WriteLine("Time(s),Left_Gesture,Right_Gesture,Left_Touch,Right_Touch,Phase,User_Speech,AI_Speech,AI_Gesture,Other");
             }
         }
         catch (Exception ex)
@@ -426,8 +426,8 @@ public class MainLogger : MonoBehaviour
         }
     }
 
-    private void WriteToCSV(float elapsed, string leftGesture, string rightGesture, string userSpeech, string leftTouch, 
-                           string rightTouch, string phase, string aiSpeech, string aiGesture, string otherEvent)
+    private void WriteToCSV(float elapsed, string leftGesture, string rightGesture, string leftTouch,
+                           string rightTouch, string phase, string userSpeech, string aiSpeech, string aiGesture, string otherEvent)
     {
         try
         {
@@ -437,10 +437,10 @@ public class MainLogger : MonoBehaviour
                     $"{elapsed:F3}," +
                     $"{EscapeCsvField(leftGesture)}," +
                     $"{EscapeCsvField(rightGesture)}," +
-                    $"{EscapeCsvField(userSpeech)}," +
                     $"{EscapeCsvField(leftTouch)}," +
                     $"{EscapeCsvField(rightTouch)}," +
                     $"{EscapeCsvField(phase)}," +
+                    $"{EscapeCsvField(userSpeech)}," +
                     $"{EscapeCsvField(aiSpeech)}," +
                     $"{EscapeCsvField(aiGesture)}," +
                     $"{EscapeCsvField(otherEvent)}");

@@ -800,7 +800,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!65 &35126151
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3653,7 +3653,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!65 &270667798
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6137,7 +6137,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &476676904
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6581,7 +6581,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!65 &502016089
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -8114,7 +8114,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!1001 &622128471
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9529,7 +9529,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &672489379
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11023,7 +11023,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!136 &789843444
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -14184,7 +14184,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!1 &973558532
 GameObject:
   m_ObjectHideFlags: 0
@@ -16025,7 +16025,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &1105086891
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18345,7 +18345,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &1308529190
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18901,6 +18901,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsKinematic
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7506277575830246130, guid: 1d6caa87d578e83468fa4ef5a5ffdc1e,
+        type: 3}
+      propertyPath: m_CollisionDetection
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 914982638871361164, guid: 1d6caa87d578e83468fa4ef5a5ffdc1e, type: 3}
@@ -20196,14 +20201,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc0e0b2c9f8b21844ae0006579e5db2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TTSWhisperIntegration
-  ttsPlayer: {fileID: 1434790982}
-  gestureSync: {fileID: 1434790992}
-  autoTranscribe: 1
-  recordFromAudioSource: 1
-  useFallbackText: 1
-  sampleRate: 16000
-  channels: 1
-  verboseLogging: 1
 --- !u!114 &1434790992
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20216,20 +20213,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98d74337f6aa3b34ba95025a54aa6d08, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WhisperGestureSync
-  whisperModelPath: Assets/StreamingAssets/Whisper/ggml-tiny.bin
-  language: en
-  enableWordTimestamps: 1
-  animatorDriver: {fileID: 1434790980}
-  gptConnector: {fileID: 1434790981}
-  ttsAudioSource: {fileID: 1434790984}
-  gestureTimingOffset: 0.1
-  duplicateClipWindowSeconds: 0.35
-  scheduleMergeWindowSeconds: 0.75
-  sameGestureCooldownSeconds: 0.9
-  confidenceThreshold: 0.5
-  enablePhaseGestures: 1
-  verboseLogging: 1
-  logWordTimestamps: 1
 --- !u!1 &1439737849
 GameObject:
   m_ObjectHideFlags: 0
@@ -20688,7 +20671,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!136 &1463736860
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -20812,7 +20795,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!4 &1463796902
 Transform:
   m_ObjectHideFlags: 0
@@ -22899,7 +22882,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!1 &1655023632
 GameObject:
   m_ObjectHideFlags: 0
@@ -46902,7 +46885,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!65 &1947257322
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -47272,7 +47255,7 @@ MonoBehaviour:
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
-  m_ActiveFontFeatures: 00000000
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
@@ -49267,7 +49250,7 @@ Rigidbody:
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!1001 &2086848509
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -51291,6 +51274,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: XR Origin Hands (XR Rig)
       objectReference: {fileID: 0}
+    - target: {fileID: 7283176920152209999, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7607234065704082460, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
       propertyPath: m_InteractionManager
@@ -51943,6 +51931,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsKinematic
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8508374479175876729, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: m_CollisionDetection
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
@@ -52939,6 +52932,11 @@ PrefabInstance:
       propertyPath: m_IsKinematic
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7506277575830246130, guid: 1d6caa87d578e83468fa4ef5a5ffdc1e,
+        type: 3}
+      propertyPath: m_CollisionDetection
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 914982638871361164, guid: 1d6caa87d578e83468fa4ef5a5ffdc1e, type: 3}
     - {fileID: 5516254743656131743, guid: 1d6caa87d578e83468fa4ef5a5ffdc1e, type: 3}
@@ -53579,7 +53577,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!4 &7313617061543436829 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 290898357438463546, guid: 4419612d9dd3ad54f8ee3718d36725d6,
@@ -53766,7 +53764,7 @@ Rigidbody:
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!1 &7563722017159985410
 GameObject:
   m_ObjectHideFlags: 0

@@ -394,7 +394,10 @@ public class GestureSynchronizer : MonoBehaviour
             "move apart",
             "separate them",
             "split",
-            "pull the two halves"
+            "splitting",
+            "pull the two halves",
+            "pull it",
+            "apart"
         };
 
         foreach (string keyword in keywords)
