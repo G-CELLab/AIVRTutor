@@ -168,34 +168,52 @@ public class TutorialQuestionPhaseController : MonoBehaviour
 
     private static bool HasGoodValidationCue(string normalized)
     {
-        // Accept common positive validation words used by the model.
-        return ContainsPhrase(normalized, "good") ||
-               ContainsPhrase(normalized, "great") ||
-               ContainsPhrase(normalized, "perfect") ||
-               ContainsPhrase(normalized, "exactly right") ||
-               ContainsPhrase(normalized, "you got it") ||
-               ContainsPhrase(normalized, "nice");
+        // Require an explicit "Good" cue for tutorial question completion.
+        return ContainsPhrase(normalized, "good");
+    }
+
+    private static bool HasRedirectCue(string normalized)
+    {
+        // Prevent off-topic coaching/reprompt text from counting as a success answer.
+        return ContainsPhrase(normalized, "great curiosity") ||
+               ContainsPhrase(normalized, "let s focus") ||
+               ContainsPhrase(normalized, "try asking") ||
+               ContainsPhrase(normalized, "please ask") ||
+               ContainsPhrase(normalized, "for example");
     }
 
     private static bool IsContentSuccessResponse(string normalized)
     {
         if (string.IsNullOrWhiteSpace(normalized)) return false;
-        // In tutorial flow, a positive validation cue means the learner succeeded.
-        return HasGoodValidationCue(normalized);
+        if (HasRedirectCue(normalized)) return false;
+
+        return HasGoodValidationCue(normalized) &&
+               ContainsPhrase(normalized, "chromosome") &&
+               (ContainsPhrase(normalized, "genetic") ||
+                ContainsPhrase(normalized, "dna") ||
+                ContainsPhrase(normalized, "structure"));
     }
 
     private static bool IsVisualSuccessResponse(string normalized)
     {
         if (string.IsNullOrWhiteSpace(normalized)) return false;
-        // In tutorial flow, a positive validation cue means the learner succeeded.
-        return HasGoodValidationCue(normalized);
+        if (HasRedirectCue(normalized)) return false;
+
+        return HasGoodValidationCue(normalized) &&
+               (ContainsPhrase(normalized, "blue chromosome") ||
+                ContainsPhrase(normalized, "blue x shaped") ||
+                (ContainsPhrase(normalized, "chromosome") && ContainsPhrase(normalized, "middle")));
     }
 
     private static bool IsManipulationSuccessResponse(string normalized)
     {
         if (string.IsNullOrWhiteSpace(normalized)) return false;
-        // In tutorial flow, a positive validation cue means the learner succeeded.
-        return HasGoodValidationCue(normalized);
+        if (HasRedirectCue(normalized)) return false;
+
+        return HasGoodValidationCue(normalized) &&
+               (ContainsPhrase(normalized, "grab") ||
+                ContainsPhrase(normalized, "move") ||
+                ContainsPhrase(normalized, "highlighted area"));
     }
 
     private static string Normalize(string input)
