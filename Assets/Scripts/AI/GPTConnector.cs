@@ -1995,8 +1995,8 @@ public class GPTConnector : MonoBehaviour
     }
 
     private string GetPhaseBaseName(GameManager.GameState gs) { return $"phase_{gs.ToString().ToLower()}"; }
-    private string GetPhaseTxtPath(GameManager.GameState gs) { return Path.Combine(Application.persistentDataPath, GetPhaseBaseName(gs) + ".txt"); }
-    private string GetPhaseWavPath(GameManager.GameState gs) { return Path.Combine(Application.persistentDataPath, GetPhaseBaseName(gs) + ".wav"); }
+    private string GetPhaseTxtPath(GameManager.GameState gs) { return TrialLogPath.GetFilePath(GetPhaseBaseName(gs) + ".txt"); }
+    private string GetPhaseWavPath(GameManager.GameState gs) { return TrialLogPath.GetFilePath(GetPhaseBaseName(gs) + ".wav"); }
 
     private IEnumerator GeneratePhaseTTS(GameManager.GameState gs, string text)
     {
@@ -2191,7 +2191,7 @@ public class GPTConnector : MonoBehaviour
         if (!dumpResponsesToFile) return;
         try
         {
-            string path = Path.Combine(Application.persistentDataPath, name);
+            string path = TrialLogPath.GetFilePath(name);
             File.WriteAllText(path, content ?? "");
             D($"[File] {name} -> {path}, len={(content == null ? 0 : content.Length)}");
         }
@@ -2206,7 +2206,7 @@ public class GPTConnector : MonoBehaviour
         if (!dumpResponsesToFile) return;
         try
         {
-            string path = Path.Combine(Application.persistentDataPath, name);
+            string path = TrialLogPath.GetFilePath(name);
             File.AppendAllText(path, content ?? "");
         }
         catch (Exception e)

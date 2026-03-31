@@ -169,7 +169,8 @@ public class TutorialQuestionPhaseController : MonoBehaviour
     private static bool HasGoodValidationCue(string normalized)
     {
         // Require an explicit "Good" cue for tutorial question completion.
-        return ContainsPhrase(normalized, "good");
+        return ContainsPhrase(normalized, "good") || 
+               ContainsPhrase(normalized, "great");
     }
 
     private static bool HasRedirectCue(string normalized)
