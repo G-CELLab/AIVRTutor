@@ -8,8 +8,8 @@ public class ChromatidAnaphaseGrab : MonoBehaviour
     void Start()
     {
         // Automatically find the hand managers in the scene
-        leftHand = Object.FindFirstObjectByType<LeftHandManager>();
-        rightHand = Object.FindFirstObjectByType<RightHandManager>();
+        leftHand = Object.FindAnyObjectByType<LeftHandManager>();
+        rightHand = Object.FindAnyObjectByType<RightHandManager>();
     }
 
     void Update()

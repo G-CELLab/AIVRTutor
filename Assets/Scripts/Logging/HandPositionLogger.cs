@@ -169,7 +169,7 @@ public class HandPositionLogger : MonoBehaviour
     
     private Transform FindHandByName(string handName)
     {
-        Transform[] allTransforms = FindObjectsByType<Transform>(FindObjectsSortMode.None);
+        Transform[] allTransforms = UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include);
         
         // Search for exact match first
         foreach (Transform t in allTransforms)

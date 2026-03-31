@@ -10,8 +10,8 @@ public class ChromatidGrab : MonoBehaviour
 
     void Start()
     {
-        left = Object.FindFirstObjectByType<LeftHandManager>();
-        right = Object.FindFirstObjectByType<RightHandManager>();
+        left = Object.FindAnyObjectByType<LeftHandManager>();
+        right = Object.FindAnyObjectByType<RightHandManager>();
 
         // Ensure we have a Rigidbody or physics will fail
         if (GetComponent<Rigidbody>() == null)

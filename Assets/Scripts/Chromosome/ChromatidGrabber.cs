@@ -7,8 +7,8 @@ public class ChromatidGrabber : MonoBehaviour
 
     void Start()
     {
-        left = Object.FindFirstObjectByType<LeftHandManager>();
-        right = Object.FindFirstObjectByType<RightHandManager>();
+        left = Object.FindAnyObjectByType<LeftHandManager>();
+        right = Object.FindAnyObjectByType<RightHandManager>();
     }
 
     void Update()

@@ -317,6 +317,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -413,12 +414,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 10140986}
   m_Mesh: {fileID: 1354445856614592872, guid: 589b2eca3522222498e7569f97980ec6, type: 3}
---- !u!135 &10390861 stripped
-SphereCollider:
-  m_CorrespondingSourceObject: {fileID: 5994637110193312729, guid: 8177890d1716a84429e08d2405ce3eb9,
-    type: 3}
-  m_PrefabInstance: {fileID: 3593299230079904728}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &17706873
 GameObject:
   m_ObjectHideFlags: 0
@@ -920,6 +915,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -1023,6 +1019,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -1364,6 +1361,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -1493,7 +1491,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.1
+  m_Radius: 0.02
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &122464283
 GameObject:
@@ -4135,12 +4133,27 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 3593299230079904728}
   m_PrefabAsset: {fileID: 0}
---- !u!65 &315633176 stripped
+--- !u!65 &315633176
 BoxCollider:
-  m_CorrespondingSourceObject: {fileID: 1432965937564232054, guid: 8177890d1716a84429e08d2405ce3eb9,
-    type: 3}
-  m_PrefabInstance: {fileID: 3593299230079904728}
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 315633175}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 9.634705, y: 7.881417, z: 8.3255005}
+  m_Center: {x: -0.52230835, y: 0.40967435, z: -0.39276123}
 --- !u!1 &327268108
 GameObject:
   m_ObjectHideFlags: 0
@@ -5840,6 +5853,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -7307,6 +7321,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -7485,6 +7500,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -8618,6 +8634,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -9778,6 +9795,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -10136,6 +10154,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -10238,6 +10257,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -10944,7 +10964,7 @@ MonoBehaviour:
   m_ParentInteractableObject: {fileID: 0}
   m_AttachTransform: {fileID: 0}
   m_SecondaryAttachTransform: {fileID: 0}
-  m_UseDynamicAttach: 0
+  m_UseDynamicAttach: 1
   m_MatchAttachPosition: 1
   m_MatchAttachRotation: 1
   m_SnapToColliderVolume: 1
@@ -10957,11 +10977,11 @@ MonoBehaviour:
   m_AngularVelocityDamping: 1
   m_AngularVelocityScale: 1
   m_TrackPosition: 1
-  m_SmoothPosition: 0
+  m_SmoothPosition: 1
   m_SmoothPositionAmount: 5
   m_TightenPosition: 0.5
   m_TrackRotation: 1
-  m_SmoothRotation: 0
+  m_SmoothRotation: 1
   m_SmoothRotationAmount: 5
   m_TightenRotation: 0.5
   m_TrackScale: 1
@@ -11021,9 +11041,9 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 1
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 3
+  m_CollisionDetection: 2
 --- !u!136 &789843444
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -11292,6 +11312,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -12132,8 +12153,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RightHandManager
   isGrabbed_right: 0
   handInteractor: {fileID: 852775122}
-  pinchPressDistance: 0.025
-  pinchReleaseDistance: 0.04
+  pinchPressDistance: 0.005
+  pinchReleaseDistance: 0.015
 --- !u!64 &877523556
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -12328,6 +12349,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -12714,6 +12736,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -13220,7 +13243,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.1
+  m_Radius: 0.02
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &940009029
 MeshRenderer:
@@ -13377,6 +13400,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -13722,6 +13746,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -13772,7 +13797,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerPositionLogger
   playerHeadTransform: {fileID: 0}
-  raycastDistance: 10
+  raycastDistance: 0.01
   raycastLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -14105,7 +14130,7 @@ MonoBehaviour:
   m_ParentInteractableObject: {fileID: 0}
   m_AttachTransform: {fileID: 0}
   m_SecondaryAttachTransform: {fileID: 0}
-  m_UseDynamicAttach: 0
+  m_UseDynamicAttach: 1
   m_MatchAttachPosition: 1
   m_MatchAttachRotation: 1
   m_SnapToColliderVolume: 1
@@ -14118,11 +14143,11 @@ MonoBehaviour:
   m_AngularVelocityDamping: 1
   m_AngularVelocityScale: 1
   m_TrackPosition: 1
-  m_SmoothPosition: 0
+  m_SmoothPosition: 1
   m_SmoothPositionAmount: 5
   m_TightenPosition: 0.5
   m_TrackRotation: 1
-  m_SmoothRotation: 0
+  m_SmoothRotation: 1
   m_SmoothRotationAmount: 5
   m_TightenRotation: 0.5
   m_TrackScale: 1
@@ -14182,9 +14207,9 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 1
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 3
+  m_CollisionDetection: 2
 --- !u!1 &973558532
 GameObject:
   m_ObjectHideFlags: 0
@@ -17046,6 +17071,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -18032,6 +18058,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -19164,7 +19191,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 0.002, y: 0.002, z: 0.002}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!54 &1354891579
 Rigidbody:
@@ -19521,6 +19548,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -19593,8 +19621,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LeftHandManager
   isGrabbed_left: 0
   handInteractor: {fileID: 846178712}
-  pinchPressDistance: 0.025
-  pinchReleaseDistance: 0.04
+  pinchPressDistance: 0.005
+  pinchReleaseDistance: 0.015
 --- !u!1 &1411262053
 GameObject:
   m_ObjectHideFlags: 0
@@ -20023,14 +20051,14 @@ MonoBehaviour:
   maxRecordTime: 30
   minRecordTime: 0.6
   preRollSeconds: 0.2
-  startThreshold: 0.02
+  startThreshold: 0.01
   startHoldTime: 0.15
   stopThreshold: 0.015
   stopSilenceTime: 1.2
   ttsToInterrupt: {fileID: 1434790982}
   allowBargeIn: 1
   interruptEvenBeforeVAD: 0
-  interruptThreshold: 0.05
+  interruptThreshold: 0.01
   interruptGraceMs: 700
   killAllTTSOnInterrupt: 1
   ttsProtectionDurationSec: 1
@@ -20592,7 +20620,7 @@ MonoBehaviour:
   m_ParentInteractableObject: {fileID: 0}
   m_AttachTransform: {fileID: 0}
   m_SecondaryAttachTransform: {fileID: 0}
-  m_UseDynamicAttach: 0
+  m_UseDynamicAttach: 1
   m_MatchAttachPosition: 1
   m_MatchAttachRotation: 1
   m_SnapToColliderVolume: 1
@@ -20605,11 +20633,11 @@ MonoBehaviour:
   m_AngularVelocityDamping: 1
   m_AngularVelocityScale: 1
   m_TrackPosition: 1
-  m_SmoothPosition: 0
+  m_SmoothPosition: 1
   m_SmoothPositionAmount: 5
   m_TightenPosition: 0.5
   m_TrackRotation: 1
-  m_SmoothRotation: 0
+  m_SmoothRotation: 1
   m_SmoothRotationAmount: 5
   m_TightenRotation: 0.5
   m_TrackScale: 1
@@ -20669,9 +20697,9 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 1
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 3
+  m_CollisionDetection: 2
 --- !u!136 &1463736860
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -21515,6 +21543,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -21981,6 +22010,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -23321,6 +23351,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -23604,6 +23635,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -24067,6 +24099,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -44547,7 +44580,7 @@ MonoBehaviour:
   m_ParentInteractableObject: {fileID: 0}
   m_AttachTransform: {fileID: 0}
   m_SecondaryAttachTransform: {fileID: 0}
-  m_UseDynamicAttach: 0
+  m_UseDynamicAttach: 1
   m_MatchAttachPosition: 1
   m_MatchAttachRotation: 1
   m_SnapToColliderVolume: 1
@@ -44560,11 +44593,11 @@ MonoBehaviour:
   m_AngularVelocityDamping: 1
   m_AngularVelocityScale: 1
   m_TrackPosition: 1
-  m_SmoothPosition: 0
+  m_SmoothPosition: 1
   m_SmoothPositionAmount: 5
   m_TightenPosition: 0.5
   m_TrackRotation: 1
-  m_SmoothRotation: 0
+  m_SmoothRotation: 1
   m_SmoothRotationAmount: 5
   m_TightenRotation: 0.5
   m_TrackScale: 1
@@ -44624,9 +44657,9 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 1
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 3
+  m_CollisionDetection: 2
 --- !u!4 &1838294739
 Transform:
   m_ObjectHideFlags: 0
@@ -44903,7 +44936,7 @@ MonoBehaviour:
   m_ParentInteractableObject: {fileID: 0}
   m_AttachTransform: {fileID: 0}
   m_SecondaryAttachTransform: {fileID: 0}
-  m_UseDynamicAttach: 0
+  m_UseDynamicAttach: 1
   m_MatchAttachPosition: 1
   m_MatchAttachRotation: 1
   m_SnapToColliderVolume: 1
@@ -44916,11 +44949,11 @@ MonoBehaviour:
   m_AngularVelocityDamping: 1
   m_AngularVelocityScale: 1
   m_TrackPosition: 1
-  m_SmoothPosition: 0
+  m_SmoothPosition: 1
   m_SmoothPositionAmount: 5
   m_TightenPosition: 0.5
   m_TrackRotation: 1
-  m_SmoothRotation: 0
+  m_SmoothRotation: 1
   m_SmoothRotationAmount: 5
   m_TightenRotation: 0.5
   m_TrackScale: 1
@@ -44980,9 +45013,9 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 1
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 0
-  m_CollisionDetection: 3
+  m_CollisionDetection: 2
 --- !u!4 &1846159468
 Transform:
   m_ObjectHideFlags: 0
@@ -45797,6 +45830,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -46013,6 +46047,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -47383,6 +47418,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -47485,6 +47521,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -47748,6 +47785,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -48727,6 +48765,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 0
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -51114,6 +51153,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 566498165649469604, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_CastDistance
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 566498165649469604, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_SphereCastRadius
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 926397660180637963, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_PokeHoverRadius
+      value: 0.025
+      objectReference: {fileID: 0}
     - target: {fileID: 926397660180637963, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
       propertyPath: m_InteractionManager
@@ -51133,11 +51187,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_InteractionLayers.m_Bits
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1626840542835389712, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_CastRadius
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 2661821861598262679, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2704389191948360916, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_Radius
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 2754277065986617799, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
@@ -51148,6 +51212,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3150907269423291393, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_PokeHoverRadius
+      value: 0.025
       objectReference: {fileID: 0}
     - target: {fileID: 3150907269423291393, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
@@ -51164,6 +51233,11 @@ PrefabInstance:
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3912240492757283700, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_Radius
+      value: 0.02
+      objectReference: {fileID: 0}
     - target: {fileID: 3987021931057262230, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
       propertyPath: m_InteractionManager
@@ -51173,6 +51247,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_InteractionLayers.m_Bits
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5026867031101227851, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_Radius
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 5218888534660200453, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
@@ -51276,9 +51355,24 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7283176920152209999, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
+      propertyPath: m_Radius
+      value: 0.02
+      objectReference: {fileID: 0}
+    - target: {fileID: 7283176920152209999, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7307286028631832394, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_CastDistance
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 7307286028631832394, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_SphereCastRadius
+      value: 0.001
+      objectReference: {fileID: 0}
     - target: {fileID: 7607234065704082460, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
       propertyPath: m_InteractionManager
@@ -51298,6 +51392,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_InteractionLayers.m_Bits
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8369825709997961982, guid: 4e07ebc652b23024083a59962ac4756c,
+        type: 3}
+      propertyPath: m_CastRadius
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 8370783528462026158, guid: 4e07ebc652b23024083a59962ac4756c,
         type: 3}
@@ -51834,6 +51933,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5994637110193312729, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
+      propertyPath: m_Radius
+      value: 0.29999998
+      objectReference: {fileID: 0}
+    - target: {fileID: 5994637110193312729, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
@@ -51929,13 +52033,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8508374479175876729, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
+      propertyPath: m_Interpolate
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8508374479175876729, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
       propertyPath: m_IsKinematic
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8508374479175876729, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
       propertyPath: m_CollisionDetection
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
@@ -51972,6 +52081,131 @@ PrefabInstance:
       propertyPath: m_InteractionManager
       value: 
       objectReference: {fileID: 1335358780}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: m_Colliders.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[0]'
+      value: 
+      objectReference: {fileID: 315633176}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[1]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[2]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[3]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[4]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[5]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[6]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[7]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[8]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[9]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[10]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[11]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[12]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[13]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[14]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[15]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[16]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[17]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[18]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[19]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[20]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[21]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[22]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      propertyPath: 'm_Colliders.Array.data[23]'
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 8609204631365923887, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
       propertyPath: m_SelectEntered.m_PersistentCalls.m_Calls.Array.size
@@ -52102,14 +52336,20 @@ PrefabInstance:
       propertyPath: m_Parameters.widthCurve.m_Curve.Array.data[1].outWeight
       value: 0.33333334
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 1432965937564232054, guid: 8177890d1716a84429e08d2405ce3eb9, type: 3}
+    - {fileID: 5994637110193312729, guid: 8177890d1716a84429e08d2405ce3eb9, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 2516947194938663752, guid: 8177890d1716a84429e08d2405ce3eb9,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1962826233}
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3001137397330901490, guid: 8177890d1716a84429e08d2405ce3eb9,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 315633176}
   m_SourcePrefab: {fileID: 100100000, guid: 8177890d1716a84429e08d2405ce3eb9, type: 3}
 --- !u!1 &3656223319381432850
 GameObject:
@@ -52309,12 +52549,12 @@ PrefabInstance:
         type: 3}
       propertyPath: onProphase.m_PersistentCalls.m_Calls.Array.data[4].m_Target
       value: 
-      objectReference: {fileID: 315633176}
+      objectReference: {fileID: 0}
     - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
         type: 3}
       propertyPath: onProphase.m_PersistentCalls.m_Calls.Array.data[5].m_Target
       value: 
-      objectReference: {fileID: 10390861}
+      objectReference: {fileID: 0}
     - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
         type: 3}
       propertyPath: onAnaphase.m_PersistentCalls.m_Calls.Array.data[10].m_Target

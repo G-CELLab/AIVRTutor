@@ -1,4 +1,4 @@
-﻿/*
+/*
  * MiVRy - 3D gesture recognition library plug-in for Unity.
  * Version 2.15
  * Copyright (c) 2026 MARUI-PlugIn (inc.)
@@ -225,7 +225,7 @@ public class GestureManagerVR : MonoBehaviour
             me.submenuContinuousGesturing.transform.localPosition = Vector3.zero;
             me.submenuContinuousGesturing.SetActive(me.gestureManager.continuous_gesturing);
         }
-        var editableTextFields = Object.FindObjectsByType<EditableTextField>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var editableTextFields = Object.FindObjectsByType<EditableTextField>(FindObjectsInactive.Include);
         foreach (var editableTextField in editableTextFields) {
             if (editableTextField.gameObject.activeSelf) {
                 editableTextField.refreshText();

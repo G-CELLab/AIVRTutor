@@ -72,7 +72,7 @@ public class AnaphaseChromatid : MonoBehaviour
     void CheckStageCompletion()
     {
         // Simple check: are both chromatids at poles?
-        AnaphaseChromatid[] allChromatids = FindObjectsByType<AnaphaseChromatid>(FindObjectsSortMode.None);
+        AnaphaseChromatid[] allChromatids = Object.FindObjectsByType<AnaphaseChromatid>(FindObjectsInactive.Exclude);
         int reachedCount = 0;
         foreach (var c in allChromatids)
         {
@@ -82,7 +82,7 @@ public class AnaphaseChromatid : MonoBehaviour
         if (reachedCount >= 2)
         {
             Debug.Log("Anaphase Complete! Moving to Telophase.");
-            GameManager gm = Object.FindFirstObjectByType<GameManager>();
+            GameManager gm = Object.FindAnyObjectByType<GameManager>();
             if (gm != null) gm.Telophase();
         }
     }
