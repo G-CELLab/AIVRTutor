@@ -37,6 +37,10 @@ public class Centrosome : MonoBehaviour
     public GameObject chromotid_R;
     public GameObject r_renderer;
 
+    [Header("Metaphase Zone")]
+    [Tooltip("Only this collider is allowed to progress Metaphase (assign P_Position_Meta collider).")]
+    [SerializeField] private Collider requiredMetaCollider;
+
     /* 굳이 아들로 뺐다가 부모로 뺄 필요없어짐 -> 오브젝트 자체가 달라져야함 1개짜리에서 2개짜리로
     private void Start()
     {
@@ -97,39 +101,33 @@ public class Centrosome : MonoBehaviour
     //3초 이상 Metaphase 구역에 잘 충돌하고 있으면 Anaphase로 이동
     private void OnTriggerStay(Collider other)
     {
-        if (GameManager.eGameStatus == GameManager.GameState.Metaphase && 
-            other.gameObject.CompareTag("Meta") && 
-            metaSuccess == false)
+        if (GameManager.eGameStatus != GameManager.GameState.Metaphase || metaSuccess)
+            return;
+
+        // Only allow progress inside the configured P_Position_Meta collider.
+        if (!IsRequiredMetaZone(other))
+            return;
+
+        if (sliderImg != null)
         {
-            if (sliderImg != null)
-            {
-                if (!sliderImg.enabled) sliderImg.enabled = true;
-                sliderImg.sprite = loadingImg;
-                sliderImg.color = new Color32(0, 255, 0, 155);
-                
-                timer += Time.deltaTime;
-                sliderImg.fillAmount = timer / lodingTime;
-            }
+            if (!sliderImg.enabled) sliderImg.enabled = true;
+            sliderImg.sprite = loadingImg;
+            sliderImg.color = new Color32(0, 255, 0, 155);
 
-            // Once the timer hits 5 seconds (lodingTime), then we trigger Anaphase
-            if (timer >= lodingTime)
-            {
-                metaSuccess = true;
-                if (particleEffect != null) particleEffect.SetActive(false);
-                if (sliderImg != null) sliderImg.enabled = false;
-
-                Debug.Log("Metaphase Complete - Transitioning to Anaphase");
-                if (gameManager != null) gameManager.Anaphase();
-                timer = 0f;
-            }
+            timer += Time.deltaTime;
+            sliderImg.fillAmount = timer / lodingTime;
         }
-        else
+
+        // Once the timer hits 5 seconds (lodingTime), then we trigger Anaphase
+        if (timer >= lodingTime)
         {
-            // Reset the slider timer if they leave the zone
-            if (timer > 0 && !metaSuccess) 
-            {
-                timer = 0f;
-            }
+            metaSuccess = true;
+            if (particleEffect != null) particleEffect.SetActive(false);
+            if (sliderImg != null) sliderImg.enabled = false;
+
+            Debug.Log("Metaphase Complete - Transitioning to Anaphase");
+            if (gameManager != null) gameManager.Anaphase();
+            timer = 0f;
         }
     }
 
@@ -151,9 +149,21 @@ public class Centrosome : MonoBehaviour
     
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.CompareTag("Meta") && metaSuccess == false)
+        if (metaSuccess == false && IsRequiredMetaZone(other))
         {
             timer = 0f;
         }
+    }
+
+    private bool IsRequiredMetaZone(Collider other)
+    {
+        if (other == null)
+            return false;
+
+        if (requiredMetaCollider != null)
+            return other == requiredMetaCollider || other.transform.IsChildOf(requiredMetaCollider.transform);
+
+        // Fallback for scenes not wired yet.
+        return other.name == "P_Position_Meta" || other.gameObject.CompareTag("Meta");
     }
 }
