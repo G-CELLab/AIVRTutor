@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,25 +11,41 @@ public class Touch_Tutorial : MonoBehaviour
     public Manager_Tutorial tutorialManager;
     public float touchingTime = 3.0f;
     float timer = 0.0f;
-    bool triggerDetected = false;
+    
+    // Track unique colliders to handle multiple parts of the hand (e.g., fingers/wrist) entering/exiting
+    private HashSet<Collider> activeColliders = new HashSet<Collider>();
+
     bool completed = false;
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.tag == "Left" || other.gameObject.tag == "Right")
+        if (other.CompareTag("Left") || other.CompareTag("Right"))
         {
-            triggerDetected = true;
+            if (!activeColliders.Contains(other))
+            {
+                activeColliders.Add(other);
+            }
             LogEventHelper.LogTriggerEnterWound();
             Debug.Log("Trigger_Enter_Wound");
         }
     }
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.tag == "Left" || other.gameObject.tag == "Right")
+        if (other.CompareTag("Left") || other.CompareTag("Right"))
         {
-            triggerDetected = false;
-            LogEventHelper.LogTriggerExitWound();
-            Debug.Log("Trigger_Exit_Wound");
+            if (activeColliders.Contains(other))
+            {
+                activeColliders.Remove(other);
+            }
+
+            // Reset only if NO hand colliders are left in the trigger
+            if (activeColliders.Count == 0 && !completed)
+            {
+                timer = 0f;
+                if (lodingImg != null) lodingImg.fillAmount = 0f;
+                LogEventHelper.LogTriggerExitWound();
+                Debug.Log("Trigger_Exit_Wound");
+            }
         }
     }
 
@@ -51,22 +67,19 @@ public class Touch_Tutorial : MonoBehaviour
             return;
         }
 
-        if (triggerDetected == true)
+        // If at least one collider is inside, progress the timer
+        if (activeColliders.Count > 0 && !completed)
         {
             Timer();
-        }
-        else
-        {
-            timer = 0f;
         }
     }
 
     void Timer()
     {
         timer += Time.deltaTime;
-        lodingImg.fillAmount = timer / touchingTime;
+        if (lodingImg != null) lodingImg.fillAmount = Mathf.Clamp01(timer / touchingTime);
 
-        if (timer > touchingTime)
+        if (timer >= touchingTime)
         {
             touchSphere.SetActive(false);
             //touchSphere.GetComponent<Renderer>().material.color = new Color(1, 255, 1);
