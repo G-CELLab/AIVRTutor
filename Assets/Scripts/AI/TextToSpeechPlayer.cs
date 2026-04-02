@@ -157,7 +157,7 @@ public class TextToSpeechPlayer : MonoBehaviour
 
         string fmt = string.IsNullOrEmpty(format) ? "wav" : format.ToLowerInvariant();
         string ext = (fmt == "wav") ? "wav" : (fmt == "mp3" ? "mp3" : "mp3"); // 默认mp3兜底
-        string filePath = Path.Combine(Application.persistentDataPath, "gpt_audio_reply." + ext);
+        string filePath = TrialLogPath.GetFilePath("gpt_audio_reply." + ext);
 
         try
         {
@@ -279,7 +279,7 @@ public class TextToSpeechPlayer : MonoBehaviour
             yield break;
         }
 
-        string path = Path.Combine(Application.persistentDataPath, "tts_reply.mp3");
+        string path = TrialLogPath.GetFilePath("tts_reply.mp3");
         File.WriteAllBytes(path, req.downloadHandler.data);
 
         using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.MPEG))

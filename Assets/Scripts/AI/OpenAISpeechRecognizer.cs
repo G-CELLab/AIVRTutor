@@ -462,7 +462,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         var outClip = AudioClip.Create("speech_trimmed", capture.Count, 1, sampleRate, false);
         outClip.SetData(capture.ToArray(), 0);
 
-        string filePath = Path.Combine(Application.persistentDataPath, "temp_speech.wav");
+        string filePath = TrialLogPath.GetFilePath("temp_speech.wav");
         try
         {
             byte[] wav = WavUtility.FromAudioClip(outClip); // 依赖你项目里的 WavUtility
