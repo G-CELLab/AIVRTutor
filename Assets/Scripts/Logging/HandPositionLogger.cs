@@ -123,7 +123,7 @@ public class HandPositionLogger : MonoBehaviour
         {
             // Create filename with cycle number (1-indexed for user readability)
             string cycleNumber = (currentCycle + 1).ToString();
-            csvFilePath = Path.Combine(Application.persistentDataPath, $"Hand_Position_Cycle{cycleNumber}.csv");
+            csvFilePath = TrialLogPath.GetFilePath($"Hand_Position_Cycle{cycleNumber}.csv");
             
             // Ensure directory exists
             string directory = Path.GetDirectoryName(csvFilePath);

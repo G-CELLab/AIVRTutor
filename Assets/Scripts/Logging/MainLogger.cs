@@ -409,7 +409,7 @@ public class MainLogger : MonoBehaviour
         {
             // Create filename with cycle number (1-indexed for user readability)
             string cycleNumber = (currentCycle + 1).ToString();
-            csvFilePath = Path.Combine(Application.persistentDataPath, $"MainLog_Cycle{cycleNumber}.csv");
+            csvFilePath = TrialLogPath.GetFilePath($"MainLog_Cycle{cycleNumber}.csv");
             
             string directory = Path.GetDirectoryName(csvFilePath);
             if (!Directory.Exists(directory))
