@@ -4810,8 +4810,8 @@ Transform:
   m_GameObject: {fileID: 412550149}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 70.091, y: 1.529, z: 79.462}
-  m_LocalScale: {x: 2.07379, y: 1.3252337, z: 1.8505048}
+  m_LocalPosition: {x: 70.198, y: 1.529, z: 79.462}
+  m_LocalScale: {x: 2.7284236, y: 1.3252337, z: 1.8505048}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -45056,6 +45056,7 @@ GameObject:
   - component: {fileID: 1846159466}
   - component: {fileID: 1846159471}
   - component: {fileID: 1846159472}
+  - component: {fileID: 1846159473}
   m_Layer: 0
   m_Name: Centriole1
   m_TagString: Untagged
@@ -45401,6 +45402,22 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 0
+--- !u!114 &1846159473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1846159465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01d905df12aab104f8d5ed7661f7ae4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ResetObject
+  boundaryCollider: {fileID: 412550150}
+  resetRotation: 1
+  resetScale: 0
+  resetCooldownSeconds: 0.25
 --- !u!1 &1864193204
 GameObject:
   m_ObjectHideFlags: 0
