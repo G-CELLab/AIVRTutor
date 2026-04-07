@@ -976,27 +976,28 @@ public class GPTConnector : MonoBehaviour
         // 2) 送音频（必须至少 100ms）
         if (pcm16User == null || pcm16User.Length < 4800) // 24kHz * 0.1s * 2 bytes = 4800
         {
-            Warn("[Realtime] Audio buffer too small (< 100ms). Skipping request.");
+            string bytesStr = pcm16User == null ? "null" : pcm16User.Length.ToString();
+            Warn($"[Realtime] Audio buffer too small ({bytesStr} bytes). Need 4800 for 100ms. Aborting request.");
             onReplyComplete?.Invoke();
             yield break;
         }
         string b64 = Convert.ToBase64String(pcm16User);
         if (string.IsNullOrEmpty(b64))
         {
-            Warn("[Realtime] Audio buffer encoded empty. Skipping request.");
+            Warn("[Realtime] Audio buffer base64 encode failure. Aborting request.");
             onReplyComplete?.Invoke();
             yield break;
         }
 
-        string append = "{\"type\":\"input_audio_buffer.append\",\"audio\":\"" + b64 + "\"}";
-        yield return SendWsText(append);
-        if (_ws == null || _ws.State != WebSocketState.Open)
-        {
-            D("[Realtime] WS closed before audio commit; aborting request.");
-            onReplyComplete?.Invoke();
-            yield break;
-        }
+        if (_ws == null || _ws.State != WebSocketState.Open) { onReplyComplete?.Invoke(); yield break; }
+        
+        yield return SendWsText("{\"type\":\"input_audio_buffer.append\",\"audio\":\"" + b64 + "\"}");
+        yield return null; // Sequence safety
+        
+        if (_ws == null || _ws.State != WebSocketState.Open) { onReplyComplete?.Invoke(); yield break; }
+        
         yield return SendWsText("{\"type\":\"input_audio_buffer.commit\"}");
+        yield return null; // Sequence safety
         if (_ws == null || _ws.State != WebSocketState.Open)
         {
             D("[Realtime] WS closed before response.create; aborting request.");

@@ -8,7 +8,7 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 
 /// <summary>
 /// Comprehensive logging system that tracks:
-/// - Gestures (left/right pinch)
+/// - Gestures (left/right grab)
 /// - Touches (what objects hands are touching)
 /// - Info Panel state (which tutorial panel is active)
 /// - Phase changes (game phase transitions)
@@ -53,7 +53,7 @@ public class MainLogger : MonoBehaviour
     // Queue for user utterances sent to the AI agent.
     private Queue<string> userSpeechQueue = new Queue<string>();
 
-    // Last valid touch values used to smooth transient trigger dropouts while pinching.
+    // Last valid touch values used to smooth transient trigger dropouts while grabbing.
     private string lastStableLeftTouch = "";
     private string lastStableRightTouch = "";
     
@@ -173,20 +173,20 @@ public class MainLogger : MonoBehaviour
     {
         if (leftHandManager == null || !leftHandManager.isGrabbed_left)
             return "";
-        return "Left_Pinch";
+        return "Left_Grab";
     }
 
     private string GetRightGesture()
     {
         if (rightHandManager == null || !rightHandManager.isGrabbed_right)
             return "";
-        return "Right_Pinch";
+        return "Right_Grab";
     }
 
     private string GetLeftTouch()
     {
-        bool isPinching = leftHandManager != null && leftHandManager.isGrabbed_left;
-        if (isPinching)
+        bool isGrabbing = leftHandManager != null && leftHandManager.isGrabbed_left;
+        if (isGrabbing)
         {
             string selectedNutrient = GetSelectedNutrientName(leftHandManager);
             if (!string.IsNullOrEmpty(selectedNutrient))
@@ -205,10 +205,10 @@ public class MainLogger : MonoBehaviour
             return cleanedTouch;
         }
 
-        if (isPinching && !string.IsNullOrEmpty(lastStableLeftTouch))
+        if (isGrabbing && !string.IsNullOrEmpty(lastStableLeftTouch))
             return lastStableLeftTouch;
 
-        if (!isPinching)
+        if (!isGrabbing)
             lastStableLeftTouch = "";
 
         return "";
@@ -216,8 +216,8 @@ public class MainLogger : MonoBehaviour
 
     private string GetRightTouch()
     {
-        bool isPinching = rightHandManager != null && rightHandManager.isGrabbed_right;
-        if (isPinching)
+        bool isGrabbing = rightHandManager != null && rightHandManager.isGrabbed_right;
+        if (isGrabbing)
         {
             string selectedNutrient = GetSelectedNutrientName(rightHandManager);
             if (!string.IsNullOrEmpty(selectedNutrient))
@@ -236,10 +236,10 @@ public class MainLogger : MonoBehaviour
             return cleanedTouch;
         }
 
-        if (isPinching && !string.IsNullOrEmpty(lastStableRightTouch))
+        if (isGrabbing && !string.IsNullOrEmpty(lastStableRightTouch))
             return lastStableRightTouch;
 
-        if (!isPinching)
+        if (!isGrabbing)
             lastStableRightTouch = "";
 
         return "";

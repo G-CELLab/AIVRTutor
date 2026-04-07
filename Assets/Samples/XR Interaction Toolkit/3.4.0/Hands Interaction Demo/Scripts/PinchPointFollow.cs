@@ -144,12 +144,15 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.Hands
             if (!TryGetPinchPosition(args, out var targetPos))
                 return;
 
+            if (m_OneEuroFilterVector3 == null)
+                m_OneEuroFilterVector3 = new OneEuroFilterVector3(targetPos);
+
             var filteredTargetPos = m_OneEuroFilterVector3.Filter(targetPos, Time.deltaTime);
 
             // Hand pose data is in local space relative to the XR Origin.
             transform.localPosition = filteredTargetPos;
 
-            if (m_HasTargetRotationTransform && m_HasRayProvider)
+            if (m_HasTargetRotationTransform && m_HasRayProvider && m_RayProvider != null)
             {
                 // Given that the ray endpoint is in world space, we need to use the world space transform of this point to determine the target rotation.
                 // This allows us to keep orientation consistent when moving the XR Origin for locomotion.

@@ -12,8 +12,13 @@ public class AnimDNA_P : MonoBehaviour
     bool isDone = false;
     public GameManager gameManager;
     
-    // Selection tracking via XRI
+    // Selection tracking via XRI and HandManager
     private XRGrabInteractable grabInteractable;
+    private LeftHandManager leftManager;
+    private RightHandManager rightManager;
+    private Transform activeHand;
+    private Vector3 grabPosOffset;
+    private Quaternion grabRotOffset;
 
     public GameObject text1;
     public GameObject text2;
@@ -26,6 +31,8 @@ public class AnimDNA_P : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         grabInteractable = GetComponent<XRGrabInteractable>();
+        leftManager = Object.FindAnyObjectByType<LeftHandManager>();
+        rightManager = Object.FindAnyObjectByType<RightHandManager>();
         
         // Fix levitation: Set to Instantaneous for hand tracking
         if (grabInteractable != null)
@@ -60,11 +67,24 @@ public class AnimDNA_P : MonoBehaviour
         delayTimer += Time.deltaTime;
         if (delayTimer < prophaseStartDelay) return;
 
-        // Check if being held
-        if (grabInteractable != null && grabInteractable.isSelected)
+        // Check if being held via XRI or custom manager
+        bool isHeldByXRI = grabInteractable != null && grabInteractable.isSelected;
+        
+        // Manage manual grab tracking
+        HandleManualGrab();
+        bool isHeldByManager = activeHand != null;
+
+        if (isHeldByXRI || isHeldByManager)
         {
             timer += Time.deltaTime;
             
+            // Apply manual movement if not selected by XRI
+            if (isHeldByManager && !isHeldByXRI)
+            {
+                // transform.position = // Handled by XRI activeHand.TransformPoint(grabPosOffset);
+                // transform.rotation = // Handled by XRI activeHand.rotation * grabRotOffset;
+            }
+
             if (anim != null)
             {
                 anim.SetBool("isOpened", true);
@@ -88,6 +108,44 @@ public class AnimDNA_P : MonoBehaviour
             
             if (timer > 0) timer -= Time.deltaTime;
         }
+    }
+
+    void HandleManualGrab()
+    {
+        // Check if we should release
+        if (activeHand != null)
+        {
+            bool stillGrabbed = false;
+            if (activeHand == leftManager?.transform) stillGrabbed = leftManager.isGrabbed_left;
+            else if (activeHand == rightManager?.transform) stillGrabbed = rightManager.isGrabbed_right;
+
+            if (!stillGrabbed)
+            {
+                activeHand = null;
+            }
+        }
+
+        // Check for new grab
+        if (activeHand == null)
+        {
+            if (leftManager != null && leftManager.isGrabbed_left && IsNear(leftManager.transform))
+            {
+                activeHand = leftManager.transform;
+                grabPosOffset = activeHand.InverseTransformPoint(transform.position);
+                grabRotOffset = Quaternion.Inverse(activeHand.rotation) * transform.rotation;
+            }
+            else if (rightManager != null && rightManager.isGrabbed_right && IsNear(rightManager.transform))
+            {
+                activeHand = rightManager.transform;
+                grabPosOffset = activeHand.InverseTransformPoint(transform.position);
+                grabRotOffset = Quaternion.Inverse(activeHand.rotation) * transform.rotation;
+            }
+        }
+    }
+
+    bool IsNear(Transform hand)
+    {
+        return Vector3.Distance(transform.position, hand.position) < 0.25f;
     }
 
     void ResetState()

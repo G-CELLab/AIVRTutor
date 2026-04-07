@@ -22,42 +22,30 @@ public class ChromatidGrab : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        // Only allow interaction during Anaphase
-        if (GameManager.eGameStatus != GameManager.GameState.Anaphase) return;
-
-        HandleGrab();
-    }
-
     void HandleGrab()
     {
-        Transform activeHand = null;
+        Transform activeHandTransform = null;
 
         // Check Left Hand
         if (left != null && left.isGrabbed_left)
         {
             if (Vector3.Distance(transform.position, left.transform.position) < grabRange)
-                activeHand = left.transform;
+                activeHandTransform = left.transform;
         }
 
         // Check Right Hand
-        if (activeHand == null && right != null && right.isGrabbed_right)
+        if (activeHandTransform == null && right != null && right.isGrabbed_right)
         {
             if (Vector3.Distance(transform.position, right.transform.position) < grabRange)
-                activeHand = right.transform;
+                activeHandTransform = right.transform;
         }
 
-        if (activeHand != null)
+        if (activeHandTransform != null)
         {
-            // BREAK FROM PARENT: If this is part of a group, pull it out
-            if (transform.parent != null) transform.SetParent(null);
+            // BREAK FROM PARENT: Handled by XRI
+            // if (transform.parent != null) transform.SetParent(null);
 
-            // FORCE POSITION: Directly overwrite the transform
-            transform.position = activeHand.position;
-
-            // Keep the rotation neutral so it's easier to see
-            transform.rotation = activeHand.rotation;
+            // Snapping behavior handled by XRGrabInteractable
         }
     }
 }

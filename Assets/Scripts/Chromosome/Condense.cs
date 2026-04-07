@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class Condense : MonoBehaviour
@@ -35,15 +35,15 @@ public class Condense : MonoBehaviour
             return;
         }
 
-        // 2. Check Input: Is either hand pinching?
-        bool isPinching = (leftHand != null && leftHand.isGrabbed_left) ||
+        // 2. Check Input: Is either hand grabbing?
+        bool isGrabbing = (leftHand != null && leftHand.isGrabbed_left) ||
                           (rightHand != null && rightHand.isGrabbed_right);
 
         // 3. Check Location: Distance to the fairy effect
         float distance = Vector3.Distance(transform.position, targetAreaObject.transform.position);
         bool isInArea = distance < areaRadius;
 
-        if (isPinching && isInArea)
+        if (isGrabbing && isInArea)
         {
             timer += Time.deltaTime;
             float progress = Mathf.Clamp01(timer / targetTime);

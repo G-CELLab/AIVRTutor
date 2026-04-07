@@ -11,31 +11,50 @@ public class ChromatidGrabber : MonoBehaviour
         right = Object.FindAnyObjectByType<RightHandManager>();
     }
 
+    private Transform activeHand;
+    private Vector3 grabPosOffset;
+    private Quaternion grabRotOffset;
+
     void Update()
     {
         // Only allow movement during Metaphase or Anaphase
         if (GameManager.eGameStatus != GameManager.GameState.Metaphase &&
             GameManager.eGameStatus != GameManager.GameState.Anaphase) return;
 
-        bool isPinching = false;
-        Transform activeHand = null;
+        // Check if we should release
+        if (activeHand != null)
+        {
+            bool stillGrabbed = false;
+            if (activeHand == left?.transform) stillGrabbed = left.isGrabbed_left;
+            else if (activeHand == right?.transform) stillGrabbed = right.isGrabbed_right;
 
-        // Check Left Hand
-        if (left != null && left.isGrabbed_left && IsNear(left.transform))
-        {
-            isPinching = true;
-            activeHand = left.transform;
-        }
-        // Check Right Hand
-        else if (right != null && right.isGrabbed_right && IsNear(right.transform))
-        {
-            isPinching = true;
-            activeHand = right.transform;
+            if (!stillGrabbed)
+            {
+                activeHand = null;
+            }
         }
 
-        if (isPinching && activeHand != null)
+        // Not being held, check for new grab
+        if (activeHand == null)
         {
-            transform.position = activeHand.position;
+            if (left != null && left.isGrabbed_left && IsNear(left.transform))
+            {
+                activeHand = left.transform;
+                grabPosOffset = activeHand.InverseTransformPoint(transform.position);
+                grabRotOffset = Quaternion.Inverse(activeHand.rotation) * transform.rotation;
+            }
+            else if (right != null && right.isGrabbed_right && IsNear(right.transform))
+            {
+                activeHand = right.transform;
+                grabPosOffset = activeHand.InverseTransformPoint(transform.position);
+                grabRotOffset = Quaternion.Inverse(activeHand.rotation) * transform.rotation;
+            }
+        }
+
+        if (activeHand != null)
+        {
+            // transform.position = // Handled by XRI activeHand.TransformPoint(grabPosOffset);
+            // transform.rotation = // Handled by XRI activeHand.rotation * grabRotOffset;
         }
     }
 

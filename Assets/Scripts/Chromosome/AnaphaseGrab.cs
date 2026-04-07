@@ -10,20 +10,22 @@ public class AnaphaseGrab : MonoBehaviour
 
     private bool isBeingHeld = false;
     private Transform activeHand;
+    private Vector3 grabPosOffset;
+    private Quaternion grabRotOffset;
 
     void Update()
     {
         // 1. Only allow pulling if the GameManager says it's Anaphase
         if (GameManager.eGameStatus != GameManager.GameState.Anaphase) return;
 
-        // 2. Check for the pinch/grab
+        // 2. Check for the grab
         CheckForGrab();
 
         // 3. Move the chromatid if held
         if (isBeingHeld && activeHand != null)
         {
-            transform.position = activeHand.position;
-
+            // Manual movement disabled to let XRGrabInteractable handle the transform.
+            
             // Check if we've pulled it far enough to finish the stage
             CheckCompletion();
         }
@@ -55,12 +57,16 @@ public class AnaphaseGrab : MonoBehaviour
         {
             isBeingHeld = true;
             activeHand = leftHand.transform;
+            grabPosOffset = activeHand.InverseTransformPoint(transform.position);
+            grabRotOffset = Quaternion.Inverse(activeHand.rotation) * transform.rotation;
         }
         // Check Right Hand
         else if (rightPossible && rightHand.isGrabbed_right && IsHandNear(rightHand.transform))
         {
             isBeingHeld = true;
             activeHand = rightHand.transform;
+            grabPosOffset = activeHand.InverseTransformPoint(transform.position);
+            grabRotOffset = Quaternion.Inverse(activeHand.rotation) * transform.rotation;
         }
     }
 

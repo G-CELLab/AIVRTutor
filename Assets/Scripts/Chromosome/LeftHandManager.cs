@@ -1,138 +1,190 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
-#if XR_HANDS_1_2_OR_NEWER
 using System.Collections.Generic;
 using UnityEngine.XR.Hands;
-#endif
+using Unity.XR.CoreUtils;
 
 public class LeftHandManager : MonoBehaviour
 {
+    [Header("State")]
     public bool isGrabbed_left = false;
 
     [Header("Interactor Source")]
     [SerializeField]
     private NearFarInteractor handInteractor;
 
-    [Header("Pinch Settings")]
+    [Header("Fist Settings")]
     [SerializeField]
-    private float pinchPressDistance = 0.025f;
+    private float fistThreshold = 0.08f; 
 
-    [SerializeField]
-    private float pinchReleaseDistance = 0.04f;
-
-    private bool pinchActiveByDistance;
-
-#if XR_HANDS_1_2_OR_NEWER
-    private List<XRHandSubsystem> handSubsystems;
     private XRHandSubsystem handSubsystem;
-#endif
+    private static List<XRHandSubsystem> s_Subsystems = new List<XRHandSubsystem>();
+    private XROrigin xrOrigin;
+
+    private Transform visualPalm;
+    private Vector3 lastValidWorldPos;
+    private Quaternion lastValidWorldRot;
+    private bool hasEverBeenTracked = false;
 
     void Start()
     {
+        xrOrigin = Object.FindAnyObjectByType<XROrigin>();
         EnsureInteractorReference();
-        EnsureValidPinchThresholds();
-#if XR_HANDS_1_2_OR_NEWER
-        handSubsystems = new List<XRHandSubsystem>();
-        TryFindHandSubsystem();
-#endif
+        ConfigureInteractorInput();
+        FindVisualPalm();
+        
+        lastValidWorldPos = transform.position;
+        lastValidWorldRot = transform.rotation;
     }
 
-    private void OnDisable()
+    private void ConfigureInteractorInput()
     {
-#if XR_HANDS_1_2_OR_NEWER
-        if (handSubsystems != null)
+        if (handInteractor != null)
         {
-            handSubsystems.Clear();
-            handSubsystems = null;
+            handInteractor.selectInput.inputSourceMode = (UnityEngine.XR.Interaction.Toolkit.Inputs.Readers.XRInputButtonReader.InputSourceMode)4;
+            handInteractor.attachTransform = null;
+            
+            foreach (Transform child in handInteractor.transform)
+            {
+                if (child.name.Contains("Select Input") || child.name.Contains("UI Press Input"))
+                    child.gameObject.SetActive(false);
+            }
         }
-        handSubsystem = null;
-#endif
+    }
+
+    private void FindVisualPalm()
+    {
+        if (transform.parent != null)
+        {
+            var allChildren = transform.parent.GetComponentsInChildren<Transform>(true);
+            foreach (var child in allChildren)
+            {
+                if (child.name == "L_Palm" && child.gameObject.activeInHierarchy)
+                {
+                    visualPalm = child;
+                    break;
+                }
+            }
+        }
     }
 
     void Update()
     {
         EnsureInteractorReference();
 
-        if (handInteractor != null)
+        if (TryGetPalmWorldPose(out Vector3 pPos, out Quaternion pRot))
         {
-            transform.position = handInteractor.transform.position;
-            transform.rotation = handInteractor.transform.rotation;
+            lastValidWorldPos = pPos;
+            lastValidWorldRot = pRot;
+            hasEverBeenTracked = true;
+        }
+        else if (visualPalm != null && visualPalm.gameObject.activeInHierarchy)
+        {
+            lastValidWorldPos = visualPalm.position;
+            lastValidWorldRot = visualPalm.rotation;
+            hasEverBeenTracked = true;
         }
 
-        bool selectionPinch = handInteractor != null && handInteractor.hasSelection;
-        bool distancePinch = TryGetDistancePinch();
+        if (hasEverBeenTracked)
+        {
+            transform.position = lastValidWorldPos;
+            transform.rotation = lastValidWorldRot;
+            
+            if (handInteractor != null)
+            {
+                handInteractor.transform.position = transform.position;
+                handInteractor.transform.rotation = transform.rotation;
+            }
+        }
 
-        isGrabbed_left = selectionPinch || distancePinch;
+        bool gestureActive = EvaluateClosedFist();
+        UpdateXRISelection(gestureActive);
+
+        isGrabbed_left = gestureActive;
+    }
+
+    private void UpdateXRISelection(bool active)
+    {
+        if (handInteractor == null || !handInteractor.enabled || !handInteractor.gameObject.activeInHierarchy)
+            return;
+
+        if (active && !handInteractor.hasSelection)
+        {
+            var targets = handInteractor.interactablesHovered;
+            if (targets != null && targets.Count > 0)
+            {
+                var target = targets[0] as UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable;
+                if (target != null && target.IsSelectableBy(handInteractor))
+                {
+                    handInteractor.StartManualInteraction(target);
+                }
+            }
+        }
+        else if (!active && handInteractor.hasSelection)
+        {
+            handInteractor.EndManualInteraction();
+        }
     }
 
     private void EnsureInteractorReference()
     {
-        if (handInteractor != null)
-            return;
-
-        handInteractor = GetComponentInChildren<NearFarInteractor>();
+        if (handInteractor != null && handInteractor.gameObject.activeInHierarchy) return;
+        handInteractor = GetComponentInChildren<NearFarInteractor>(true);
+        if (handInteractor == null && transform.parent != null)
+            handInteractor = transform.parent.GetComponentInChildren<NearFarInteractor>(true);
     }
 
-    private void EnsureValidPinchThresholds()
+    private bool TryGetPalmWorldPose(out Vector3 pos, out Quaternion rot)
     {
-        pinchPressDistance = Mathf.Max(0.001f, pinchPressDistance);
-        pinchReleaseDistance = Mathf.Max(pinchPressDistance + 0.001f, pinchReleaseDistance);
+        pos = Vector3.zero; rot = Quaternion.identity;
+        if (handSubsystem == null || !handSubsystem.running) TryFindHandSubsystem();
+        if (handSubsystem != null && handSubsystem.running && handSubsystem.leftHand.isTracked)
+        {
+            var palm = handSubsystem.leftHand.GetJoint(XRHandJointID.Palm);
+            if (palm.TryGetPose(out var pose))
+            {
+                if (xrOrigin != null)
+                {
+                    pos = xrOrigin.transform.TransformPoint(pose.position);
+                    rot = xrOrigin.transform.rotation * pose.rotation;
+                }
+                else { pos = pose.position; rot = pose.rotation; }
+                return true;
+            }
+        }
+        return false;
     }
 
-    private bool TryGetDistancePinch()
+    private bool EvaluateClosedFist()
     {
-#if XR_HANDS_1_2_OR_NEWER
-        if (handSubsystem == null)
-            TryFindHandSubsystem();
-
-        if (handSubsystem == null)
-            return false;
+        if (handSubsystem == null || !handSubsystem.running) TryFindHandSubsystem();
+        if (handSubsystem == null || !handSubsystem.running) return false;
 
         XRHand hand = handSubsystem.leftHand;
-        if (!hand.isTracked)
+        if (!hand.isTracked) return false;
+
+        var palm = hand.GetJoint(XRHandJointID.Palm);
+        if (!palm.TryGetPose(out var pPose)) return false;
+
+        int curled = 0;
+        XRHandJointID[] tips = { XRHandJointID.IndexTip, XRHandJointID.MiddleTip, XRHandJointID.RingTip, XRHandJointID.LittleTip };
+        foreach (var id in tips)
         {
-            pinchActiveByDistance = false;
-            return false;
-        }
-
-        var thumbTip = hand.GetJoint(XRHandJointID.ThumbTip);
-        var indexTip = hand.GetJoint(XRHandJointID.IndexTip);
-
-        if (!thumbTip.TryGetPose(out var thumbPose) || !indexTip.TryGetPose(out var indexPose))
-        {
-            pinchActiveByDistance = false;
-            return false;
-        }
-
-        float tipDistance = Vector3.Distance(thumbPose.position, indexPose.position);
-        if (pinchActiveByDistance)
-            pinchActiveByDistance = tipDistance <= pinchReleaseDistance;
-        else
-            pinchActiveByDistance = tipDistance <= pinchPressDistance;
-
-        return pinchActiveByDistance;
-#else
-        return false;
-#endif
-    }
-
-#if XR_HANDS_1_2_OR_NEWER
-    private void TryFindHandSubsystem()
-    {
-        if (handSubsystem != null)
-            return;
-
-        SubsystemManager.GetSubsystems(handSubsystems);
-        for (int i = 0; i < handSubsystems.Count; i++)
-        {
-            if (handSubsystems[i] != null && handSubsystems[i].running)
+            if (hand.GetJoint(id).TryGetPose(out var tipPose))
             {
-                handSubsystem = handSubsystems[i];
-                return;
+                if (Vector3.Distance(pPose.position, tipPose.position) <= fistThreshold)
+                    curled++;
             }
         }
 
-        handSubsystem = handSubsystems.Count > 0 ? handSubsystems[0] : null;
+        // Deliberate Closed Fist: at least 3 fingers must be curled. 
+        // Instant release if fewer than 3.
+        return curled >= 3;
     }
-#endif
+
+    private void TryFindHandSubsystem()
+    {
+        SubsystemManager.GetSubsystems(s_Subsystems);
+        foreach (var s in s_Subsystems) { if (s.running) { handSubsystem = s; break; } }
+    }
 }

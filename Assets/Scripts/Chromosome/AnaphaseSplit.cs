@@ -17,27 +17,27 @@ public class AnaphaseSplit : MonoBehaviour
 
         // Determine which hand should grab this specific side
         bool canGrab = false;
-        Transform grabbingHand = null;
+        Transform grabbingHandTransform = null;
 
         if (side == Side.Left && leftHand != null && leftHand.isGrabbed_left)
         {
             canGrab = true;
-            grabbingHand = leftHand.transform;
+            grabbingHandTransform = leftHand.transform;
         }
         else if (side == Side.Right && rightHand != null && rightHand.isGrabbed_right)
         {
             canGrab = true;
-            grabbingHand = rightHand.transform;
+            grabbingHandTransform = rightHand.transform;
         }
 
-        if (canGrab && IsNear(grabbingHand))
+        if (canGrab && IsNear(grabbingHandTransform))
         {
-            transform.position = grabbingHand.position;
+            // // transform.position = // Handled by XRI grabbingHandTransform.position; // Handled by XRGrabInteractable
         }
     }
 
     bool IsNear(Transform t)
     {
-        return Vector3.Distance(transform.position, t.position) < 0.2f;
+        return Vector3.Distance(transform.position, t.position) < 0.4f;
     }
 }

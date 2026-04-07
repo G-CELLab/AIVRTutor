@@ -584,7 +584,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     {
         AudioSource[] all;
 #if UNITY_2020_1_OR_NEWER
-        all = GameObject.FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+        all = UnityEngine.Object.FindObjectsByType<AudioSource>(FindObjectsInactive.Exclude);
 #else
         var active = UnityEngine.Object.FindObjectsOfType<AudioSource>();
         var maybeAll = Resources.FindObjectsOfTypeAll<AudioSource>();

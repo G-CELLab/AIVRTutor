@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 
 //
@@ -240,10 +240,10 @@ public class TTSAnimatorDriver : MonoBehaviour
             LogParamCheck(trigDZ22, _hasDZ22, "Trigger");
             
             LogParamCheck(animSpeedParam, _hasAnimSpeed, "Float");
-            if (!_hasAnimSpeed) 
-                Debug.LogWarning("[TTSAnimatorDriver] ⚠️ gestureSpeed Float parameter not found - LINE UP gesture speed control disabled. Add 'gestureSpeed' Float parameter to Animator to enable.");
-        }
-    }
+            // if (!_hasAnimSpeed) 
+            //    Debug.LogWarning("[TTSAnimatorDriver] ⚠️ gestureSpeed Float parameter not found - LINE UP gesture speed control disabled. Add 'gestureSpeed' Float parameter to Animator to enable.");
+            }
+            }
 
     bool HasParam(string name, AnimatorControllerParameterType type)
     {
@@ -256,8 +256,8 @@ public class TTSAnimatorDriver : MonoBehaviour
 
     void LogParamCheck(string name, bool ok, string type)
     {
-        if (ok) Debug.Log($"[TTSAnimatorDriver] ✅ Animator 参数存在: {type} {name}");
-        else Debug.LogWarning($"[TTSAnimatorDriver] ❌ 缺少 Animator 参数: {type} {name}");
+        // if (ok) Debug.Log($"[TTSAnimatorDriver] ✅ Animator 参数存在: {type} {name}");
+        // else Debug.LogWarning($"[TTSAnimatorDriver] ❌ 缺少 Animator 参数: {type} {name}");
     }
 
     // ======= 右键菜单：一键自测（不依赖语音/识别） =======

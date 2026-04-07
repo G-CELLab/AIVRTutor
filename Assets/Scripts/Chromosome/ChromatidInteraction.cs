@@ -9,15 +9,6 @@ public class ChromatidInteraction : MonoBehaviour
     public enum HandSide { Left, Right }
     public HandSide preferredHand;
 
-    void Update()
-    {
-        // 1. Only allow interaction during Metaphase or Anaphase 
-        if (GameManager.eGameStatus != GameManager.GameState.Metaphase &&
-            GameManager.eGameStatus != GameManager.GameState.Anaphase) return;
-
-        CheckGrab();
-    }
-
     void CheckGrab()
     {
         bool grabbed = false;
@@ -35,9 +26,10 @@ public class ChromatidInteraction : MonoBehaviour
             handTransform = rightHand.transform;
         }
 
-        if (grabbed && Vector3.Distance(transform.position, handTransform.position) < 0.2f)
+        if (grabbed && Vector3.Distance(transform.position, handTransform.position) < 0.4f)
         {
-            transform.position = handTransform.position;
+            // Snapping
+            // // transform.position = // Handled by XRI handTransform.position; // Handled by XRGrabInteractable
         }
     }
 }

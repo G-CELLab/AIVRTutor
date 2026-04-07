@@ -21,7 +21,7 @@ public class TextToSpeechPlayer : MonoBehaviour
     {
         while (true)
         {
-            var all = GameObject.FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+            var all = UnityEngine.Object.FindObjectsByType<AudioSource>(FindObjectsInactive.Exclude);
             foreach (var s in all)
             {
                 if (s == null) continue;
