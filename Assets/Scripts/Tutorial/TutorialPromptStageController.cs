@@ -21,6 +21,7 @@ public class TutorialPromptStageController : MonoBehaviour
     public float greetingDelay = 0.5f;
 
     private Manager_Tutorial.TutorialStage lastStage = (Manager_Tutorial.TutorialStage)(-1);
+    private Coroutine greetingRoutine;
 
     private void Awake()
     {
@@ -63,8 +64,23 @@ public class TutorialPromptStageController : MonoBehaviour
             // Trigger AI greeting for question stages
             if (autoGreetOnStageEnter && IsQuestionStage(stage))
             {
-                StartCoroutine(TriggerAIGreeting(stage));
+                if (greetingRoutine != null)
+                {
+                    StopCoroutine(greetingRoutine);
+                    greetingRoutine = null;
+                }
+
+                greetingRoutine = StartCoroutine(TriggerAIGreeting(stage));
             }
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (greetingRoutine != null)
+        {
+            StopCoroutine(greetingRoutine);
+            greetingRoutine = null;
         }
     }
 
@@ -79,11 +95,33 @@ public class TutorialPromptStageController : MonoBehaviour
     private System.Collections.IEnumerator TriggerAIGreeting(Manager_Tutorial.TutorialStage stage)
     {
         yield return new WaitForSeconds(greetingDelay);
+
+        if (tutorialManager == null || gptConnector == null)
+        {
+            greetingRoutine = null;
+            yield break;
+        }
+
+        // If the stage changed while waiting, do not send stale onboarding.
+        if (tutorialManager.CurrentStage != stage)
+        {
+            greetingRoutine = null;
+            yield break;
+        }
+
+        // Avoid racing with a real learner utterance that already triggered a response.
+        if (gptConnector.IsAgentBusy)
+        {
+            Debug.Log($"[TutorialPrompt] Skipping delayed greeting for {stage} because agent is already busy.");
+            greetingRoutine = null;
+            yield break;
+        }
         
         string greetingPrompt = GetGreetingForStage(stage);
         Debug.Log($"[TutorialPrompt] Triggering AI greeting for {stage}: {greetingPrompt}");
         
         gptConnector.SendToGPT(greetingPrompt, null);
+        greetingRoutine = null;
     }
     
     private string GetGreetingForStage(Manager_Tutorial.TutorialStage stage)

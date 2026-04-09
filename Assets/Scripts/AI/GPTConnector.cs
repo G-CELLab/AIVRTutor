@@ -1995,8 +1995,8 @@ public class GPTConnector : MonoBehaviour
     }
 
     private string GetPhaseBaseName(GameManager.GameState gs) { return $"phase_{gs.ToString().ToLower()}"; }
-    private string GetPhaseTxtPath(GameManager.GameState gs) { return TrialLogPath.GetFilePath(GetPhaseBaseName(gs) + ".txt"); }
-    private string GetPhaseWavPath(GameManager.GameState gs) { return TrialLogPath.GetFilePath(GetPhaseBaseName(gs) + ".wav"); }
+    private string GetPhaseTxtPath(GameManager.GameState gs) { return ResolveTrialLogFilePath(GetPhaseBaseName(gs) + ".txt"); }
+    private string GetPhaseWavPath(GameManager.GameState gs) { return ResolveTrialLogFilePath(GetPhaseBaseName(gs) + ".wav"); }
 
     private IEnumerator GeneratePhaseTTS(GameManager.GameState gs, string text)
     {
@@ -2186,12 +2186,46 @@ public class GPTConnector : MonoBehaviour
         return key.Substring(0, 4) + "****" + key.Substring(key.Length - 4);
     }
 
+    private string ResolveTrialLogFilePath(string fileName)
+    {
+        if (string.IsNullOrEmpty(fileName)) fileName = "unnamed.log";
+
+        // Use TrialLogPath when present, but avoid hard compile-time dependency.
+        try
+        {
+            var trialLogType = Type.GetType("TrialLogPath")
+                ?? Type.GetType("TrialLogPath, Assembly-CSharp");
+
+            if (trialLogType != null)
+            {
+                var method = trialLogType.GetMethod("GetFilePath", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (method != null)
+                {
+                    string resolved = method.Invoke(null, new object[] { fileName }) as string;
+                    if (!string.IsNullOrEmpty(resolved))
+                    {
+                        return resolved;
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("[File] TrialLogPath reflection failed: " + e.Message);
+        }
+
+        // Fallback path keeps logs grouped under persistent data.
+        string fallbackDir = Path.Combine(Application.persistentDataPath, "trial_logs", "fallback");
+        Directory.CreateDirectory(fallbackDir);
+        return Path.Combine(fallbackDir, fileName);
+    }
+
     private void SafeWriteFile(string name, string content)
     {
         if (!dumpResponsesToFile) return;
         try
         {
-            string path = TrialLogPath.GetFilePath(name);
+            string path = ResolveTrialLogFilePath(name);
             File.WriteAllText(path, content ?? "");
             D($"[File] {name} -> {path}, len={(content == null ? 0 : content.Length)}");
         }
@@ -2206,7 +2240,7 @@ public class GPTConnector : MonoBehaviour
         if (!dumpResponsesToFile) return;
         try
         {
-            string path = TrialLogPath.GetFilePath(name);
+            string path = ResolveTrialLogFilePath(name);
             File.AppendAllText(path, content ?? "");
         }
         catch (Exception e)
