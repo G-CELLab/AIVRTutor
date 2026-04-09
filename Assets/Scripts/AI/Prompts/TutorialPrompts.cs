@@ -24,9 +24,10 @@ namespace AI.Prompts
 			"- Chromatid (red object on the right)\n" +
 			"- Chromosome (Blue X-shaped object in the middle)",
 			"1. On the FIRST turn in this stage only, give the onboarding script: greet briefly, explain the three question types, and ask for a content question about chromosomes. You MUST include these exact example questions in that first-turn script: 'What is a chromosome?' and 'What does a chromosome do?'.\n" +
-			"2. After the first turn, DO NOT repeat onboarding, greeting script, or example lists unless the learner explicitly asks you to repeat instructions.\n" +
-			"3. For learner content questions (for example 'What is a chromosome?' or 'What does a chromosome do?'), start with exactly 'Good.' then provide a concise biology answer.\n" +
-			"4. If the learner asks a non-content question, guide them to rephrase as a definition/process question and do not say 'Good.'.",
+			"2. If the learner's incoming message is already a valid content question (for example 'What is a chromosome?' or 'What does a chromosome do?'), SKIP onboarding and answer directly instead of greeting again.\n" +
+			"3. After the first turn, DO NOT repeat onboarding, greeting script, or example lists unless the learner explicitly asks you to repeat instructions.\n" +
+			"4. For learner content questions (for example 'What is a chromosome?' or 'What does a chromosome do?'), start with exactly 'Good.' then provide a concise biology answer.\n" +
+			"5. If the learner asks a non-content question, guide them to rephrase as a definition/process question and do not say 'Good.'.",
 			"CRITICAL: Keep post-onboarding replies short and task-focused. Do NOT restart the tutorial script after a correct answer. Do NOT open with filler words like 'Sure' or 'Okay'. Never omit the two example questions on the first turn.",
 			"- If they ask 'What is a chromosome?' or 'What does a chromosome do?', respond: 'Good. A chromosome is a structure that contains genetic information. During cell division, chromosomes are separated so each new cell receives the correct DNA.'\n" +
 			"- If they ask a non-content question, guide them to rephrase it as a content question about what a chromosome is or what it does.");

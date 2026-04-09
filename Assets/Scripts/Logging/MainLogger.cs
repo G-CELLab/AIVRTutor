@@ -253,6 +253,10 @@ public class MainLogger : MonoBehaviour
         string normalized = touchValue.Trim();
         string lower = normalized.ToLowerInvariant();
 
+        // Exclude boundary colliders from data export entirely.
+        if (lower.Contains("boundry") || lower.Contains("boundary"))
+            return "";
+
         // Never allow detector-vs-detector contacts to appear in log columns.
         if (lower.Contains("lefttouchdetector") || lower.Contains("righttouchdetector"))
             return "";

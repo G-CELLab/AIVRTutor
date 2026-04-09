@@ -112,6 +112,10 @@ public class LeftHandTouching : MonoBehaviour
         if (other == null)
             return true;
 
+        string lowerName = other.name.ToLowerInvariant();
+        if (lowerName.Contains("boundry") || lowerName.Contains("boundary"))
+            return true;
+
         // Never log left/right detector overlap as touched gameplay objects.
         if (other.GetComponentInParent<LeftHandTouching>() != null ||
             other.GetComponentInParent<RightHandTouching>() != null)
