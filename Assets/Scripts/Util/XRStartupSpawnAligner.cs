@@ -5,19 +5,21 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Keeps Tutorial spawn deterministic by aligning the XR rig camera to
+/// Keeps spawn deterministic by aligning the XR rig camera to
 /// "Initial Location" on scene load and shortly after focus returns.
 /// </summary>
 [DefaultExecutionOrder(1000)]
 public class XRStartupSpawnAligner : MonoBehaviour
 {
-    private const string TutorialSceneName = "Tutorial";
+    private static readonly string[] DefaultAlignedSceneNames = { "Tutorial", "ChromosoME" };
     private const string XrRigName = "XR Origin Hands (XR Rig)";
     private const string SpawnAnchorName = "Initial Location";
 
     private static XRStartupSpawnAligner _instance;
 
     [SerializeField] private int startupDelayFrames = 2;
+    [Tooltip("Scenes that should use startup/focus spawn realignment.")]
+    [SerializeField] private string[] alignedSceneNames = DefaultAlignedSceneNames;
     [Tooltip("If true, perform one alignment on scene load.")]
     [SerializeField] private bool enableInitialSceneLoadAlign = true;
     [Tooltip("If true, run additional startup realign attempts after the initial alignment.")]
@@ -46,10 +48,10 @@ public class XRStartupSpawnAligner : MonoBehaviour
     [Tooltip("Extra vertical offset applied only when Align Vertical To Anchor is true.")]
     [SerializeField] private float anchorVerticalOffsetMeters = 0f;
 
-    private float tutorialSceneLoadedAt = -999f;
+    private float alignedSceneLoadedAt = -999f;
     private int focusRealignAttempts;
     private Coroutine startupRealignRoutine;
-    private Scene _tutorialScene;
+    private Scene _lastAlignedScene;
     private bool _loggedAnchorCandidates;
     private bool _loggedInvalidRigChildAnchor;
 
@@ -70,6 +72,7 @@ public class XRStartupSpawnAligner : MonoBehaviour
     {
         if (_instance != null && _instance != this)
         {
+            _instance.CopySettingsFrom(this);
             // Never destroy the host GameObject here. This script may be placed on scene anchors
             // (for convenience in the Inspector), and deleting the GameObject can remove "Initial Location".
             Destroy(this);
@@ -78,6 +81,36 @@ public class XRStartupSpawnAligner : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
+    }
+
+    private void CopySettingsFrom(XRStartupSpawnAligner source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        startupDelayFrames = source.startupDelayFrames;
+        alignedSceneNames = source.alignedSceneNames != null
+            ? (string[])source.alignedSceneNames.Clone()
+            : null;
+        enableInitialSceneLoadAlign = source.enableInitialSceneLoadAlign;
+        enableStartupFollowupRealigns = source.enableStartupFollowupRealigns;
+        focusRealignWindowSeconds = source.focusRealignWindowSeconds;
+        enableFocusReturnRealign = source.enableFocusReturnRealign;
+        maxFocusRealignAttempts = source.maxFocusRealignAttempts;
+        additionalYawOffsetDegrees = source.additionalYawOffsetDegrees;
+        startupRealignAttempts = source.startupRealignAttempts;
+        startupRealignIntervalSeconds = source.startupRealignIntervalSeconds;
+        enableEditorLateRealign = source.enableEditorLateRealign;
+        editorLateRealignWindowSeconds = source.editorLateRealignWindowSeconds;
+        editorLateRealignIntervalSeconds = source.editorLateRealignIntervalSeconds;
+        editorLatePlanarDriftThresholdMeters = source.editorLatePlanarDriftThresholdMeters;
+        editorLateYawDriftThresholdDegrees = source.editorLateYawDriftThresholdDegrees;
+        editorLateStableChecksToStop = source.editorLateStableChecksToStop;
+        spawnAnchorOverride = source.spawnAnchorOverride;
+        alignVerticalToAnchor = source.alignVerticalToAnchor;
+        anchorVerticalOffsetMeters = source.anchorVerticalOffsetMeters;
     }
 
     private void OnEnable()
@@ -103,12 +136,12 @@ public class XRStartupSpawnAligner : MonoBehaviour
         }
 
         Scene activeScene = SceneManager.GetActiveScene();
-        if (!activeScene.IsValid() || activeScene.name != TutorialSceneName)
+        if (!activeScene.IsValid() || !IsAlignedScene(activeScene.name))
         {
             return;
         }
 
-        float timeSinceLoad = Time.realtimeSinceStartup - tutorialSceneLoadedAt;
+        float timeSinceLoad = Time.realtimeSinceStartup - alignedSceneLoadedAt;
         if (timeSinceLoad > focusRealignWindowSeconds)
         {
             return;
@@ -125,14 +158,16 @@ public class XRStartupSpawnAligner : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name != TutorialSceneName)
+        if (!IsAlignedScene(scene.name))
         {
             return;
         }
 
-        _tutorialScene = scene;
-        tutorialSceneLoadedAt = Time.realtimeSinceStartup;
+        _lastAlignedScene = scene;
+        alignedSceneLoadedAt = Time.realtimeSinceStartup;
         focusRealignAttempts = 0;
+        _loggedAnchorCandidates = false;
+        _loggedInvalidRigChildAnchor = false;
         if (startupRealignRoutine != null)
         {
             StopCoroutine(startupRealignRoutine);
@@ -273,7 +308,7 @@ public class XRStartupSpawnAligner : MonoBehaviour
 
         rigTransform.position = targetRigPosition;
 
-        Debug.Log($"[XRStartupSpawnAligner] Aligned tutorial rig on {reason}. rigY={rigTransform.position.y:0.###}, camY={cameraTransform.position.y:0.###}, anchorY={spawnAnchor.position.y:0.###}");
+        Debug.Log($"[XRStartupSpawnAligner] Aligned rig on {reason} in scene '{SceneManager.GetActiveScene().name}'. rigY={rigTransform.position.y:0.###}, camY={cameraTransform.position.y:0.###}, anchorY={spawnAnchor.position.y:0.###}");
         return true;
     }
 
@@ -297,7 +332,7 @@ public class XRStartupSpawnAligner : MonoBehaviour
 
     private Transform FindAnchorInActiveScene(string targetName)
     {
-        Transform anchor = FindAnchorInScene(_tutorialScene, targetName);
+        Transform anchor = FindAnchorInScene(_lastAlignedScene, targetName);
         if (anchor != null)
         {
             return anchor;
@@ -402,6 +437,34 @@ public class XRStartupSpawnAligner : MonoBehaviour
             normalized.Equals("InitialLocation", System.StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("Initial Spawn", System.StringComparison.OrdinalIgnoreCase) ||
             normalized.Equals("Start Location", System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsAlignedScene(string sceneName)
+    {
+        if (string.IsNullOrWhiteSpace(sceneName))
+        {
+            return false;
+        }
+
+        string[] scenes = (alignedSceneNames != null && alignedSceneNames.Length > 0)
+            ? alignedSceneNames
+            : DefaultAlignedSceneNames;
+
+        for (int i = 0; i < scenes.Length; i++)
+        {
+            string candidate = scenes[i];
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                continue;
+            }
+
+            if (sceneName.Equals(candidate.Trim(), System.StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string GetLoadedSceneNames()
