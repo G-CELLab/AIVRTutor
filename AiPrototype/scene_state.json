@@ -1,0 +1,7 @@
+{
+  "phase": "prophase",
+  "scene_summary": "The learner is in the prophase stage of the mitosis simulation.",
+  "current_objective": "Answer questions about prophase and guide the learner in the current scene.",
+  "visible_objects": "Chromosome: blue X-shaped object in the middle; Chromatid: red object on the right; Centriole: small yellow barrel-shaped object on the left.",
+  "next_action": "hold the red DNA steady until it condenses into an X-shaped chromosome."
+}
