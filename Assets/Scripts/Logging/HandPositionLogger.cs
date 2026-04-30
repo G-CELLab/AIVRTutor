@@ -14,7 +14,7 @@ public class HandPositionLogger : MonoBehaviour
     
     [Header("Logging Settings")]
     [SerializeField] private float loggingInterval = 0.1f; // Log every 0.1 seconds
-    [SerializeField] private bool logToConsole = true;
+    [SerializeField] private bool logToConsole = false;
     [SerializeField] private bool logToCSV = true;
     
     private string csvFilePath;
@@ -31,7 +31,10 @@ public class HandPositionLogger : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("[HandPositionLogger] START called");
+        if (logToConsole)
+        {
+            Debug.Log("[HandPositionLogger] START called");
+        }
         
         if (leftHandTransform == null || rightHandTransform == null)
         {
@@ -47,8 +50,11 @@ public class HandPositionLogger : MonoBehaviour
         }
         sessionStartTime = globalSessionStartTime;
 
-        Debug.Log("[HandPositionLogger] Found Left Hand: " + leftHandTransform.name);
-        Debug.Log("[HandPositionLogger] Found Right Hand: " + rightHandTransform.name);
+        if (logToConsole)
+        {
+            Debug.Log("[HandPositionLogger] Found Left Hand: " + leftHandTransform.name);
+            Debug.Log("[HandPositionLogger] Found Right Hand: " + rightHandTransform.name);
+        }
 
         // Setup initial CSV file path
         if (logToCSV)
@@ -58,7 +64,10 @@ public class HandPositionLogger : MonoBehaviour
             InitializeCSVFile();
         }
 
-        Debug.Log("[HandPositionLogger] Initialized. Logging to: " + csvFilePath);
+        if (logToConsole)
+        {
+            Debug.Log("[HandPositionLogger] Initialized. Logging to: " + csvFilePath);
+        }
     }
 
     private void OnDisable()
@@ -80,7 +89,10 @@ public class HandPositionLogger : MonoBehaviour
             if (logToCSV)
             {
                 InitializeCSVFile();
-                Debug.Log($"[HandPositionLogger] Started new cycle {currentCycle + 1}");
+                if (logToConsole)
+                {
+                    Debug.Log($"[HandPositionLogger] Started new cycle {currentCycle + 1}");
+                }
             }
         }
         

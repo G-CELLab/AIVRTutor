@@ -1,0 +1,81 @@
+# NewAI Requirements
+
+## Unity Side (Built-in)
+- Unity 2021.3 LTS or later
+- Standard components: Transform, AudioSource, Animator (if needed)
+- No external packages required initially
+
+## Python Side (Optional, for local backend)
+
+### For Basic RAG (existing AiPrototype)
+```
+openai>=1.0.0
+```
+
+### For HTTP Bridge (rag_integration_server.py)
+```
+openai>=1.0.0
+flask>=2.0.0
+```
+
+Install with:
+```bash
+cd NewAI
+pip install -r requirements-python.txt
+```
+
+Or manually:
+```bash
+pip install openai flask
+```
+
+### Environment Variables
+```bash
+# Required for OpenAI responses
+export OPENAI_API_KEY="sk-proj-..."
+
+# Optional, defaults shown
+export OPENAI_MODEL="gpt-4o-mini"
+```
+
+## Knowledge Base
+The `knowledge_base/` folder should contain `.md` files describing:
+- Mitosis phases (prophase, metaphase, anaphase, telophase)
+- Cell biology concepts
+- Tutorial instructions for each phase
+- Expected learner questions and answers
+
+Recommended structure:
+```
+knowledge_base/
+├── 01-interphase.md          (Cell preparation, DNA replication)
+├── 02-prophase.md            (Nuclear envelope breaks down)
+├── 03-metaphase.md           (Chromosomes align)
+├── 04-anaphase.md            (Sister chromatids separate)
+├── 05-telophase.md           (Nuclear envelopes reform)
+├── 06-mitosis-overview.md    (General process overview)
+├── faq.md                    (Common questions)
+└── tutorial-hints.md         (What learners should do)
+```
+
+Each file is indexed locally using TF-IDF for quick retrieval.
+
+## Optional Packages
+
+### For better performance
+```
+numpy          # Matrix operations for TF-IDF
+scipy          # Scientific computing
+```
+
+### For local LLM (future)
+```
+torch          # PyTorch for Llama/Mistral
+transformers   # HuggingFace models
+```
+
+### For production deployment
+```
+gunicorn       # WSGI server (replaces Flask dev server)
+redis          # Caching layer
+```

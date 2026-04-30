@@ -1,0 +1,35 @@
+# NewAI folder .gitignore
+
+# Generated files
+*.meta
+*.dll
+*.so
+*.dylib
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Logs
+Logs/
+*.log
+
+# Cache
+.cache/
+*.cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+bin/
+obj/

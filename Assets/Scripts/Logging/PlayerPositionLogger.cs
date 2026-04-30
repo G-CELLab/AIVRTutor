@@ -20,7 +20,7 @@ public class PlayerPositionLogger : MonoBehaviour
     
     [Header("Logging Settings")]
     [SerializeField] private float loggingInterval = 0.1f;
-    [SerializeField] private bool logToConsole = true;
+    [SerializeField] private bool logToConsole = false;
     [SerializeField] private bool logToCSV = true;
 
     // CSV and timing
@@ -38,7 +38,10 @@ public class PlayerPositionLogger : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("[PlayerPositionLogger] START called");
+        if (logToConsole)
+        {
+            Debug.Log("[PlayerPositionLogger] START called");
+        }
         if (!hasGlobalSessionStartTime)
         {
             globalSessionStartTime = Time.time;
@@ -53,7 +56,10 @@ public class PlayerPositionLogger : MonoBehaviour
             if (mainCameraObj != null)
             {
                 playerHeadTransform = mainCameraObj.transform;
-                Debug.Log("[PlayerPositionLogger] Auto-found Main Camera");
+                if (logToConsole)
+                {
+                    Debug.Log("[PlayerPositionLogger] Auto-found Main Camera");
+                }
             }
             else
             {
@@ -71,7 +77,10 @@ public class PlayerPositionLogger : MonoBehaviour
             InitializeCSVFile();
         }
 
-        Debug.Log("[PlayerPositionLogger] Initialized. Logging to: " + csvFilePath);
+        if (logToConsole)
+        {
+            Debug.Log("[PlayerPositionLogger] Initialized. Logging to: " + csvFilePath);
+        }
     }
 
     private void OnDisable()
@@ -93,7 +102,10 @@ public class PlayerPositionLogger : MonoBehaviour
             if (logToCSV)
             {
                 InitializeCSVFile();
-                Debug.Log($"[PlayerPositionLogger] Started new cycle {currentCycle + 1}");
+                if (logToConsole)
+                {
+                    Debug.Log($"[PlayerPositionLogger] Started new cycle {currentCycle + 1}");
+                }
             }
         }
         

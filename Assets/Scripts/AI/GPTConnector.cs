@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using AI;
@@ -47,6 +48,24 @@ public class GPTConnector : MonoBehaviour
     public int maxHistoryTurnsToSend = AI.Prompts.Customizations.DefaultMaxHistoryTurnsToSend;
     public int maxCharsBudget = AI.Prompts.Customizations.DefaultMaxCharsBudget;
 
+    [Header("Phase Prompting")]
+    [Tooltip("Enable current-phase prompt injection. Disable for prototype-like RAG-only behavior.")]
+    public bool usePhasePrompting = false;
+
+    [Header("Prototype RAG")]
+    public bool usePrototypeRag = true;
+    [Tooltip("Relative folder under the project root, or an absolute path, for the prototype knowledge base")]
+    public string knowledgeBaseFolder = @"AiPrototype/knowledge_base";
+    public int ragTopK = 3;
+    public int ragMaxContextChars = 2500;
+    public float ragMinRetrievalScore = 0.08f;
+    [Tooltip("If enabled, log retrieval source and score for every user turn")]
+    public bool logRagRetrieval = true;
+
+    private readonly PrototypeRagIndex prototypeRagIndex = new PrototypeRagIndex();
+    private bool prototypeRagBuilt = false;
+    private string prototypeRagContextPrompt = "";
+
     [Header("Prompt Overrides")]
     public bool usePhasePromptOverride = false;
     [TextArea(3, 8)]
@@ -59,6 +78,12 @@ public class GPTConnector : MonoBehaviour
     public string gptVoice = AI.Prompts.Customizations.DefaultGptVoice;
     [Tooltip("模型语音格式（pcm16/g711_ulaw/g711_alaw）")]
     public string gptAudioFormat = AI.Prompts.Customizations.DefaultGptAudioFormat;
+
+    [Header("Realtime Speech Start")]
+    [Tooltip("Start speaking during streaming as soon as the first transcript/text delta arrives, instead of waiting for response.completed")]
+    public bool speakOnFirstSentenceDelta = true;
+    [Tooltip("Minimum characters required before early streaming speech starts (set to 1 for immediate start)")]
+    public int minCharsForEarlyStreamSpeak = 1;
 
     [Header("Audio Coordinator")]
     public OpenAISpeechRecognizer speechRecognizer;
@@ -116,6 +141,10 @@ public class GPTConnector : MonoBehaviour
     public bool prependPhaseInstructionAudio = AI.Prompts.Customizations.DefaultPrependPhaseInstructionAudio; // 把“相位指令的音频”拼在用户语音前（需采样率一致，默认关)
 
     // ===== 触发来源：仅用“助理字幕/文本” =====
+    [Header("Phase Announcement")]
+    [Tooltip("Prepend 'You are in <phase>' to assistant responses. Disable for prototype-like behavior.")]
+    public bool prependPhaseAnnouncement = false;
+
     [Header("Reactions")]
     public bool reactToAssistantTranscript = true; // 用助理回复字幕触发动作
     [Tooltip("🎯 NEW: Use real-time streaming deltas for precise gesture timing (triggers as words arrive, not after speech completes). Recommended for Realtime API.")]
@@ -163,9 +192,16 @@ public class GPTConnector : MonoBehaviour
     private readonly StringBuilder _assistantTranscriptAccum = new StringBuilder(256);
     private bool _assistantGestureTriggeredForResponse = false;
     private bool _assistantTranscriptForwardedForResponse = false;
+    private bool _earlyStreamSpeakStartedForResponse = false;
+    private bool _earlyStreamFirstSegmentFinished = false;
+    private string _earlySpokenPrefix = "";
+    private string _earlyPendingTail = null;
+    private Action _earlyCompletionAction;
 
     private const string DefaultQueueEvaluationPrompt =
         "You just finished speaking. The user said something while you were talking. Decide if you should respond. Reply ONLY with 'YES' or 'NO'. Say YES if it's a new question, comment, or request. Say NO if it's just acknowledgment, 'ok', 'thanks', or doesn't need a response.";
+
+    private static readonly Regex PhaseQueryRegex = new Regex(@"\b(interphase|prophase|metaphase|anaphase|telophase|cytokinesis)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     // -------- 生命周期：启动即预缓存 --------
     // private void Start()
@@ -239,19 +275,29 @@ public class GPTConnector : MonoBehaviour
     // ===== 合并“系统+相位+可选附加”为最终 instructions =====
     private string BuildFinalInstructions(string extra = null, bool includePhase = true)
     {
-        var parts = new List<string>(3);
+        var parts = new List<string>(4);
         if (!string.IsNullOrEmpty(systemPrompt)) parts.Add(systemPrompt);
-        string phase = includePhase ? GetCurrentPhasePrompt() : null;
+        string phase = (includePhase && usePhasePrompting) ? GetCurrentPhasePrompt() : null;
         if (!string.IsNullOrEmpty(phase)) parts.Add(phase);
+        if (!string.IsNullOrEmpty(prototypeRagContextPrompt)) parts.Add(prototypeRagContextPrompt);
+        if (!string.IsNullOrEmpty(prototypeRagContextPrompt))
+        {
+            parts.Add("RAG PRIORITY RULE: When retrieved knowledge excerpts are present, prefer them over generic phase wording. If anything conflicts, trust retrieved excerpts.");
+        }
         if (!string.IsNullOrEmpty(extra)) parts.Add(extra);
         string joined = string.Join("\n\n", parts);
         string finalInstr = ApplyLang(joined);
-        LogPromptBreakdown("BuildFinalInstructions", systemPrompt, phase, extra, finalInstr);
+        LogPromptBreakdown("BuildFinalInstructions", systemPrompt, phase, CombinePromptExtras(prototypeRagContextPrompt, extra), finalInstr);
         return finalInstr;
     }
 
     private string BuildPhaseOnlyInstructions(GameManager.GameState gs, string extra = null)
     {
+        if (!usePhasePrompting)
+        {
+            return ApplyLang(string.IsNullOrWhiteSpace(extra) ? string.Empty : extra);
+        }
+
         var parts = new List<string>(2);
         string phaseText = GetPhasePrompt(gs);
         if (!string.IsNullOrEmpty(phaseText)) parts.Add(phaseText);
@@ -261,14 +307,130 @@ public class GPTConnector : MonoBehaviour
 
     private string GetCurrentPhasePrompt()
     {
+        if (!usePhasePrompting) return "";
         if (usePhasePromptOverride) return phasePromptOverride ?? "";
         return BuildSystemPromptForCurrentPhase();
     }
 
     private string GetPhasePrompt(GameManager.GameState gs)
     {
+        if (!usePhasePrompting) return "";
         if (usePhasePromptOverride) return phasePromptOverride ?? "";
         return PhaseText(gs);
+    }
+
+    private void RefreshPrototypeRagContext(string userInput, string transcriptContext)
+    {
+        if (!usePrototypeRag)
+        {
+            prototypeRagContextPrompt = "";
+            return;
+        }
+
+        string query = !string.IsNullOrWhiteSpace(transcriptContext) ? transcriptContext : userInput;
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            prototypeRagContextPrompt = "";
+            return;
+        }
+
+        EnsurePrototypeRagIndex();
+        if (prototypeRagIndex.ChunkCount == 0)
+        {
+            prototypeRagContextPrompt = "";
+            return;
+        }
+
+        string phaseName = GetPhaseDisplayName(GameManager.eGameStatus);
+        string ragQuery = string.IsNullOrWhiteSpace(phaseName) ? query : phaseName + " " + query;
+        float bestScore;
+        string bestSource;
+        string context = prototypeRagIndex.BuildContextPrompt(ragQuery, phaseName, ragTopK, ragMaxContextChars, out bestScore, out bestSource);
+
+        string askedPhase = ExtractAskedPhase(query);
+        if (!string.IsNullOrWhiteSpace(askedPhase) && !string.Equals(askedPhase, phaseName, StringComparison.OrdinalIgnoreCase))
+        {
+            context += $"\nCROSS-PHASE OVERRIDE: The learner explicitly asked about {askedPhase} while current phase is {phaseName}. " +
+                       "Answer the asked phase directly first, with concise conceptual explanation. " +
+                       "Do not redirect to current-phase task steps unless the learner asks what to do now.\n";
+        }
+
+        if (bestScore < ragMinRetrievalScore)
+        {
+            context += "\n- Retrieval confidence is low, so answer cautiously and keep it grounded in the current scene and knowledge base.\n";
+        }
+
+        prototypeRagContextPrompt = context;
+
+        if (logRagRetrieval)
+        {
+            Debug.Log($"[RAG] query='{query}' bestScore={bestScore:0.000} source='{bestSource}'");
+        }
+    }
+
+    private void EnsurePrototypeRagIndex()
+    {
+        if (prototypeRagBuilt)
+        {
+            return;
+        }
+
+        string kbPath = ResolvePrototypeKnowledgeBasePath();
+        prototypeRagIndex.ChunkSize = 1500;
+        prototypeRagIndex.ChunkOverlap = 80;
+        prototypeRagIndex.Rebuild(kbPath);
+        prototypeRagBuilt = true;
+
+        if (verboseDebug)
+        {
+            D($"[RAG] Built prototype index from '{kbPath}' with {prototypeRagIndex.ChunkCount} chunks");
+        }
+    }
+
+    private string ResolvePrototypeKnowledgeBasePath()
+    {
+        string candidate = knowledgeBaseFolder ?? "";
+        if (!Path.IsPathRooted(candidate))
+        {
+            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+            candidate = Path.GetFullPath(Path.Combine(projectRoot, candidate));
+        }
+
+        if (Directory.Exists(candidate))
+        {
+            return candidate;
+        }
+
+        string streamingAssetsPath = Path.Combine(Application.streamingAssetsPath, "KnowledgeBase");
+        if (Directory.Exists(streamingAssetsPath))
+        {
+            return streamingAssetsPath;
+        }
+
+        return Path.GetFullPath(Path.Combine(Application.dataPath, "..", "AiPrototype", "knowledge_base"));
+    }
+
+    private static string CombinePromptExtras(string ragPrompt, string extraPrompt)
+    {
+        if (string.IsNullOrEmpty(ragPrompt))
+        {
+            return extraPrompt;
+        }
+
+        if (string.IsNullOrEmpty(extraPrompt))
+        {
+            return ragPrompt;
+        }
+
+        return ragPrompt + "\n\n" + extraPrompt;
+    }
+
+    private static string ExtractAskedPhase(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query)) return null;
+        Match m = PhaseQueryRegex.Match(query);
+        if (!m.Success) return null;
+        return m.Groups[1].Value;
     }
 
     // ===== PHASE ANNOUNCEMENT HELPERS =====
@@ -416,6 +578,7 @@ public class GPTConnector : MonoBehaviour
 
     private void ExecuteTextRequest(string userInput, Action onComplete)
     {
+        RefreshPrototypeRagContext(userInput, null);
         _responseInProgress = true;
         _assistantGestureTriggeredForResponse = false;
         _assistantTranscriptForwardedForResponse = false;
@@ -510,10 +673,10 @@ public class GPTConnector : MonoBehaviour
                 ExecuteTextRequest(req.Text, req.OnComplete);
                 break;
             case GPTRequestQueue.RequestType.AudioFile:
-                ExecuteAudioFileRequest(req.AudioFilePath, req.OnComplete);
+                ExecuteAudioFileRequest(req.AudioFilePath, req.TranscriptContext, req.OnComplete);
                 break;
             case GPTRequestQueue.RequestType.AudioBytes:
-                ExecuteAudioBytesRequest(req.AudioBytes, req.AudioFormat, req.OnComplete);
+                ExecuteAudioBytesRequest(req.AudioBytes, req.AudioFormat, req.TranscriptContext, req.OnComplete);
                 break;
         }
     }
@@ -595,7 +758,7 @@ public class GPTConnector : MonoBehaviour
         {
             if (allowUserInterrupts)
             {
-                StartCoroutine(InterruptThenRun(() => ExecuteAudioFileRequest(audioFilePath, onComplete)));
+                StartCoroutine(InterruptThenRun(() => ExecuteAudioFileRequest(audioFilePath, transcriptContext, onComplete)));
                 return;
             }
             D($"[Queue] Queuing audio file request (agent busy): {audioFilePath}");
@@ -609,11 +772,12 @@ public class GPTConnector : MonoBehaviour
             });
             return;
         }
-        ExecuteAudioFileRequest(audioFilePath, onComplete);
+        ExecuteAudioFileRequest(audioFilePath, transcriptContext, onComplete);
     }
 
-    private void ExecuteAudioFileRequest(string audioFilePath, Action onComplete)
+    private void ExecuteAudioFileRequest(string audioFilePath, string transcriptContext, Action onComplete)
     {
+        RefreshPrototypeRagContext(transcriptContext, transcriptContext);
         _responseInProgress = true;
         _assistantGestureTriggeredForResponse = false;
         _assistantTranscriptForwardedForResponse = false;
@@ -639,6 +803,10 @@ public class GPTConnector : MonoBehaviour
             D($"[SendAudioFile] ✓ WAV extraction succeeded: {wav.Length} bytes → {pcm.Length} bytes PCM16");
             string extra = string.IsNullOrWhiteSpace(pendingUserPrompt) ? null : pendingUserPrompt;
             pendingUserPrompt = "";
+            if (!string.IsNullOrWhiteSpace(transcriptContext))
+            {
+                extra = string.IsNullOrWhiteSpace(extra) ? transcriptContext : extra + "\n\n" + transcriptContext;
+            }
             StartCoroutine(SendPcmViaRealtime(pcm, extra));
         }
         else
@@ -672,7 +840,7 @@ public class GPTConnector : MonoBehaviour
         {
             if (allowUserInterrupts)
             {
-                StartCoroutine(InterruptThenRun(() => ExecuteAudioBytesRequest(audioBytes, format, onComplete)));
+                StartCoroutine(InterruptThenRun(() => ExecuteAudioBytesRequest(audioBytes, format, transcriptContext, onComplete)));
                 return;
             }
             D($"[Queue] Queuing audio bytes request (agent busy), transcript: {transcriptContext ?? "(none)"}");
@@ -687,7 +855,7 @@ public class GPTConnector : MonoBehaviour
             });
             return;
         }
-        ExecuteAudioBytesRequest(audioBytes, format, onComplete);
+        ExecuteAudioBytesRequest(audioBytes, format, transcriptContext, onComplete);
     }
 
     private IEnumerator InterruptThenRun(Action run)
@@ -707,8 +875,9 @@ public class GPTConnector : MonoBehaviour
         run?.Invoke();
     }
 
-    private void ExecuteAudioBytesRequest(byte[] audioBytes, string format, Action onComplete)
+    private void ExecuteAudioBytesRequest(byte[] audioBytes, string format, string transcriptContext, Action onComplete)
     {
+        RefreshPrototypeRagContext(transcriptContext, transcriptContext);
         _responseInProgress = true;
         _assistantGestureTriggeredForResponse = false;
         _assistantTranscriptForwardedForResponse = false;
@@ -723,6 +892,10 @@ public class GPTConnector : MonoBehaviour
         {
             string extra = string.IsNullOrWhiteSpace(pendingUserPrompt) ? null : pendingUserPrompt;
             pendingUserPrompt = "";
+            if (!string.IsNullOrWhiteSpace(transcriptContext))
+            {
+                extra = string.IsNullOrWhiteSpace(extra) ? transcriptContext : extra + "\n\n" + transcriptContext;
+            }
             StartCoroutine(SendPcmViaRealtime(audioBytes, extra));
         }
         else
@@ -1182,6 +1355,11 @@ public class GPTConnector : MonoBehaviour
             _assistantGestureTriggeredForResponse = false;
             _assistantTranscriptForwardedForResponse = false;
             _realtimeCompletionHandledForCurrentResponse = false;
+            _earlyStreamSpeakStartedForResponse = false;
+            _earlyStreamFirstSegmentFinished = false;
+            _earlySpokenPrefix = "";
+            _earlyPendingTail = null;
+            _earlyCompletionAction = null;
             
             // Notify gesture synchronizer of new response
             if (useGestureSynchronizer && gestureSynchronizer != null)
@@ -1200,6 +1378,7 @@ public class GPTConnector : MonoBehaviour
             {
                 _textAccum?.Append(delta);
                 if (outputText) outputText.text += delta;
+                TryStartEarlyStreamSpeechFromTranscript();
             }
             return;
         }
@@ -1238,6 +1417,7 @@ public class GPTConnector : MonoBehaviour
             {
                 _assistantTranscriptAccum.Append(delta);
                 Debug.Log("[STT][assistant/delta] " + delta);
+                TryStartEarlyStreamSpeechFromTranscript();
                 
                 // 🎯 REAL-TIME GESTURE DETECTION with improved synchronizer
                 if (useStreamingGestureTiming && reactToAssistantTranscript && !_assistantGestureTriggeredForResponse)
@@ -1306,7 +1486,7 @@ public class GPTConnector : MonoBehaviour
             replyText = StripPhaseAnnouncementsFromResponse(replyText);
             
             // ===== PREPEND PHASE ANNOUNCEMENT IF NEEDED =====
-            if (!string.IsNullOrEmpty(replyText))
+            if (prependPhaseAnnouncement && !string.IsNullOrEmpty(replyText) && !_earlyStreamSpeakStartedForResponse)
             {
                 string phaseAnnouncement = GetPhaseAnnouncementIfNeeded();
                 if (!string.IsNullOrEmpty(phaseAnnouncement))
@@ -1337,6 +1517,47 @@ public class GPTConnector : MonoBehaviour
                 _responseInProgress = false;
                 StartCoroutine(ProcessQueuedRequestWithEvaluation());
             };
+
+            Action finalizeAfterSpeech = () =>
+            {
+                try { ttsDriver?.CancelWait(); } catch { }
+                onReplyComplete?.Invoke();
+                afterPlayback();
+            };
+
+            if (speakOnFirstSentenceDelta && _earlyStreamSpeakStartedForResponse)
+            {
+                string remaining = GetRemainingReplyAfterEarlyPrefix(replyText, _earlySpokenPrefix);
+                if (string.IsNullOrWhiteSpace(remaining) || (minCharsForTts > 0 && remaining.Length < minCharsForTts))
+                {
+                    if (_earlyStreamFirstSegmentFinished)
+                    {
+                        finalizeAfterSpeech();
+                    }
+                    else
+                    {
+                        _earlyCompletionAction = finalizeAfterSpeech;
+                    }
+                }
+                else
+                {
+                    if (_earlyStreamFirstSegmentFinished)
+                    {
+                        StartEarlyStreamTailSpeech(remaining, finalizeAfterSpeech);
+                    }
+                    else
+                    {
+                        _earlyPendingTail = remaining;
+                        _earlyCompletionAction = finalizeAfterSpeech;
+                    }
+                }
+
+                _audioAccum?.Dispose();
+                _audioAccum = new MemoryStream();
+                _audioChunkCount = 0;
+                _textAccum?.Clear();
+                return;
+            }
 
             bool skipTtsRealtime = !string.IsNullOrEmpty(replyText) && minCharsForTts > 0 && replyText.Length < minCharsForTts;
 
@@ -1480,7 +1701,7 @@ public class GPTConnector : MonoBehaviour
         replyText = StripPhaseAnnouncementsFromResponse(replyText);
         
         // ===== PREPEND PHASE ANNOUNCEMENT IF NEEDED =====
-        if (!string.IsNullOrEmpty(replyText))
+        if (prependPhaseAnnouncement && !string.IsNullOrEmpty(replyText))
         {
             string phaseAnnouncement = GetPhaseAnnouncementIfNeeded();
             if (!string.IsNullOrEmpty(phaseAnnouncement))
@@ -1560,6 +1781,150 @@ public class GPTConnector : MonoBehaviour
                 AfterPlayback();
             }
         }
+    }
+
+    private void TryStartEarlyStreamSpeechFromTranscript()
+    {
+        if (!speakOnFirstSentenceDelta) return;
+        if (!useRealtime) return;
+        if (_earlyStreamSpeakStartedForResponse) return;
+        if (ttsPlayer == null) return;
+        if (!CanUseLocalEarlyTts()) return;
+
+        string streamText = _assistantTranscriptAccum.Length > 0
+            ? _assistantTranscriptAccum.ToString()
+            : (_textAccum != null ? _textAccum.ToString() : string.Empty);
+        if (string.IsNullOrWhiteSpace(streamText)) return;
+
+        int boundary = FindSentenceBoundary(streamText);
+        string firstSentence;
+        if (boundary > 0)
+        {
+            firstSentence = streamText.Substring(0, boundary).Trim();
+        }
+        else
+        {
+            if (streamText.Length < Mathf.Max(1, minCharsForEarlyStreamSpeak)) return;
+            firstSentence = streamText.Trim();
+        }
+
+        if (string.IsNullOrWhiteSpace(firstSentence)) return;
+        if (firstSentence.Length < Mathf.Max(1, minCharsForEarlyStreamSpeak)) return;
+
+        _earlyStreamSpeakStartedForResponse = true;
+        _earlySpokenPrefix = firstSentence;
+
+        D($"[EarlySpeech] Starting streaming speech on first sentence ({firstSentence.Length} chars)");
+        MarkSpeakingStart();
+        if (useGestureSynchronizer && gestureSynchronizer != null)
+        {
+            gestureSynchronizer.OnAudioPlaybackStart();
+        }
+
+        ttsPlayer.Speak(firstSentence, () =>
+        {
+            _earlyStreamFirstSegmentFinished = true;
+            MarkSpeakingEnd();
+
+            if (!string.IsNullOrWhiteSpace(_earlyPendingTail))
+            {
+                string tail = _earlyPendingTail;
+                _earlyPendingTail = null;
+                StartEarlyStreamTailSpeech(tail, _earlyCompletionAction);
+                _earlyCompletionAction = null;
+                return;
+            }
+
+            if (_earlyCompletionAction != null)
+            {
+                Action done = _earlyCompletionAction;
+                _earlyCompletionAction = null;
+                done?.Invoke();
+            }
+        });
+    }
+
+    private bool CanUseLocalEarlyTts()
+    {
+        if (ttsPlayer == null) return false;
+
+        // Early streaming speech currently uses TextToSpeechPlayer.Speak(), which requires a valid key
+        // on TextToSpeechPlayer itself. If missing/placeholder, keep normal completion playback path.
+        string key = ttsPlayer.openAIKey;
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return false;
+        }
+
+        string trimmed = key.Trim();
+        if (!trimmed.StartsWith("sk-", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (trimmed.Contains("*") || trimmed.Contains("PLACEHOLDER", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void StartEarlyStreamTailSpeech(string tailText, Action onFinished)
+    {
+        if (string.IsNullOrWhiteSpace(tailText) || ttsPlayer == null)
+        {
+            onFinished?.Invoke();
+            return;
+        }
+
+        D($"[EarlySpeech] Speaking remaining tail ({tailText.Length} chars)");
+        MarkSpeakingStart();
+        if (useGestureSynchronizer && gestureSynchronizer != null)
+        {
+            gestureSynchronizer.OnAudioPlaybackStart();
+        }
+
+        ttsPlayer.Speak(tailText, () =>
+        {
+            MarkSpeakingEnd();
+            onFinished?.Invoke();
+        });
+    }
+
+    private static int FindSentenceBoundary(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return -1;
+        for (int i = 0; i < text.Length; i++)
+        {
+            char c = text[i];
+            if (c == '.' || c == '!' || c == '?')
+            {
+                return i + 1;
+            }
+        }
+        return -1;
+    }
+
+    private static string GetRemainingReplyAfterEarlyPrefix(string fullReply, string spokenPrefix)
+    {
+        if (string.IsNullOrWhiteSpace(fullReply)) return string.Empty;
+        if (string.IsNullOrWhiteSpace(spokenPrefix)) return fullReply.Trim();
+
+        string full = fullReply.Trim();
+        string prefix = spokenPrefix.Trim();
+        if (full.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return full.Substring(prefix.Length).Trim();
+        }
+
+        int idx = full.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+        if (idx >= 0)
+        {
+            return full.Substring(idx + prefix.Length).Trim();
+        }
+
+        return full;
     }
 
     // ========= 仅基于“助理字幕/文本”的 4 个动作（延时触发实现） =========
@@ -2246,6 +2611,276 @@ public class GPTConnector : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogWarning("[File] 追加失败: " + e.Message);
+        }
+    }
+
+    private sealed class PrototypeRagIndex
+    {
+        private static readonly Regex WordRegex = new Regex(@"[a-zA-Z0-9_]+", RegexOptions.Compiled);
+
+        public sealed class RagChunk
+        {
+            public string Source;
+            public string Text;
+        }
+
+        public sealed class RagHit
+        {
+            public RagChunk Chunk;
+            public float Score;
+        }
+
+        private readonly List<RagChunk> _chunks = new List<RagChunk>();
+        private readonly Dictionary<string, int> _docFreq = new Dictionary<string, int>();
+        private readonly List<Dictionary<string, float>> _chunkTermFreqs = new List<Dictionary<string, float>>();
+
+        public int ChunkSize { get; set; } = 1500;
+        public int ChunkOverlap { get; set; } = 80;
+        public int ChunkCount => _chunks.Count;
+
+        public void Rebuild(string knowledgeBaseFolder)
+        {
+            _chunks.Clear();
+            _docFreq.Clear();
+            _chunkTermFreqs.Clear();
+
+            if (string.IsNullOrWhiteSpace(knowledgeBaseFolder) || !Directory.Exists(knowledgeBaseFolder))
+            {
+                return;
+            }
+
+            int overlap = Mathf.Max(0, Mathf.Min(ChunkOverlap, ChunkSize / 2));
+            string[] files = Directory.GetFiles(knowledgeBaseFolder, "*.md", SearchOption.AllDirectories)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            foreach (string filePath in files)
+            {
+                string raw = File.ReadAllText(filePath);
+                foreach (string piece in ChunkText(raw, ChunkSize, overlap))
+                {
+                    _chunks.Add(new RagChunk
+                    {
+                        Source = Path.GetFileName(filePath),
+                        Text = piece
+                    });
+                }
+            }
+
+            foreach (RagChunk chunk in _chunks)
+            {
+                Dictionary<string, float> tf = TermFrequency(chunk.Text);
+                _chunkTermFreqs.Add(tf);
+                foreach (string term in tf.Keys)
+                {
+                    _docFreq[term] = _docFreq.TryGetValue(term, out int current) ? current + 1 : 1;
+                }
+            }
+        }
+
+        public List<RagHit> Retrieve(string query, int topK = 3)
+        {
+            if (_chunks.Count == 0)
+            {
+                return new List<RagHit>();
+            }
+
+            Dictionary<string, float> queryTf = TermFrequency(query);
+            if (queryTf.Count == 0)
+            {
+                return new List<RagHit>();
+            }
+
+            Dictionary<string, float> qvec = Tfidf(queryTf);
+            double qnorm = Norm(qvec);
+            if (qnorm <= 0d)
+            {
+                return new List<RagHit>();
+            }
+
+            List<RagHit> scored = new List<RagHit>();
+            for (int i = 0; i < _chunkTermFreqs.Count; i++)
+            {
+                Dictionary<string, float> cvec = Tfidf(_chunkTermFreqs[i]);
+                double cnorm = Norm(cvec);
+                double denom = qnorm * cnorm;
+                if (denom <= 0d)
+                {
+                    continue;
+                }
+
+                double similarity = Dot(qvec, cvec) / denom;
+                if (similarity > 0d)
+                {
+                    scored.Add(new RagHit
+                    {
+                        Chunk = _chunks[i],
+                        Score = (float)similarity
+                    });
+                }
+            }
+
+            return scored
+                .OrderByDescending(hit => hit.Score)
+                .ThenBy(hit => hit.Chunk.Source, StringComparer.OrdinalIgnoreCase)
+                .Take(Mathf.Max(1, topK))
+                .ToList();
+        }
+
+        public string BuildContextPrompt(string query, string phaseName, int topK, int maxChars, out float bestScore, out string bestSource)
+        {
+            List<RagHit> hits = Retrieve(query, topK);
+            bestScore = hits.Count > 0 ? hits[0].Score : 0f;
+            bestSource = hits.Count > 0 ? hits[0].Chunk.Source : string.Empty;
+
+            List<string> lines = new List<string>();
+            lines.Add("PROTOTYPE KNOWLEDGE BASE CONTEXT");
+            lines.Add($"Current phase: {phaseName}");
+            lines.Add($"Query: {query}");
+            lines.Add("Retrieved excerpts:");
+
+            if (hits.Count == 0)
+            {
+                lines.Add("(no relevant knowledge base entries found)");
+            }
+            else
+            {
+                foreach (RagHit hit in hits)
+                {
+                    string preview = hit.Chunk.Text.Trim();
+                    if (preview.Length > 900)
+                    {
+                        preview = preview.Substring(0, 900).TrimEnd() + "...";
+                    }
+
+                    lines.Add($"[{hit.Chunk.Source} | score={hit.Score:0.000}] {preview}");
+                }
+            }
+
+            lines.Add(string.Empty);
+            lines.Add("Rules:");
+            lines.Add("- Prefer the knowledge base and do not invent scene mechanics or instructions.");
+            lines.Add("- Keep replies concise and conversational, usually 1-2 sentences.");
+            lines.Add("- If the answer is not supported by the knowledge base, say so briefly and ask a focused follow-up question.");
+            lines.Add("- If the learner asks about another phase, answer that phase directly and correctly using the knowledge base.");
+
+            return Truncate(string.Join("\n", lines), maxChars);
+        }
+
+        private static IEnumerable<string> ChunkText(string text, int chunkSize, int overlap)
+        {
+            string normalized = Regex.Replace(text ?? string.Empty, @"\s+", " ").Trim();
+            if (string.IsNullOrEmpty(normalized))
+            {
+                yield break;
+            }
+
+            int step = Mathf.Max(1, chunkSize - overlap);
+            int start = 0;
+            while (start < normalized.Length)
+            {
+                int end = Mathf.Min(normalized.Length, start + chunkSize);
+                string piece = normalized.Substring(start, end - start).Trim();
+                if (!string.IsNullOrEmpty(piece))
+                {
+                    yield return piece;
+                }
+
+                if (end >= normalized.Length)
+                {
+                    yield break;
+                }
+
+                start += step;
+            }
+        }
+
+        private static Dictionary<string, float> TermFrequency(string text)
+        {
+            List<string> tokens = new List<string>();
+            foreach (Match match in WordRegex.Matches(text ?? string.Empty))
+            {
+                if (match.Success)
+                {
+                    tokens.Add(match.Value.ToLowerInvariant());
+                }
+            }
+
+            Dictionary<string, float> tf = new Dictionary<string, float>();
+            if (tokens.Count == 0)
+            {
+                return tf;
+            }
+
+            foreach (string token in tokens)
+            {
+                tf[token] = tf.TryGetValue(token, out float current) ? current + 1f : 1f;
+            }
+
+            float total = tokens.Count;
+            foreach (string token in tf.Keys.ToList())
+            {
+                tf[token] = tf[token] / total;
+            }
+
+            return tf;
+        }
+
+        private Dictionary<string, float> Tfidf(Dictionary<string, float> tf)
+        {
+            int nDocs = Mathf.Max(1, _chunks.Count);
+            Dictionary<string, float> output = new Dictionary<string, float>();
+
+            foreach (KeyValuePair<string, float> pair in tf)
+            {
+                int df = _docFreq.TryGetValue(pair.Key, out int current) ? current : 0;
+                double idf = Math.Log((1.0 + nDocs) / (1.0 + df)) + 1.0;
+                output[pair.Key] = (float)(pair.Value * idf);
+            }
+
+            return output;
+        }
+
+        private static double Dot(Dictionary<string, float> a, Dictionary<string, float> b)
+        {
+            if (a.Count > b.Count)
+            {
+                Dictionary<string, float> tmp = a;
+                a = b;
+                b = tmp;
+            }
+
+            double sum = 0d;
+            foreach (KeyValuePair<string, float> pair in a)
+            {
+                if (b.TryGetValue(pair.Key, out float other))
+                {
+                    sum += pair.Value * other;
+                }
+            }
+
+            return sum;
+        }
+
+        private static double Norm(Dictionary<string, float> vector)
+        {
+            double sum = 0d;
+            foreach (float value in vector.Values)
+            {
+                sum += value * value;
+            }
+
+            return Math.Sqrt(sum);
+        }
+
+        private static string Truncate(string text, int maxChars)
+        {
+            if (string.IsNullOrEmpty(text) || maxChars <= 0 || text.Length <= maxChars)
+            {
+                return text;
+            }
+
+            return text.Substring(0, maxChars).TrimEnd() + "...";
         }
     }
 }

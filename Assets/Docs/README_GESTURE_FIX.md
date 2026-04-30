@@ -1,3 +1,4 @@
+
 # Gesture Timing Fix - What You Need to Know
 
 ## Quick Summary

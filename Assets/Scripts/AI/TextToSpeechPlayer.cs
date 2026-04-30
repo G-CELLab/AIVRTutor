@@ -21,7 +21,7 @@ public class TextToSpeechPlayer : MonoBehaviour
     {
         while (true)
         {
-            var all = GameObject.FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+            var all = GameObject.FindObjectsByType<AudioSource>();
             foreach (var s in all)
             {
                 if (s == null) continue;
@@ -40,6 +40,8 @@ public class TextToSpeechPlayer : MonoBehaviour
     [Header("OpenAI")]
     
     public string openAIKey = "*****";
+    [Tooltip("Text-to-speech model for /v1/audio/speech")]
+    public string ttsModel = "gpt-4o-mini-tts";
     public string voice = "nova";
 
     [Header("Audio")]
@@ -49,6 +51,8 @@ public class TextToSpeechPlayer : MonoBehaviour
 
     private static readonly HashSet<TextToSpeechPlayer> INSTANCES = new HashSet<TextToSpeechPlayer>();
     public bool IsSpeaking { get; private set; } = false;
+    private Action _currentPlaybackComplete;
+    private bool _currentPlaybackCompleteInvoked = false;
     
     // Track current speech for logging
     private static string currentSpeechText = "";
@@ -71,9 +75,7 @@ public class TextToSpeechPlayer : MonoBehaviour
         if (!INSTANCES.Contains(this)) INSTANCES.Add(this);
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
-        audioSource.loop = false;
-        audioSource.playOnAwake = false;
-        audioSource.spatialBlend = 0f;
+        ConfigureAudioSourceForSpeech();
     }
 
     void OnDestroy() { INSTANCES.Remove(this); }
@@ -94,6 +96,7 @@ public class TextToSpeechPlayer : MonoBehaviour
             Debug.Log("[TTS] StopSpeaking() called.");
 
         IsSpeaking = false;
+        CompleteCurrentPlayback();
         // Don't clear currentSpeechText here - keep it for logging purposes
         // It will be replaced when new speech starts
         if (audioSource != null)
@@ -113,10 +116,45 @@ public class TextToSpeechPlayer : MonoBehaviour
                         Debug.LogWarning($"[TTS] audioSource.clip set to null on {audioSource.name} (GameObject: {audioSource.gameObject.name})");
                     audioSource.clip = null;
                 }
-                audioSource.mute = false;
+                ConfigureAudioSourceForSpeech();
             }
             catch (System.Exception ex) { Debug.LogError($"[TTS] Exception in StopSpeaking: {ex}"); }
         }
+    }
+
+    private void ConfigureAudioSourceForSpeech()
+    {
+        if (audioSource == null) return;
+
+        audioSource.loop = false;
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.dopplerLevel = 0f;
+        audioSource.mute = false;
+
+        if (audioSource.volume <= 0f)
+        {
+            audioSource.volume = 1f;
+        }
+    }
+
+    private void StartPlaybackCompletionTracking(Action onPlaybackComplete)
+    {
+        _currentPlaybackComplete = onPlaybackComplete;
+        _currentPlaybackCompleteInvoked = false;
+    }
+
+    private void CompleteCurrentPlayback()
+    {
+        if (_currentPlaybackCompleteInvoked)
+        {
+            return;
+        }
+
+        _currentPlaybackCompleteInvoked = true;
+        var playbackComplete = _currentPlaybackComplete;
+        _currentPlaybackComplete = null;
+        playbackComplete?.Invoke();
     }
 
     public void BindRecognizer(OpenAISpeechRecognizer rec)
@@ -136,6 +174,7 @@ public class TextToSpeechPlayer : MonoBehaviour
     // ====== 新增：播放模型直接返回的音频（base64） ======
     public void PlayModelAudioBase64(string base64Data, string format, Action onPlaybackComplete)
     {
+        StartPlaybackCompletionTracking(onPlaybackComplete);
         StartCoroutine(PlayModelAudioBase64_Co(base64Data, format, onPlaybackComplete));
     }
 
@@ -144,6 +183,7 @@ public class TextToSpeechPlayer : MonoBehaviour
     {
         currentSpeechText = speechText;
         lastSpeechText = speechText; // Store for persistent logging
+        StartPlaybackCompletionTracking(onPlaybackComplete);
         StartCoroutine(PlayModelAudioBase64_Co(base64Data, format, onPlaybackComplete));
     }
 
@@ -151,7 +191,7 @@ public class TextToSpeechPlayer : MonoBehaviour
     {
         if (string.IsNullOrEmpty(base64Data))
         {
-            onPlaybackComplete?.Invoke();
+            CompleteCurrentPlayback();
             yield break;
         }
 
@@ -167,7 +207,7 @@ public class TextToSpeechPlayer : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogError("写入模型音频失败: " + e.Message);
-            onPlaybackComplete?.Invoke();
+            CompleteCurrentPlayback();
             yield break;
         }
 
@@ -186,7 +226,7 @@ public class TextToSpeechPlayer : MonoBehaviour
             if (!ok)
             {
                 Debug.LogError("加载模型音频失败: " + www.error + " (HTTP " + www.responseCode + ")");
-                onPlaybackComplete?.Invoke();
+                CompleteCurrentPlayback();
                 yield break;
             }
 
@@ -238,9 +278,20 @@ public class TextToSpeechPlayer : MonoBehaviour
     // ====== 旧功能：文本 → 本地TTS（保留以便回退） ======
     public void Speak(string text, Action onPlaybackComplete)
     {
+        Debug.Log($"[TextToSpeechPlayer.Speak] ENTRY - text length: {text?.Length ?? 0}, callback: {(onPlaybackComplete != null ? "provided" : "null")}");
+        StartPlaybackCompletionTracking(onPlaybackComplete);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            Debug.LogWarning("[TTS] Speak called with empty text.");
+            CompleteCurrentPlayback();
+            return;
+        }
+
         currentSpeechText = text;
         lastSpeechText = text; // Store for persistent logging
         Debug.Log($"[TTS] Speech text set for logging: '{text.Substring(0, Mathf.Min(50, text.Length))}'...");
+        Debug.Log("[TTS] Starting TTS request.");
+        Debug.Log($"[TextToSpeechPlayer.Speak] Starting SendTextToSpeech coroutine");
         StartCoroutine(SendTextToSpeech(text, onPlaybackComplete));
     }
 
@@ -248,9 +299,18 @@ public class TextToSpeechPlayer : MonoBehaviour
     {
         string url = "https://api.openai.com/v1/audio/speech";
 
+        string resolvedKey = ResolveOpenAIKey();
+        if (string.IsNullOrWhiteSpace(resolvedKey))
+        {
+            Debug.LogError("TTS 请求失败: OpenAI key is missing. Set TextToSpeechPlayer.openAIKey or OPENAI_API_KEY.");
+            IsSpeaking = false;
+            CompleteCurrentPlayback();
+            yield break;
+        }
+
         string json = JsonUtility.ToJson(new SpeechRequest()
         {
-            model = "openai/gpt-oss-120b",
+            model = string.IsNullOrWhiteSpace(ttsModel) ? "gpt-4o-mini-tts" : ttsModel,
             input = text,
             voice = voice,
             response_format = "mp3"
@@ -260,7 +320,7 @@ public class TextToSpeechPlayer : MonoBehaviour
         byte[] body = System.Text.Encoding.UTF8.GetBytes(json);
         req.uploadHandler = new UploadHandlerRaw(body);
         req.downloadHandler = new DownloadHandlerBuffer();
-        req.SetRequestHeader("Authorization", "Bearer " + openAIKey);
+        req.SetRequestHeader("Authorization", "Bearer " + resolvedKey);
         req.SetRequestHeader("Content-Type", "application/json");
 
         yield return req.SendWebRequest();
@@ -274,13 +334,18 @@ public class TextToSpeechPlayer : MonoBehaviour
         if (!ok)
         {
             Debug.LogError("TTS 请求失败: " + req.error + " (HTTP " + req.responseCode + ")");
+            if (req.downloadHandler != null && !string.IsNullOrEmpty(req.downloadHandler.text))
+            {
+                Debug.LogError("TTS 错误详情: " + req.downloadHandler.text);
+            }
             IsSpeaking = false;
-            onPlaybackComplete?.Invoke();
+            CompleteCurrentPlayback();
             yield break;
         }
 
         string path = TrialLogPath.GetFilePath("tts_reply.mp3");
         File.WriteAllBytes(path, req.downloadHandler.data);
+        Debug.Log($"[TTS] Saved TTS audio to {path} ({req.downloadHandler.data.Length} bytes).");
 
         using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + path, AudioType.MPEG))
         {
@@ -296,12 +361,26 @@ public class TextToSpeechPlayer : MonoBehaviour
                 if (audioSource == null) audioSource = gameObject.GetComponent<AudioSource>();
                 if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
 
-                audioSource.loop = false;
-                audioSource.playOnAwake = false;
+                ConfigureAudioSourceForSpeech();
                 audioSource.clip = clip;
+
+                if (clip == null)
+                {
+                    Debug.LogError("[TTS] Audio clip decode returned null.");
+                    IsSpeaking = false;
+                    CompleteCurrentPlayback();
+                    yield break;
+                }
+
+                Debug.Log($"[TTS] Loaded audio clip '{clip.name}' length={clip.length:F2}s samples={clip.samples} channels={clip.channels}.");
 
                 IsSpeaking = true;
                 audioSource.Play();
+
+                if (!audioSource.isPlaying)
+                {
+                    Debug.LogWarning($"[TTS] audioSource.Play() did not report playing immediately on {audioSource.name}.");
+                }
 
                 // Robust playback wait: handle brief hiccups (Quest Link lag, GC, etc.)
                 float expectedDuration = clip != null ? clip.length : 0f;
@@ -338,8 +417,53 @@ public class TextToSpeechPlayer : MonoBehaviour
             }
         }
 
+        Debug.Log("[TextToSpeechPlayer.SendTextToSpeech] Playback completed - setting IsSpeaking=false");
         IsSpeaking = false;
-        onPlaybackComplete?.Invoke();
+        Debug.Log("[TextToSpeechPlayer.SendTextToSpeech] Calling CompleteCurrentPlayback()");
+        CompleteCurrentPlayback();
+        Debug.Log("[TextToSpeechPlayer.SendTextToSpeech] EXIT - coroutine complete");
+    }
+
+    private string ResolveOpenAIKey()
+    {
+        if (IsLikelyRealKey(openAIKey))
+        {
+            return openAIKey.Trim();
+        }
+
+        string envKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        if (IsLikelyRealKey(envKey))
+        {
+            return envKey.Trim();
+        }
+
+        var connector = FindAnyObjectByType<GPTConnector>();
+        if (connector != null && IsLikelyRealKey(connector.apiKey))
+        {
+            return connector.apiKey.Trim();
+        }
+
+        var responseGenerator = FindAnyObjectByType<NewAI.Scripts.Core.AIResponseGenerator>();
+        if (responseGenerator != null)
+        {
+            string sharedKey = responseGenerator.GetResolvedApiKey();
+            if (IsLikelyRealKey(sharedKey))
+            {
+                return sharedKey.Trim();
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsLikelyRealKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return false;
+        string trimmed = key.Trim();
+        if (trimmed.Length < 20) return false;
+        if (trimmed.Contains("*")) return false;
+        if (trimmed.Equals("placeholder", StringComparison.OrdinalIgnoreCase)) return false;
+        return trimmed.StartsWith("sk-", StringComparison.OrdinalIgnoreCase);
     }
 
     [Serializable]

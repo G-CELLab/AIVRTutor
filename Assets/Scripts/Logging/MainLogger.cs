@@ -28,7 +28,7 @@ public class MainLogger : MonoBehaviour
     
     [Header("Logging Settings")]
     [SerializeField] private float loggingInterval = 0.1f;
-    [SerializeField] private bool logToConsole = true;
+    [SerializeField] private bool logToConsole = false;
     [SerializeField] private bool logToCSV = true;
     
     // CSV and timing
@@ -67,7 +67,10 @@ public class MainLogger : MonoBehaviour
 
     private void Start()
     {
-        Debug.Log("[MainLogger] START called");
+        if (logToConsole)
+        {
+            Debug.Log("[MainLogger] START called");
+        }
         if (!hasGlobalSessionStartTime)
         {
             globalSessionStartTime = Time.time;
@@ -89,8 +92,11 @@ public class MainLogger : MonoBehaviour
             return;
         }
         
-        Debug.Log("[MainLogger] Found Left Hand Manager");
-        Debug.Log("[MainLogger] Found Right Hand Manager");
+        if (logToConsole)
+        {
+            Debug.Log("[MainLogger] Found Left Hand Manager");
+            Debug.Log("[MainLogger] Found Right Hand Manager");
+        }
 
         // Setup initial CSV file path
         if (logToCSV)
@@ -100,7 +106,10 @@ public class MainLogger : MonoBehaviour
             InitializeCSVFile();
         }
 
-        Debug.Log("[MainLogger] Initialized. Logging to: " + csvFilePath);
+        if (logToConsole)
+        {
+            Debug.Log("[MainLogger] Initialized. Logging to: " + csvFilePath);
+        }
     }
 
     private void OnDisable()
@@ -122,7 +131,10 @@ public class MainLogger : MonoBehaviour
             if (logToCSV)
             {
                 InitializeCSVFile();
-                Debug.Log($"[MainLogger] Started new cycle {currentCycle + 1}");
+                if (logToConsole)
+                {
+                    Debug.Log($"[MainLogger] Started new cycle {currentCycle + 1}");
+                }
             }
         }
         

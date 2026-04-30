@@ -19973,6 +19973,423 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1420570198}
   m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &1421749239
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 71.61927
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.20700002
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 79.25793
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.42797175
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.90379214
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -129.322
+      objectReference: {fileID: 0}
+    - target: {fileID: 2850009111799039596, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_Name
+      value: AITutorNPC
+      objectReference: {fileID: 0}
+    - target: {fileID: 8173304327840291862, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: fd7aa1199b99ef04abed730a7b6f1b49, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749241}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749245}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749244}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749243}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749242}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749246}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749249}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749252}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749251}
+    - targetCorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1421749250}
+  m_SourcePrefab: {fileID: 100100000, guid: 7e8650427ef954305ae0737763b3acd2, type: 3}
+--- !u!1 &1421749240 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3226429475329203414, guid: 7e8650427ef954305ae0737763b3acd2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1421749239}
+  m_PrefabAsset: {fileID: 0}
+--- !u!82 &1421749241
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &1421749242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6f66f5b0d628ba4383cdc0359b15257, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NewAI.Scripts.RAGBridge
+  usePythonBackend: 0
+  pythonBackendUrl: http://localhost:5000/retrieve
+  pythonScriptPath: ../AiPrototype/rag_cli.py
+  aiTutor: {fileID: 1421749245}
+--- !u!114 &1421749243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec4aceca422fb4949af3120d2d06f1fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NewAI.Scripts.Core.AIResponseGenerator
+  openaiApiKey: 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
+  openaiModel: gpt-4o-mini
+  temperature: 0.2
+  maxTokens: 600
+  requestTimeoutSeconds: 30
+  useStreamingApi: 0
+  logApiCalls: 0
+  logLatencyMetrics: 1
+--- !u!114 &1421749244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5eac93ec236169e468c705a81afbda65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NewAI.Scripts.RAG.RAGRetriever
+  ragServiceUrl: http://localhost:5000
+  defaultTopK: 3
+  useLocalPythonProcess: 1
+  pythonScriptPath: ../AiPrototype/rag_cli.py
+--- !u!114 &1421749245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 92f32b871267e604da59a9b4825af03e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NewAI.Scripts.Core.AITutor
+  settings:
+    characterName: Biology Tutor
+    topK: 3
+    maxOutputTokens: 200
+    showDebugContext: 0
+  OnResponseStarted:
+    m_PersistentCalls:
+      m_Calls: []
+  OnResponseStreamed:
+    m_PersistentCalls:
+      m_Calls: []
+  OnResponseCompleted:
+    m_PersistentCalls:
+      m_Calls: []
+  OnErrorOccurred:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &1421749246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c8eac3f6c7def94da40d9b1b381cc01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NewAI.Examples.AITutorExample
+  aiTutor: {fileID: 1421749245}
+  testQueries:
+  - What is happening right now?
+  - What should I do in this phase?
+  - Tell me about mitosis
+--- !u!114 &1421749249
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8181f2f7083721048899d74d25cd1fbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NewAI.Scripts.Core.AITutorVoiceBridge
+  aiTutor: {fileID: 1421749245}
+  speechRecognizer: {fileID: 1421749252}
+  ttsPlayer: {fileID: 1421749250}
+  autoWireRecognizerToTutor: 1
+  speakTutorResponses: 1
+  logTranscriptRouting: 1
+--- !u!114 &1421749250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 929cded6fb6289f4884b8ee9f07317c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TextToSpeechPlayer
+  logInterruptWarnings: 0
+  openAIKey: '*****'
+  ttsModel: gpt-4o-mini-tts
+  voice: nova
+  audioSource: {fileID: 0}
+  killAllTTSOnInterrupt: 1
+--- !u!114 &1421749251
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 864f6b3bba490ae419b35b9665ce8190, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TTSAnimatorDriver
+  tts: {fileID: 0}
+  animator: {fileID: 0}
+  isSpeakingParam: isSpeaking
+  waitSpeakParam: waitSpeak
+  trigDZ7: doDZ7
+  trigDZ8: doDZ8
+  trigDZ13: doDZ13
+  trigDZ14: doDZ14
+  trigDZ15: doDZ15
+  trigDZ18: doDZ18
+  trigDZ12: doDZ12
+  trigDZ22: doDZ22
+  lineUpGestureSpeedMultiplier: 1
+  animSpeedParam: gestureSpeed
+  waitBeforeDZ2: 10
+  lingerAfterEnd: 0
+  minRepeatTriggerIntervalSec: 0.75
+  verbose: 1
+--- !u!114 &1421749252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421749240}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b90d053f58cd7b64d879076ca573e621, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OpenAISpeechRecognizer
+  openAIKey: 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
+  gptConnector: {fileID: 0}
+  sendAudioToGptConnector: 1
+  transcribeBeforeSend: 1
+  transcriptionModel: gpt-4o-mini-transcribe
+  sampleRate: 16000
+  maxRecordTime: 30
+  minRecordTime: 0.6
+  preRollSeconds: 0.2
+  recordCooldownSec: 0.8
+  startThreshold: 0.02
+  startHoldTime: 0.7
+  stopThreshold: 0.015
+  stopSilenceTime: 1
+  ttsToInterrupt: {fileID: 0}
+  allowBargeIn: 1
+  interruptEvenBeforeVAD: 0
+  interruptThreshold: 0.03
+  interruptGraceMs: 700
+  killAllTTSOnInterrupt: 1
+  ttsProtectionDurationSec: 0.5
+  interruptCooldownSec: 0.5
+  showDebugOverlay: 1
+  verboseDebug: 1
+  debugLogInterval: 0.25
 --- !u!1 &1434790979 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: fa9486789a9f2ad42ba0f9442e8f031e,
@@ -20145,11 +20562,20 @@ MonoBehaviour:
     instructions or guidance.'
   maxHistoryTurnsToSend: 15
   maxCharsBudget: 12000
+  usePhasePrompting: 0
+  usePrototypeRag: 1
+  knowledgeBaseFolder: AiPrototype/knowledge_base
+  ragTopK: 3
+  ragMaxContextChars: 2500
+  ragMinRetrievalScore: 0.08
+  logRagRetrieval: 1
   usePhasePromptOverride: 0
   phasePromptOverride: 
   preferModelAudio: 1
   gptVoice: alloy
   gptAudioFormat: wav
+  speakOnFirstSentenceDelta: 1
+  minCharsForEarlyStreamSpeak: 1
   speechRecognizer: {fileID: 1434790983}
   pendingUserPrompt: 
   realtimeSilenceTimeoutSec: 30
@@ -20176,6 +20602,7 @@ MonoBehaviour:
   phaseAudioFormat: wav
   prependPhaseTextAsDeveloperItem: 1
   prependPhaseInstructionAudio: 1
+  prependPhaseAnnouncement: 0
   reactToAssistantTranscript: 1
   useStreamingGestureTiming: 1
   evaluateQueuedRequests: 1
@@ -20198,6 +20625,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   logInterruptWarnings: 0
   openAIKey: '*****'
+  ttsModel: gpt-4o-mini-tts
   voice: nova
   audioSource: {fileID: 1434790984}
   killAllTTSOnInterrupt: 1
@@ -20215,12 +20643,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   openAIKey: 
   gptConnector: {fileID: 1434790981}
+  sendAudioToGptConnector: 1
   transcribeBeforeSend: 1
   transcriptionModel: gpt-4o-mini-transcribe
   sampleRate: 16000
   maxRecordTime: 30
   minRecordTime: 0.6
   preRollSeconds: 0.2
+  recordCooldownSec: 0.8
   startThreshold: 0.02
   startHoldTime: 0.15
   stopThreshold: 0.015
@@ -20233,7 +20663,7 @@ MonoBehaviour:
   killAllTTSOnInterrupt: 1
   ttsProtectionDurationSec: 1
   interruptCooldownSec: 0.5
-  showDebugOverlay: 0
+  showDebugOverlay: 1
   verboseDebug: 1
   debugLogInterval: 0.25
 --- !u!82 &1434790984
@@ -47368,7 +47798,7 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: fa9486789a9f2ad42ba0f9442e8f031e,
         type: 3}
@@ -52433,6 +52863,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
         type: 3}
+      propertyPath: proPhase
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
+        type: 3}
       propertyPath: HPsliderImg
       value: 
       objectReference: {fileID: 1585911900}
@@ -52460,7 +52895,7 @@ PrefabInstance:
         type: 3}
       propertyPath: onIntro.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
-      objectReference: {fileID: 1434790979}
+      objectReference: {fileID: 1421749240}
     - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
         type: 3}
       propertyPath: onAnaphase.m_PersistentCalls.m_Calls.Array.data[10].m_Mode
@@ -52735,7 +53170,7 @@ PrefabInstance:
         type: 3}
       propertyPath: onInterphase.m_PersistentCalls.m_Calls.Array.data[6].m_Target
       value: 
-      objectReference: {fileID: 1434790979}
+      objectReference: {fileID: 1421749240}
     - target: {fileID: 562977098698051847, guid: acb5e3d7873047647a45e0c3d003313c,
         type: 3}
       propertyPath: onInterphase.m_PersistentCalls.m_Calls.Array.data[7].m_Target
@@ -54374,3 +54809,4 @@ SceneRoots:
   - {fileID: 2227016443715010650}
   - {fileID: 1781776762}
   - {fileID: 412550153}
+  - {fileID: 1421749239}

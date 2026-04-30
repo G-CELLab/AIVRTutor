@@ -10,8 +10,10 @@ using UnityEngine.Networking;
 public class OpenAISpeechRecognizer : MonoBehaviour
 {
     [Header("OpenAI")]
-    public string openAIKey = "";                 // ⚠️ 不要硬编码 API Key，改在 Inspector 里填
-    public GPTConnector gptConnector;             // 识别后把音频直接交给 GPTConnector
+    public string openAIKey = "";                 // ⚠️ Do NOT hardcode API key; set it in the Inspector
+    public GPTConnector gptConnector;             // If assigned, hand audio to GPTConnector after capture/transcription
+    [Tooltip("If enabled, send captured audio to GPTConnector after transcription")]
+    public bool sendAudioToGptConnector = true;
 
     [Header("Transcription")]
     [Tooltip("Transcribe user audio before sending so User_Speech logs contain the actual utterance")]
@@ -20,55 +22,59 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     public string transcriptionModel = "gpt-4o-mini-transcribe";
 
     [Header("Record Settings")]
-    public int sampleRate = 16000;                // Quest 3 建议 48000
-    public int maxRecordTime = 30;                // 单段最大录音时长（秒）
-    public float minRecordTime = 0.6f;            // 最短有效录音时长（秒）
-    public float preRollSeconds = 0.2f;           // 开始点前的预录缓存（秒）
+    public int sampleRate = 16000;                // Quest 3 recommended 48000
+    public int maxRecordTime = 30;                // Maximum single-record duration (seconds)
+    public float minRecordTime = 0.6f;            // Minimum valid recording duration (seconds)
+    public float preRollSeconds = 0.2f;           // Pre-roll buffer before start point (seconds)
+    [Tooltip("Cooldown after sending an utterance before listening for the next one (seconds)")]
+    public float recordCooldownSec = 0.8f;
 
     [Header("Voice Activity Detection")]
-    [Tooltip("判定“开始说话”的音量阈值（0~1）")]
+    [Tooltip("Volume threshold to consider 'start speaking' (0~1)")]
     public float startThreshold = 0.02f;
-    [Tooltip("音量持续高于 startThreshold 这么久才算“开始说话”")]
-    public float startHoldTime = 0.7f; // Require 700ms above threshold to trigger VAD
-    [Tooltip("判定“停止”的音量阈值（建议略低于开始阈值）")]
+    [Tooltip("How long volume must stay above startThreshold to mark speech start")]
+    public float startHoldTime = 0.35f; // Require 350ms above threshold to trigger VAD (shorter for snappier replies)
+    [Tooltip("Volume threshold to consider 'stop speaking' (recommend slightly below start threshold)")]
     public float stopThreshold = 0.015f;
-    [Tooltip("开始说话后，静音持续这么久即判定“结束”")]
+    [Tooltip("Silence duration after speech start to consider the utterance ended")]
     public float stopSilenceTime = 1.0f;
 
     [Header("TTS Interrupt")]
-    [Tooltip("需要被打断的 TTS 播放器（可空；为空时仍会广播 OnUserSpeechLikely 事件）")]
+    [Tooltip("TTS player to interrupt (optional; OnUserSpeechLikely still broadcast if null)")]
     public TextToSpeechPlayer ttsToInterrupt;
-    [Tooltip("允许在 AI 说话时继续监听并打断（barge-in）")]
+    [Tooltip("Allow listening and barge-in while AI is speaking")]
     public bool allowBargeIn = true;
-    [Tooltip("即使 VAD 还没判定开始，只要峰值短时间超过阈值也立刻打断 TTS (DISABLED for uninterruptible agent)")]
-    public bool interruptEvenBeforeVAD = false; // DISABLED: Agent is uninterruptible
-    [Tooltip("硬中断的瞬时阈值（0~1，可按设备调）")]
+    [Tooltip("Even before VAD triggers, a short peak above threshold can hard-interrupt TTS (DISABLED for uninterruptible agent)")]
+    public bool interruptEvenBeforeVAD = true; // ENABLED: allow fast hard-interrupts from user during TTS
+    [Tooltip("Instant threshold for hard interrupt (0~1, adjust per device)")]
     public float interruptThreshold = 0.03f;
-    [Tooltip("硬中断阈值需要持续的最短时间（毫秒）")]
+    [Tooltip("Minimum duration (ms) the hard-interrupt threshold must hold")]
     public float interruptGraceMs = 700f;
-    [Tooltip("打断时是否全局停所有注册的 TTS（项目里有多个 TTS 时建议开启）")]
+    [Tooltip("Stop all registered TTS on interrupt (recommended when multiple TTS exist)")]
     public bool killAllTTSOnInterrupt = true;
-    [Tooltip("TTS 开始播放后，在此时间内不会被用户声音打断（秒，防止自中断）")]
+    [Tooltip("Protection window after TTS starts during which user audio won't interrupt (seconds)")]
     public float ttsProtectionDurationSec = 0.5f;
     [Tooltip("Minimum interval between interrupt triggers to avoid duplicate barge-in calls")]
     public float interruptCooldownSec = 0.5f;
 
-    // 识别器对外事件：一旦“疑似用户开口”，立即触发（供 TTS 订阅）
+    // Public events: invoked when user likely starts speaking (subscribed by TTS)
     public event Action OnUserSpeechLikely;
+    // Public events: invoked after transcription is ready (subscribed by NewAI/AITutor)
+    public event Action<string> OnTranscriptReady;
 
     [Header("Debug")]
     public bool showDebugOverlay = true;
-    [Tooltip("是否打印详细调试日志")]
+    [Tooltip("Enable verbose debug logging")]
     public bool verboseDebug = true;
-    [Tooltip("节流：两次日志之间的最小间隔（秒）")]
+    [Tooltip("Throttle: minimum interval between logs (seconds)")]
     public float debugLogInterval = 0.25f;
 
     // 内部状态
     private string microphoneName;
     private AudioClip micClip;
     private bool isRunning;
-    private float interruptAboveTimer = 0f;   // 峰值持续计时（秒）
-    private float lastBatchMax = 0f;          // 调试显示：最近一批最大值
+    private float interruptAboveTimer = 0f;   // timer for how long peak remains above threshold (seconds)
+    private float lastBatchMax = 0f;          // debug display: max of the most recent batch
     private GUIStyle _g;
     private float _ttsStartTime = -999f;      // Track when TTS started to prevent self-interrupt
     private float _lastInterruptTriggerAt = -999f;
@@ -80,10 +86,10 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     private int _overStopCount = 0;
     private int _overInterruptCount = 0;
 
-    // ========= 生命周期 =========
+    // ========= Lifecycle =========
     void Start()
     {
-        D("[Init] Start() 进入");
+        D("[Init] Start() entered");
         StartCoroutine(InitMicrophoneAndStartLoop());
     }
 
@@ -112,7 +118,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         // 打印设备列表
         if (Microphone.devices.Length == 0)
         {
-            Debug.LogError("❌ 未检测到麦克风");
+            Debug.LogError("❌ No microphone detected");
             yield break;
         }
         else
@@ -124,7 +130,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         microphoneName = Microphone.devices[0];
         D($"[Mic] Using device: {microphoneName}");
 
-        StartCoroutine(RecordingLoop()); // 非阻塞主循环：持续边听边处理
+        StartCoroutine(RecordingLoop()); // non-blocking main loop: continuously listen and process
     }
 
     void OnGUI()
@@ -142,13 +148,13 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         GUI.Box(new Rect(10, 10, 260, 70), msg, _g);
     }
 
-    // ========= 主循环：录一段 -> 立刻异步处理 -> 立即进入下一段 =========
+    // ========= Main loop: record one utterance -> process asynchronously -> continue listening =========
     private IEnumerator RecordingLoop()
     {
-        D("[Loop] 进入 RecordingLoop()");
+        D("[Loop] Entering RecordingLoop()");
         isRunning = true;
         float lastUtteranceTime = -999f;
-        float cooldownSec = 1.0f; // 1 second cooldown after each utterance
+            float cooldownSec = recordCooldownSec; // configurable cooldown after each utterance
         while (isRunning)
         {
             // Block recording while agent is busy (unless barge-in is enabled)
@@ -160,19 +166,19 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             string wavPath = null;
             _globalMax = 0f; _overStartCount = 0; _overStopCount = 0; _overInterruptCount = 0;
 
-            // 录到“开始”+“结束”一段，保存到 wavPath
-            yield return StartCoroutine(RecordUtteranceAndSave(path => wavPath = path));
+            // Record a segment (start+end) and save to wavPath
+            yield return StartCoroutine(RecordUtteranceAndSave(path => { wavPath = path; Debug.Log($"[RecCallback] wavPath assigned: {path}"); }));
 
             if (!string.IsNullOrEmpty(wavPath))
             {
-                D($"[Loop] 本段保存成功: {wavPath}");
+                D($"[Loop] Segment saved: {wavPath}");
                 // 立刻异步处理（直接把音频送给 GPTConnector），不阻塞录音主循环
                 StartCoroutine(ProcessUtterance(wavPath));
                 lastUtteranceTime = Time.realtimeSinceStartup;
             }
             else
             {
-                D("[Loop] 本段保存失败/无有效语音，继续下一轮监听");
+                D("[Loop] Segment save failed / no valid speech, continuing");
             }
 
             // Cooldown after sending utterance
@@ -183,13 +189,12 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         }
     }
 
-    // ========= 处理单段话：不再转写；直接送 GPT =========
+    // ========= Process a single utterance: (optionally transcribe) then send to GPT =========
     private IEnumerator ProcessUtterance(string wavPath)
     {
-        if (gptConnector == null)
+        if (sendAudioToGptConnector && gptConnector == null)
         {
-            Debug.LogWarning("GPTConnector 未设置，无法发送音频。");
-            yield break;
+            Debug.LogWarning("[SpeechRecognizer] sendAudioToGptConnector=true but GPTConnector is not assigned.");
         }
         // Check minimum audio duration before sending
         if (!string.IsNullOrEmpty(wavPath))
@@ -206,47 +211,75 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                 Debug.LogWarning($"[SpeechRecognizer] Failed to check audio file: {e.Message}");
             }
         }
-        D($"[Send] 发送音频到 GPTConnector: {wavPath}");
+        D($"[Send] Processing utterance audio: {wavPath}");
 
         string transcriptContext = null;
         if (transcribeBeforeSend)
         {
-            yield return StartCoroutine(SendAudioToOpenAI(wavPath, text => transcriptContext = text));
+            D("[ProcessUtterance] Starting nested SendAudioToOpenAI coroutine...");
+            yield return StartCoroutine(SendAudioToOpenAI(wavPath, text => {
+                    D($"[ProcessUtterance] SendAudioToOpenAI callback received: {(string.IsNullOrWhiteSpace(text) ? "(null)" : text)}");
+                transcriptContext = text;
+            }));
+            D("[ProcessUtterance] Nested SendAudioToOpenAI coroutine completed");
+            D($"[ProcessUtterance] transcriptContext value: {(string.IsNullOrWhiteSpace(transcriptContext) ? "(null)" : transcriptContext)}");
+            
             if (!string.IsNullOrWhiteSpace(transcriptContext))
             {
                 D($"[STT][user] {transcriptContext}");
+                Debug.Log($"[SpeechRecognizer] OnTranscriptReady about to invoke with transcript: {transcriptContext}");
+                OnTranscriptReady?.Invoke(transcriptContext);
+                Debug.Log("[SpeechRecognizer] OnTranscriptReady invocation completed");
+            }
+            else
+            {
+                D("[ProcessUtterance] WARNING: transcriptContext is null after SendAudioToOpenAI");
             }
         }
 
         // Check audio length before sending (must be at least 100ms for 16kHz = 1600 samples, for 24kHz = 2400 samples)
+        D("[ProcessUtterance] Checking audio file size...");
         try {
             var wavBytes = File.ReadAllBytes(wavPath);
+            D($"[ProcessUtterance] Audio file size: {wavBytes.Length} bytes");
             // crude check: look for at least 3200 bytes (16-bit mono, 1600 samples)
             if (wavBytes.Length < 4000) {
-                Debug.LogWarning("[OpenAISpeechRecognizer] Audio buffer too small, not sending to GPTConnector.");
+                D($"[ProcessUtterance] WARNING: Audio buffer too small ({wavBytes.Length} bytes), not sending to GPTConnector");
                 yield break;
             }
         } catch (Exception e) {
-            Debug.LogWarning($"[OpenAISpeechRecognizer] Failed to check audio file size: {e.Message}");
+            D($"[ProcessUtterance] ERROR checking audio file size: {e.GetType().Name} - {e.Message}");
         }
-        gptConnector.SendAudioFileToGPT(wavPath, transcriptContext, null);
+        
+        D("[ProcessUtterance] About to send audio to GPTConnector...");
+        if (sendAudioToGptConnector && gptConnector != null)
+        {
+            D($"[ProcessUtterance] Calling gptConnector.SendAudioFileToGPT with transcript: {(string.IsNullOrWhiteSpace(transcriptContext) ? "(null)" : transcriptContext)}");
+            gptConnector.SendAudioFileToGPT(wavPath, transcriptContext, null);
+        }
+        else
+        {
+            D($"[ProcessUtterance] GPTConnector call skipped (sendAudioToGptConnector={sendAudioToGptConnector}, gptConnector={(gptConnector != null)})");
+        }
+        
+        D("[ProcessUtterance] Coroutine completing normally");
         yield return null;
     }
 
-    // ========= 真正的录音 + VAD（含硬中断触发 TTS 停止） =========
+    // ========= Actual recording + VAD (includes hard-interrupt handling for TTS) =========
     private IEnumerator RecordUtteranceAndSave(Action<string> onSaved)
     {
         D($"[Rec] Microphone.Start(name={microphoneName}, rate={sampleRate})");
         micClip = Microphone.Start(microphoneName, true, maxRecordTime, sampleRate);
 
-        // 等待设备开始输出
+        // Wait for the device to start providing output
         yield return new WaitUntil(() =>
         {
             int pos = Microphone.GetPosition(microphoneName);
             return pos > 0;
         });
 
-        D($"[Rec] 录音启动成功，clip={micClip}, freq={micClip.frequency}, channels={micClip.channels}");
+        D($"[Rec] Recording started successfully, clip={micClip}, freq={micClip.frequency}, channels={micClip.channels}");
 
         int channels = micClip.channels;
         int lastSample = 0;
@@ -260,7 +293,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         Queue<float> preRoll = new Queue<float>(preRollMax);
         List<float> capture = new List<float>(sampleRate * 10);
 
-        // 节流打印函数（每 debugLogInterval 秒打印一次状态）
+        // Throttled state logger (prints once every debugLogInterval seconds)
         Action throttledStateLog = () =>
         {
             if (!verboseDebug) return;
@@ -278,13 +311,13 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             int cur = Microphone.GetPosition(microphoneName);
             if (cur < 0)
             {
-                Debug.LogWarning("[Rec] Microphone.GetPosition 返回 -1（某些平台可能会这样），继续等待");
+                Debug.LogWarning("[Rec] Microphone.GetPosition returned -1 (some platforms may do this), continuing to wait");
                 yield return null;
                 continue;
             }
 
             int delta = cur - lastSample;
-            if (delta < 0) delta += micClip.samples; // 环形缓冲
+            if (delta < 0) delta += micClip.samples; // circular buffer wrap
             if (delta == 0) { throttledStateLog(); yield return null; continue; }
 
             int toEnd = micClip.samples - lastSample;
@@ -346,14 +379,14 @@ public class OpenAISpeechRecognizer : MonoBehaviour
             lastBatchMax = batchMax;
             if (batchMax > _globalMax) _globalMax = batchMax;
 
-            // —— 1) 硬中断（峰值 > interruptThreshold 持续 interruptGraceMs）——
+            // —— 1) Hard interrupt (peak > interruptThreshold sustained for interruptGraceMs) ——
             if (interruptEvenBeforeVAD && (ttsToInterrupt != null ? ttsToInterrupt.IsSpeaking : true))
             {
                 if (batchMax > interruptThreshold)
                 {
                     interruptAboveTimer += batchDur;
                     _overInterruptCount++;
-                    DT($"[INT]", $"硬中断计时: {interruptAboveTimer:F3}s / {(interruptGraceMs / 1000f):F3}s (batchMax={batchMax:F4})");
+                    DT($"[INT]", $"Hard interrupt timer: {interruptAboveTimer:F3}s / {(interruptGraceMs / 1000f):F3}s (batchMax={batchMax:F4})");
 
                     if (interruptAboveTimer >= (interruptGraceMs / 1000f))
                     {
@@ -364,12 +397,12 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                 else
                 {
                     if (interruptAboveTimer > 0f)
-                        DT("[INT]", $"硬中断计时被清零（batchMax={batchMax:F4} < {interruptThreshold})");
+                        DT("[INT]", $"Hard interrupt timer reset (batchMax={batchMax:F4} < {interruptThreshold})");
                     interruptAboveTimer = 0f;
                 }
             }
 
-            // —— 2) 正式“开始说话”判定（VAD）——
+            // —— 2) Official 'start speaking' detection (VAD) ——
             if (!started)
             {
                 if (batchMax > startThreshold)
@@ -387,12 +420,12 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                     {
                         aboveTimer += batchDur;
                         _overStartCount++;
-                        DT("[VAD]", $">startThreshold：aboveTimer={aboveTimer:F3}/{startHoldTime:F3} (batchMax={batchMax:F4})");
+                        DT("[VAD]", $">startThreshold: aboveTimer={aboveTimer:F3}/{startHoldTime:F3} (batchMax={batchMax:F4})");
 
                         if (aboveTimer >= startHoldTime)
                         {
                             started = true;
-                            DT("[VAD]", $"✅ STARTED! preRoll={preRoll.Count} samples 将并入 capture");
+                            DT("[VAD]", $"✅ STARTED! preRoll={preRoll.Count} samples merged into capture");
 
                             HandleUserInterrupt();
 
@@ -408,7 +441,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                 else
                 {
                     if (aboveTimer > 0f)
-                        DT("[VAD]", $"start计时清零（batchMax={batchMax:F4} < {startThreshold})");
+                        DT("[VAD]", $"start timer reset (batchMax={batchMax:F4} < {startThreshold})");
                     aboveTimer = 0f;
                 }
             }
@@ -419,25 +452,25 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                 {
                     silenceTimer += batchDur;
                     _overStopCount++;
-                    DT("[VAD]", $"<stopThreshold：silenceTimer={silenceTimer:F3}/{stopSilenceTime:F3} (batchMax={batchMax:F4})");
+                    DT("[VAD]", $"<stopThreshold: silenceTimer={silenceTimer:F3}/{stopSilenceTime:F3} (batchMax={batchMax:F4})");
                 }
                 else
                 {
                     if (silenceTimer > 0f)
-                        DT("[VAD]", $"stop计时清零（batchMax={batchMax:F4} >= {stopThreshold})");
+                        DT("[VAD]", $"stop timer reset (batchMax={batchMax:F4} >= {stopThreshold})");
                     silenceTimer = 0f;
                 }
 
                 if (recordedTime >= minRecordTime && silenceTimer >= stopSilenceTime)
                 {
-                    DT("[VAD]", $"🛑 结束：recordedTime={recordedTime:F2}s, silenceTimer={silenceTimer:F2}s");
+                    DT("[VAD]", $"🛑 END: recordedTime={recordedTime:F2}s, silenceTimer={silenceTimer:F2}s");
                     break;
                 }
             }
 
             if (totalTime >= maxRecordTime)
             {
-                DT("[VAD]", $"⏱️ 达到最大录音时长 {maxRecordTime}s，强制结束本段");
+                DT("[VAD]", $"⏱️ Reached max record time {maxRecordTime}s, forcing end of segment");
                 break;
             }
 
@@ -449,9 +482,21 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         Microphone.End(microphoneName);
         D($"[Rec] Microphone.End(). globalMax={_globalMax:F4}, captureSamples={capture.Count}");
 
+        // If VAD never flipped to 'started' we may still have useful audio in the pre-roll buffer
+        // (short utterances or noisy input can prevent aboveTimer from reaching startHoldTime).
+        // Salvage pre-roll into capture when there's evidence of audio activity.
+        if (capture.Count == 0 && preRoll != null && preRoll.Count > 0 && _globalMax > startThreshold)
+        {
+            D($"[VAD] Salvaging pre-roll as utterance (globalMax={_globalMax:F4} > startThreshold={startThreshold:F4})");
+            while (preRoll.Count > 0)
+            {
+                capture.Add(preRoll.Dequeue());
+            }
+        }
+
         if (capture.Count == 0)
         {
-            Debug.LogWarning("⚠️ 未捕获到有效语音（阈值可能过高或环境过静）" +
+            Debug.LogWarning("⚠️ No valid speech captured (threshold may be too high or environment too quiet)" +
                              $" | globalMax={_globalMax:F4} startThr={startThreshold} stopThr={stopThreshold} " +
                              $" | over(start/stop/intr)={_overStartCount}/{_overStopCount}/{_overInterruptCount}");
             onSaved?.Invoke(null);
@@ -463,16 +508,17 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         outClip.SetData(capture.ToArray(), 0);
 
         string filePath = TrialLogPath.GetFilePath("temp_speech.wav");
-        try
-        {
-            byte[] wav = WavUtility.FromAudioClip(outClip); // 依赖你项目里的 WavUtility
-            File.WriteAllBytes(filePath, wav);
-            D($"[Save] 写入 WAV 完成: {filePath} ({wav.Length} bytes)");
-            onSaved?.Invoke(filePath);
-        }
+            try
+            {
+                byte[] wav = WavUtility.FromAudioClip(outClip); // depends on your project's WavUtility
+                File.WriteAllBytes(filePath, wav);
+                Debug.Log($"[Save] WAV write completed: {filePath} ({wav.Length} bytes)");
+                onSaved?.Invoke(filePath);
+                Debug.Log($"[Save] onSaved invoked with path: {filePath}");
+            }
         catch (Exception e)
         {
-            Debug.LogError("保存 WAV 失败: " + e.Message);
+            Debug.LogError("Failed to save WAV: " + e.Message);
             onSaved?.Invoke(null);
         }
     }
@@ -496,26 +542,44 @@ public class OpenAISpeechRecognizer : MonoBehaviour
     // =========（未使用）转写 =========
     private IEnumerator SendAudioToOpenAI(string filePath, Action<string> onComplete)
     {
-        if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+        D($"[SendAudioToOpenAI] ENTRY - filePath: {filePath}");
+        
+        if (string.IsNullOrEmpty(filePath))
         {
+            D("[SendAudioToOpenAI] ERROR: filePath is null or empty");
             onComplete?.Invoke(null);
             yield break;
         }
+
+        if (!File.Exists(filePath))
+        {
+            D($"[SendAudioToOpenAI] ERROR: File does not exist at path: {filePath}");
+            onComplete?.Invoke(null);
+            yield break;
+        }
+
+        D($"[SendAudioToOpenAI] File exists, size: {new System.IO.FileInfo(filePath).Length} bytes");
 
         string key = ResolveApiKey();
         if (string.IsNullOrEmpty(key))
         {
+            D("[SendAudioToOpenAI] ERROR: API key is null or empty");
             onComplete?.Invoke(null);
             yield break;
         }
 
+        D("[SendAudioToOpenAI] API key resolved successfully");
+
         byte[] audioData;
         try
         {
+            D("[SendAudioToOpenAI] About to read audio file...");
             audioData = File.ReadAllBytes(filePath);
+            D($"[SendAudioToOpenAI] Audio file read successfully, {audioData.Length} bytes");
         }
-        catch
+        catch (Exception ex)
         {
+            D($"[SendAudioToOpenAI] ERROR reading file: {ex.GetType().Name} - {ex.Message}");
             onComplete?.Invoke(null);
             yield break;
         }
@@ -524,10 +588,14 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         form.AddBinaryData("file", audioData, "speech.wav", "audio/wav");
         form.AddField("model", string.IsNullOrWhiteSpace(transcriptionModel) ? "gpt-4o-mini-transcribe" : transcriptionModel);
 
+        D("[SendAudioToOpenAI] Creating WebRequest to OpenAI API...");
         var req = UnityWebRequest.Post("https://api.openai.com/v1/audio/transcriptions", form);
         req.SetRequestHeader("Authorization", "Bearer " + key);
         req.timeout = 20;
+        
+        D("[SendAudioToOpenAI] Sending WebRequest (timeout: 20s)...");
         yield return req.SendWebRequest();
+        D("[SendAudioToOpenAI] WebRequest completed");
 
         bool ok;
 #if UNITY_2020_2_OR_NEWER
@@ -536,36 +604,60 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         ok = (!req.isNetworkError && !req.isHttpError);
 #endif
 
-        if (!ok || req.downloadHandler == null)
+        if (!ok)
         {
+            D($"[SendAudioToOpenAI] ERROR: WebRequest failed - result: {req.result}");
+            if (req.downloadHandler != null)
+                D($"[SendAudioToOpenAI] Response: {req.downloadHandler.text}");
             onComplete?.Invoke(null);
             yield break;
         }
 
+        if (req.downloadHandler == null)
+        {
+            D("[SendAudioToOpenAI] ERROR: downloadHandler is null");
+            onComplete?.Invoke(null);
+            yield break;
+        }
+
+        D("[SendAudioToOpenAI] WebRequest successful, parsing response...");
+
         string response = req.downloadHandler.text;
+        D($"[SendAudioToOpenAI] Response text: {response}");
+        
         string transcript = null;
 
         try
         {
+            D("[SendAudioToOpenAI] Attempting JSON parse...");
             var parsed = JsonUtility.FromJson<TranscriptResponse>(response);
             if (parsed != null)
                 transcript = parsed.text;
+            D($"[SendAudioToOpenAI] JSON parse successful, transcript: {transcript}");
         }
-        catch
+        catch (Exception ex)
         {
-            // Fall back to regex extraction below.
+            D($"[SendAudioToOpenAI] JSON parse failed ({ex.GetType().Name}), attempting regex fallback");
         }
 
         if (string.IsNullOrWhiteSpace(transcript))
         {
+            D("[SendAudioToOpenAI] Attempting regex extraction...");
             Match m = Regex.Match(response ?? "", "\"text\"\\s*:\\s*\"(?<t>(?:\\\\.|[^\"])*)\"");
             if (m.Success)
             {
                 transcript = Regex.Unescape(m.Groups["t"].Value);
+                D($"[SendAudioToOpenAI] Regex extraction successful: {transcript}");
+            }
+            else
+            {
+                D("[SendAudioToOpenAI] Regex extraction failed");
             }
         }
 
+        D($"[SendAudioToOpenAI] Final transcript: {(string.IsNullOrWhiteSpace(transcript) ? "(null)" : transcript.Trim())}");
         onComplete?.Invoke(string.IsNullOrWhiteSpace(transcript) ? null : transcript.Trim());
+        D("[SendAudioToOpenAI] EXIT - callback invoked");
     }
 
     private string ResolveApiKey()
@@ -579,7 +671,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         return null;
     }
 
-    // ========= 全局硬停 & 临时静音（兼容 Unity 2019） =========
+    // ========= Global hard-stop & temporary mute (compatible with Unity 2019) =========
     private void LogAndStopAllAudio(string reason)
     {
         AudioSource[] all;
@@ -611,7 +703,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
                 s.clip = null;
             }
         }
-        D($"[INT] {reason}: 停止所有 AudioSource");
+        D($"[INT] {reason}: stopped all AudioSources");
     }
 
     private IEnumerator HardMuteForFrames(int frames)
@@ -624,7 +716,7 @@ public class OpenAISpeechRecognizer : MonoBehaviour
 
     [Serializable] private class TranscriptResponse { public string text; }
 
-    // ======== 调试辅助 ========
+    // ======== Debug helpers ========
     private void D(string msg) { if (verboseDebug) Debug.Log(msg); }
     private void DT(string tag, string msg)
     {

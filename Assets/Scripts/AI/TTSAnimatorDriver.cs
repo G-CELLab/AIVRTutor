@@ -57,7 +57,7 @@ public class TTSAnimatorDriver : MonoBehaviour
     void Awake()
     {
         if (!tts) tts = FindAnyObjectByType<TextToSpeechPlayer>();
-        if (!animator) animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>(true);
+        if (!animator) animator = FindCompatibleAnimator();
         if (!animator) { Debug.LogError("[TTSAnimatorDriver] ❌ 没有 Animator"); enabled = false; return; }
 
         Rehash();
@@ -67,7 +67,11 @@ public class TTSAnimatorDriver : MonoBehaviour
         {
             if (!tts) Debug.LogWarning("[TTSAnimatorDriver] ⚠️ 未找到 TextToSpeechPlayer，speaking 轮询可能一直为 false");
             if (!_hasIsSpeaking || !_hasWaitSpeak)
-                Debug.LogWarning("[TTSAnimatorDriver] ⚠️ isSpeaking / waitSpeak 任一缺失，开口与等待状态将无法驱动状态机");
+                Debug.LogWarning($"[TTSAnimatorDriver] ⚠️ Animator '{animator.name}' controller '{GetControllerName(animator)}' is missing required bools: " +
+                                 $"isSpeaking={_hasIsSpeaking}, waitSpeak={_hasWaitSpeak}. " +
+                                 $"This Animator cannot drive the TTS state machine until those parameters are added or the reference is corrected.");
+            else
+                Debug.Log($"[TTSAnimatorDriver] Using Animator '{animator.name}' controller '{GetControllerName(animator)}'");
         }
     }
 
@@ -252,6 +256,59 @@ public class TTSAnimatorDriver : MonoBehaviour
             if (p != null && p.type == type && p.name == name)
                 return true;
         return false;
+    }
+
+    Animator FindCompatibleAnimator()
+    {
+        var candidates = new List<Animator>();
+
+        var localAnimator = GetComponent<Animator>();
+        if (localAnimator) candidates.Add(localAnimator);
+
+        var parentAnimator = GetComponentInParent<Animator>(true);
+        if (parentAnimator && !candidates.Contains(parentAnimator)) candidates.Add(parentAnimator);
+
+        var childAnimators = GetComponentsInChildren<Animator>(true);
+        foreach (var candidate in childAnimators)
+        {
+            if (candidate && !candidates.Contains(candidate)) candidates.Add(candidate);
+        }
+
+        Animator fallback = null;
+        foreach (var candidate in candidates)
+        {
+            if (!candidate) continue;
+            if (fallback == null) fallback = candidate;
+            if (CandidateLooksCompatible(candidate)) return candidate;
+        }
+
+        return fallback;
+    }
+
+    bool CandidateLooksCompatible(Animator candidate)
+    {
+        if (!candidate) return false;
+        var controller = candidate.runtimeAnimatorController;
+        if (!controller) return false;
+        return ControllerHasParam(candidate, isSpeakingParam, AnimatorControllerParameterType.Bool)
+            && ControllerHasParam(candidate, waitSpeakParam, AnimatorControllerParameterType.Bool);
+    }
+
+    bool ControllerHasParam(Animator candidate, string name, AnimatorControllerParameterType type)
+    {
+        if (!candidate || string.IsNullOrEmpty(name)) return false;
+        foreach (var parameter in candidate.parameters)
+        {
+            if (parameter != null && parameter.type == type && parameter.name == name)
+                return true;
+        }
+        return false;
+    }
+
+    string GetControllerName(Animator target)
+    {
+        if (!target || !target.runtimeAnimatorController) return "<none>";
+        return target.runtimeAnimatorController.name;
     }
 
     void LogParamCheck(string name, bool ok, string type)
