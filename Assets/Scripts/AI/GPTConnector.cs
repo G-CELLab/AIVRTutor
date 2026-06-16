@@ -102,7 +102,7 @@ public class GPTConnector : MonoBehaviour
     public bool logPrompts = true;
     public TMP_Text promptEchoText; // 可选：场景里拖一个 TMP_Text 看最后一次 instructions
     public int promptLogMaxChars = 2000;
-    [TextArea(2, 8)] public string lastPrompt = ""; // 公开存储最近一次“最终发送”的 instructions
+    [TextArea(2, 8)] public string lastPrompt = ""; // 公开存储最近一次"最终发送"的 instructions
 
     // ================= 相位指令预缓存（文本+音频） =================
     [Header("Phase Cache (Precompute)")]
@@ -113,9 +113,9 @@ public class GPTConnector : MonoBehaviour
     public string ttsVoice = AI.Prompts.Customizations.DefaultTtsVoice; // TTS 音色
     public string phaseAudioFormat = AI.Prompts.Customizations.DefaultPhaseAudioFormat; // TTS 音频格式（建议 wav）
     public bool prependPhaseTextAsDeveloperItem = AI.Prompts.Customizations.DefaultPrependPhaseTextAsDeveloperItem; // 每次对话前把相位指令作为 developer 文本钉入
-    public bool prependPhaseInstructionAudio = AI.Prompts.Customizations.DefaultPrependPhaseInstructionAudio; // 把“相位指令的音频”拼在用户语音前（需采样率一致，默认关)
+    public bool prependPhaseInstructionAudio = AI.Prompts.Customizations.DefaultPrependPhaseInstructionAudio; // 把"相位指令的音频"拼在用户语音前（需采样率一致，默认关)
 
-    // ===== 触发来源：仅用“助理字幕/文本” =====
+    // ===== 触发来源：仅用"助理字幕/文本" =====
     [Header("Reactions")]
     public bool reactToAssistantTranscript = true; // 用助理回复字幕触发动作
     [Tooltip("🎯 NEW: Use real-time streaming deltas for precise gesture timing (triggers as words arrive, not after speech completes). Recommended for Realtime API.")]
@@ -236,7 +236,7 @@ public class GPTConnector : MonoBehaviour
             text.IndexOf("all spoken audio and text must be english", StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
-    // ===== 合并“系统+相位+可选附加”为最终 instructions =====
+    // ===== 合并"系统+相位+可选附加"为最终 instructions =====
     private string BuildFinalInstructions(string extra = null, bool includePhase = true)
     {
         var parts = new List<string>(3);
@@ -365,7 +365,7 @@ public class GPTConnector : MonoBehaviour
         return result;
     }
 
-    // ===== 为“指定相位”构造最终 instructions（用于预缓存） =====
+    // ===== 为"指定相位"构造最终 instructions（用于预缓存） =====
     private string BuildInstructionsForPhase(GameManager.GameState gs, string extra = null)
     {
         var parts = new List<string>(3);
@@ -914,7 +914,7 @@ public class GPTConnector : MonoBehaviour
             yield return EnsureRealtimeConnected();
             yield return WaitForSessionReady(3f); // 等待会话指令就绪
 
-        // 将“当前相位指令”作为 system 文本钉入对话
+        // 将"当前相位指令"作为 system 文本钉入对话
         if (prependPhaseTextAsDeveloperItem)
         {
             string dev = BuildPhaseOnlyInstructions(GameManager.eGameStatus);
@@ -935,11 +935,9 @@ public class GPTConnector : MonoBehaviour
         string instr = BuildFinalInstructions(null, includePhaseInRealtime);
         EchoPrompt("RT/Text.Instructions(final)", instr, true);
 
-        sb.Append("\"modalities\":[\"text\",\"audio\"],");
-        sb.Append($"\"temperature\":{AI.Prompts.Customizations.DefaultTemperature},");
         sb.Append($"\"max_output_tokens\":{AI.Prompts.Customizations.DefaultMaxOutputTokens}");
         sb.Append(",\"instructions\":\"").Append(Escape(instr)).Append("\"");
-        sb.Append("}}");;
+        sb.Append("}}");
 
         yield return SendWsText(sb.ToString());
         // Note: _responseInProgress will be reset by onReplyComplete callback after TTS finishes
@@ -1012,8 +1010,6 @@ public class GPTConnector : MonoBehaviour
         string finalInstr = BuildFinalInstructions(string.IsNullOrWhiteSpace(extraInstruction) ? null : extraInstruction, includePhaseInRealtime);
         EchoPrompt("RT/Audio.Instructions(final)", finalInstr, true);
 
-        sb.Append("\"modalities\":[\"text\",\"audio\"],");
-        sb.Append($"\"temperature\":{AI.Prompts.Customizations.DefaultTemperature},");
         sb.Append($"\"max_output_tokens\":{AI.Prompts.Customizations.DefaultMaxOutputTokens}");
         sb.Append(",\"instructions\":\"").Append(Escape(finalInstr)).Append("\"");
         sb.Append("}}");
@@ -1042,10 +1038,11 @@ public class GPTConnector : MonoBehaviour
         _audioChunkCount = 0;
         _sessionReady = false;
 
-        string url = "wss://api.openai.com/v1/realtime?model=" + Uri.EscapeDataString(string.IsNullOrEmpty(realtimeModel) ? "gpt-realtime-2025-08-28" : realtimeModel);
+        string url = "wss://api.openai.com/v1/realtime?model=" + Uri.EscapeDataString(string.IsNullOrEmpty(realtimeModel) ? "gpt-realtime" : realtimeModel);
         _ws = new ClientWebSocket();
         _ws.Options.SetRequestHeader("Authorization", "Bearer " + apiKey);
-        _ws.Options.SetRequestHeader("OpenAI-Beta", "realtime=v1");
+        // NOTE (GA migration): The "OpenAI-Beta: realtime=v1" header has been removed.
+        // The GA interface no longer requires (or accepts) the beta header.
 
         Task t = _ws.ConnectAsync(new Uri(url), _wsCts.Token);
         while (!t.IsCompleted) yield return null;
@@ -1059,33 +1056,41 @@ public class GPTConnector : MonoBehaviour
         Debug.Log("[Realtime] ✅ WebSocket connected: " + url);
         _ = Task.Run(ReceiveLoop);
 
-        // === 发送 session.update ===
-        var cfg = new StringBuilder();
-        cfg.Append("{\"type\":\"session.update\",\"session\":{");
-        cfg.Append("\"modalities\":[\"text\",\"audio\"],");
-        cfg.Append("\"voice\":\"").Append(string.IsNullOrEmpty(gptVoice) ? "alloy" : gptVoice).Append("\",");
-
-        // turn_detection
-        cfg.Append("\"turn_detection\":{")
-          .Append("\"type\":\"server_vad\",")
-          .Append("\"silence_duration_ms\":").Append(AI.Prompts.Customizations.SilenceDurationMs).Append(",")
-          .Append("\"prefix_padding_ms\":").Append(AI.Prompts.Customizations.PrefixPaddingMs)
-          .Append("},");
-        // 输出音频格式（string，不是object）
-        // Always use pcm16 for Realtime API regardless of Inspector value
-        cfg.Append("\"output_audio_format\":\"pcm16\",");
-
-        // 输入音频格式（string，不是object）
-        cfg.Append("\"input_audio_format\":\"pcm16\"");
-
-        // 指令
+        // === 发送 session.update (GA shape) ===
+        // GA moves audio config under session.audio.input / session.audio.output,
+        // with "format" as an object ({"type":"audio/pcm","rate":24000}) instead of
+        // the beta's bare string ("pcm16"). A top-level "type":"realtime" is required.
         bool includePhaseInSession = !(prependPhaseTextAsDeveloperItem && omitPhaseFromInstructionsWhenPinned);
         string sessionInstr = BuildFinalInstructions(null, includePhaseInSession);
         EchoPrompt("RT/session.update.Instructions(final)", sessionInstr, true);
-        cfg.Append(",\"instructions\":\"").Append(Escape(sessionInstr)).Append("\"");
-        cfg.Append("}}");
 
-        Debug.Log("[Realtime] → sending session.update ...");
+        var cfg = new StringBuilder();
+        cfg.Append("{\"type\":\"session.update\",\"session\":{");
+        cfg.Append("\"type\":\"realtime\",");
+        cfg.Append("\"output_modalities\":[\"audio\"],"); // audio output implies transcript too
+        cfg.Append("\"audio\":{");
+
+        // -- input audio config --
+        cfg.Append("\"input\":{");
+        cfg.Append("\"format\":{\"type\":\"audio/pcm\",\"rate\":24000},");
+        cfg.Append("\"turn_detection\":{")
+           .Append("\"type\":\"server_vad\",")
+           .Append("\"silence_duration_ms\":").Append(AI.Prompts.Customizations.SilenceDurationMs).Append(",")
+           .Append("\"prefix_padding_ms\":").Append(AI.Prompts.Customizations.PrefixPaddingMs)
+           .Append("}");
+        cfg.Append("},");
+
+        // -- output audio config --
+        cfg.Append("\"output\":{");
+        cfg.Append("\"format\":{\"type\":\"audio/pcm\",\"rate\":24000},");
+        cfg.Append("\"voice\":\"").Append(string.IsNullOrEmpty(gptVoice) ? "alloy" : gptVoice).Append("\"");
+        cfg.Append("}");
+
+        cfg.Append("}"); // close "audio"
+        cfg.Append(",\"instructions\":\"").Append(Escape(sessionInstr)).Append("\"");
+        cfg.Append("}}"); // close "session", close root
+
+        Debug.Log("[Realtime] → sending session.update (GA) ...");
         yield return SendWsText(cfg.ToString());
         Debug.Log("[Realtime] ✓ session.update sent");
 
@@ -1192,8 +1197,8 @@ public class GPTConnector : MonoBehaviour
             return;
         }
 
-        // === 文本增量（兼容新旧命名）
-        if (type == "response.text.delta" || type.Contains("response.output_text.delta"))
+        // === 文本增量（GA: response.output_text.delta；兼容旧 beta 命名）
+        if (type == "response.output_text.delta" || type == "response.text.delta")
         {
             string delta = ExtractJsonString(json, "delta");
             if (!string.IsNullOrEmpty(delta))
@@ -1204,8 +1209,8 @@ public class GPTConnector : MonoBehaviour
             return;
         }
 
-        // === 音频增量
-        if (type.Contains("audio.delta"))
+        // === 音频增量（GA: response.output_audio.delta；兼容旧命名通过 Contains 检查）
+        if (type == "response.output_audio.delta" || type.Contains("audio.delta"))
         {
             string b64 = ExtractJsonString(json, "delta");
             if (string.IsNullOrEmpty(b64))
@@ -1231,7 +1236,8 @@ public class GPTConnector : MonoBehaviour
         }
 
         // === 模型语音字幕（delta）- REAL-TIME GESTURE TIMING
-        if (type == "response.audio_transcript.delta")
+        // GA: response.output_audio_transcript.delta (was response.audio_transcript.delta in beta)
+        if (type == "response.output_audio_transcript.delta" || type == "response.audio_transcript.delta")
         {
             string delta = ExtractJsonString(json, "delta") ?? ExtractJsonString(json, "text");
             if (!string.IsNullOrEmpty(delta))
@@ -1262,7 +1268,8 @@ public class GPTConnector : MonoBehaviour
         }
 
         // === 模型语音字幕（done）→ 触发动作（仅助理）FALLBACK if streaming didn't catch it
-        if (type == "response.audio_transcript.done")
+        // GA: response.output_audio_transcript.done (was response.audio_transcript.done in beta)
+        if (type == "response.output_audio_transcript.done" || type == "response.audio_transcript.done")
         {
             string full = ExtractJsonString(json, "transcript") ?? ExtractJsonString(json, "text");
             if (string.IsNullOrEmpty(full) && _assistantTranscriptAccum.Length > 0) full = _assistantTranscriptAccum.ToString();
@@ -1301,6 +1308,13 @@ public class GPTConnector : MonoBehaviour
             DT("[RT]", "response completed/done");
 
             string replyText = _textAccum != null && _textAccum.Length > 0 ? _textAccum.ToString() : null;
+
+            // If text modality wasn't requested (output_modalities=["audio"]), fall back
+            // to the accumulated audio transcript for history/gesture/logging purposes.
+            if (string.IsNullOrEmpty(replyText) && _assistantTranscriptAccum.Length > 0)
+            {
+                replyText = _assistantTranscriptAccum.ToString();
+            }
             
             // ===== STRIP DUPLICATE PHASE ANNOUNCEMENTS =====
             replyText = StripPhaseAnnouncementsFromResponse(replyText);
@@ -1562,7 +1576,7 @@ public class GPTConnector : MonoBehaviour
         }
     }
 
-    // ========= 仅基于“助理字幕/文本”的 4 个动作（延时触发实现） =========
+    // ========= 仅基于"助理字幕/文本"的 4 个动作（延时触发实现） =========
     public event Action<string> OnAssistantTranscript;
 
     private void ForwardAssistantTranscriptForTutorial(string transcript)

@@ -1377,24 +1377,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74cc4b6eef8826e47bab98b68be2da07, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::XRStartupSpawnAligner
-  startupDelayFrames: 2
-  enableInitialSceneLoadAlign: 1
-  enableStartupFollowupRealigns: 0
-  focusRealignWindowSeconds: 8
-  enableFocusReturnRealign: 0
-  maxFocusRealignAttempts: 2
-  additionalYawOffsetDegrees: 0
-  startupRealignAttempts: 4
-  startupRealignIntervalSeconds: 0.2
-  enableEditorLateRealign: 0
-  editorLateRealignWindowSeconds: 6
-  editorLateRealignIntervalSeconds: 0.5
-  editorLatePlanarDriftThresholdMeters: 0.06
-  editorLateYawDriftThresholdDegrees: 4
-  editorLateStableChecksToStop: 2
-  spawnAnchorOverride: {fileID: 366701344}
-  alignVerticalToAnchor: 1
-  anchorVerticalOffsetMeters: 0
 --- !u!1 &253412223
 GameObject:
   m_ObjectHideFlags: 0
@@ -2299,17 +2281,17 @@ MonoBehaviour:
     RESPONSE STYLE:
 
     -
-    Be warm and encouraging. Use phrases like ''Great job!'', ''You''ve got this!'',
-    ''That''s exactly right!''
+    Be enthusiastic and encouraging. Use phrases like ''Great job!'', ''You''ve got
+    this!'', ''That''s exactly right!''
 
-    - Be concise but never cold. Every response should
-    feel supportive.
+    - Be concise but never cold. Every response
+    should feel supportive.
 
-    - If the student seems stuck, offer gentle guidance: ''No
-    worries, let me help you out.''
+    - If the student seems stuck, offer gentle guidance:
+    ''No worries, let me help you out.''
 
-    - End with encouragement or a simple next
-    step when appropriate.'
+    - End with encouragement or a simple
+    next step when appropriate.'
   maxHistoryTurnsToSend: 15
   maxCharsBudget: 12000
   usePhasePromptOverride: 0
@@ -16122,7 +16104,7 @@ PrefabInstance:
     - target: {fileID: 1820897918385990095, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}
       propertyPath: m_RequestedTrackingOriginMode
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1976415994398670502, guid: d6878e1999eb4b44a9f5a263af86c185,
         type: 3}

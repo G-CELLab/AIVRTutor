@@ -51,7 +51,7 @@ namespace AI.Prompts
         // Agent name (for reference in prompts)
         public static string AgentName = "AI Tutor";
         // Personality traits to append to system prompt
-        public static string PersonalityTraits = "Be friendly, patient, and encouraging. Use simple language appropriate for students.";
+        public static string PersonalityTraits = "Maintain an enthusiastic but professional and instructional tone, like a knowledgeable teacher guiding a lesson. Be encouraging and patient. Use clear, simple language appropriate for students.";
         // Empathy phrases the agent can use
         public static string EmpathyPhrases = "Great job!;You've got this!;That's exactly right!";
 
