@@ -260,7 +260,7 @@ public class TextToSpeechPlayer : MonoBehaviour
         byte[] body = System.Text.Encoding.UTF8.GetBytes(json);
         req.uploadHandler = new UploadHandlerRaw(body);
         req.downloadHandler = new DownloadHandlerBuffer();
-        req.SetRequestHeader("Authorization", "Bearer " + openAIKey);
+        req.SetRequestHeader("Authorization", "Bearer " + ResolveOpenAIKey());
         req.SetRequestHeader("Content-Type", "application/json");
 
         yield return req.SendWebRequest();
@@ -340,6 +340,34 @@ public class TextToSpeechPlayer : MonoBehaviour
 
         IsSpeaking = false;
         onPlaybackComplete?.Invoke();
+    }
+
+    // ── Key resolution ────────────────────────────────────────────────────────
+    // Inspector field -> env var -> ApiKeyConfig asset (built by ApiKeyBuildInjector)
+    // -> local.secrets file (editor only). The Inspector field defaults to "*****",
+    // which is intentionally not a usable key.
+    private string ResolveOpenAIKey()
+    {
+        if (!string.IsNullOrWhiteSpace(openAIKey) && !openAIKey.Contains("*"))
+            return openAIKey;
+
+        string env = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        if (!string.IsNullOrWhiteSpace(env)) return env;
+
+        var config = Resources.Load<ApiKeyConfig>("ApiKeyConfig");
+        if (config != null && !string.IsNullOrWhiteSpace(config.OpenAIKey))
+            return config.OpenAIKey;
+
+#if UNITY_EDITOR
+        const string localSecretsFile = "local.secrets/openai.key";
+        if (File.Exists(localSecretsFile))
+        {
+            string fileKey = File.ReadAllText(localSecretsFile).Trim();
+            if (!string.IsNullOrWhiteSpace(fileKey)) return fileKey;
+        }
+#endif
+
+        return null;
     }
 
     [Serializable]

@@ -573,8 +573,27 @@ public class OpenAISpeechRecognizer : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(openAIKey))
             return openAIKey;
 
-        if (gptConnector != null && !string.IsNullOrWhiteSpace(gptConnector.apiKey))
-            return gptConnector.apiKey;
+        // Use GPTConnector's resolved key (Inspector -> env var -> ApiKeyConfig ->
+        // local.secrets), not its raw Inspector field, so this recognizer benefits
+        // from the same fallback chain.
+        if (gptConnector != null && !string.IsNullOrWhiteSpace(gptConnector.ApiKey))
+            return gptConnector.ApiKey;
+
+        string env = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        if (!string.IsNullOrWhiteSpace(env)) return env;
+
+        var config = Resources.Load<ApiKeyConfig>("ApiKeyConfig");
+        if (config != null && !string.IsNullOrWhiteSpace(config.OpenAIKey))
+            return config.OpenAIKey;
+
+#if UNITY_EDITOR
+        const string localSecretsFile = "local.secrets/openai.key";
+        if (File.Exists(localSecretsFile))
+        {
+            string fileKey = File.ReadAllText(localSecretsFile).Trim();
+            if (!string.IsNullOrWhiteSpace(fileKey)) return fileKey;
+        }
+#endif
 
         return null;
     }

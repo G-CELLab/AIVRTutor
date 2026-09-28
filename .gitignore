@@ -32,3 +32,8 @@ desktop.ini
 
 # Build Files
 .utmp
+
+# API key injected at build time — never commit
+Assets/Resources/ApiKeyConfig.asset
+Assets/Resources/ApiKeyConfig.asset.meta
+local.secrets/

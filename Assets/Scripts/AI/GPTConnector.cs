@@ -19,6 +19,36 @@ public class GPTConnector : MonoBehaviour
     private GPTRequestQueue _requestQueue = new GPTRequestQueue();
     [Header("OpenAI")]
     public string apiKey = ""; // ⚠️不要硬编码，Inspector 填
+
+    // ── Key resolution ────────────────────────────────────────────────────────
+    // Falls back to the ApiKeyConfig asset (populated by ApiKeyBuildInjector at
+    // build time) and then to a local secrets file, so the Inspector field and
+    // OPENAI_API_KEY env var stay the primary sources but nothing breaks if
+    // neither is set on this machine.
+    public string ApiKey => ResolveApiKey();
+
+    private string ResolveApiKey()
+    {
+        if (!string.IsNullOrWhiteSpace(apiKey)) return apiKey;
+
+        string env = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        if (!string.IsNullOrWhiteSpace(env)) return env;
+
+        var config = Resources.Load<ApiKeyConfig>("ApiKeyConfig");
+        if (config != null && !string.IsNullOrWhiteSpace(config.OpenAIKey))
+            return config.OpenAIKey;
+
+#if UNITY_EDITOR
+        const string localSecretsFile = "local.secrets/openai.key";
+        if (File.Exists(localSecretsFile))
+        {
+            string fileKey = File.ReadAllText(localSecretsFile).Trim();
+            if (!string.IsNullOrWhiteSpace(fileKey)) return fileKey;
+        }
+#endif
+
+        return null;
+    }
     public string chatModel = AI.Prompts.Customizations.DefaultChatModel;
     public int requestTimeoutSeconds = AI.Prompts.Customizations.DefaultRequestTimeoutSeconds;
 
@@ -534,7 +564,7 @@ public class GPTConnector : MonoBehaviour
         req.uploadHandler = new UploadHandlerRaw(bodyRaw);
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
-        req.SetRequestHeader("Authorization", "Bearer " + apiKey);
+        req.SetRequestHeader("Authorization", "Bearer " + ResolveApiKey());
         req.timeout = 10; // Quick timeout for evaluation
 
         D($"[Queue/Eval] Asking AI if should respond...");
@@ -818,10 +848,10 @@ public class GPTConnector : MonoBehaviour
         req.uploadHandler = new UploadHandlerRaw(bodyRaw);
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
-        req.SetRequestHeader("Authorization", "Bearer " + apiKey);
+        req.SetRequestHeader("Authorization", "Bearer " + ResolveApiKey());
         req.timeout = Mathf.Max(5, requestTimeoutSeconds);
 
-        D($"[HTTP→] {endpoint}\nheaders: Authorization=Bearer {MaskKey(apiKey)}\npayloadBytes={bodyRaw.Length}");
+        D($"[HTTP→] {endpoint}\nheaders: Authorization=Bearer {MaskKey(ResolveApiKey())}\npayloadBytes={bodyRaw.Length}");
         yield return req.SendWebRequest();
 
         bool ok;
@@ -877,7 +907,7 @@ public class GPTConnector : MonoBehaviour
         req.uploadHandler = new UploadHandlerRaw(bodyRaw);
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
-        req.SetRequestHeader("Authorization", "Bearer " + apiKey);
+        req.SetRequestHeader("Authorization", "Bearer " + ResolveApiKey());
         req.timeout = Mathf.Max(5, requestTimeoutSeconds);
 
         D($"[HTTP→] {endpoint}\npayloadBytes={bodyRaw.Length}, base64Len={base64Audio.Length}");
@@ -1040,7 +1070,7 @@ public class GPTConnector : MonoBehaviour
 
         string url = "wss://api.openai.com/v1/realtime?model=" + Uri.EscapeDataString(string.IsNullOrEmpty(realtimeModel) ? "gpt-realtime" : realtimeModel);
         _ws = new ClientWebSocket();
-        _ws.Options.SetRequestHeader("Authorization", "Bearer " + apiKey);
+        _ws.Options.SetRequestHeader("Authorization", "Bearer " + ResolveApiKey());
         // NOTE (GA migration): The "OpenAI-Beta: realtime=v1" header has been removed.
         // The GA interface no longer requires (or accepts) the beta header.
 
@@ -2028,7 +2058,7 @@ public class GPTConnector : MonoBehaviour
         req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
         req.downloadHandler = new DownloadHandlerBuffer();
         req.SetRequestHeader("Content-Type", "application/json");
-        req.SetRequestHeader("Authorization", "Bearer " + apiKey);
+        req.SetRequestHeader("Authorization", "Bearer " + ResolveApiKey());
         req.timeout = Mathf.Max(5, requestTimeoutSeconds);
 
         D($"[TTS→] {endpoint} phase={gs}");
